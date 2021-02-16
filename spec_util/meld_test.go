@@ -86,6 +86,15 @@ var tests = []testData{
 		},
 		"testdata/meld/meld_suppress_none_conflict_expected.pb.txt",
 	},
+	{
+		// Test meld(T, optional<T>) => optional<T>
+		"meld optional and non-optional versions of the same type",
+		[]string{
+			"testdata/meld/meld_optional_required_1.pb.txt",
+			"testdata/meld/meld_optional_required_2.pb.txt",
+		},
+		"testdata/meld/meld_optional_required_2.pb.txt",
+	},
 }
 
 func TestMeldWithFormats(t *testing.T) {

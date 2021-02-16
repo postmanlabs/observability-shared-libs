@@ -4,8 +4,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	"github.com/akitasoftware/akita-libs/pbhash"
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/akitasoftware/akita-libs/pbhash"
 )
 
 // Melds src into dst, resolving conflicts using oneof. Assumes that dst and src
@@ -139,34 +139,31 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		dst.Value, src.Value = src.Value, dst.Value
 	}
 
-	// If dst is a none, replace dst with an optional version of src.
-	if isNone(dst) {
-		if isOptional(src) {
-			dst.Value = src.Value
-		} else {
-			dst.Value = &pb.Data_Optional{
-				Optional: &pb.Optional{
-					Value: &pb.Optional_Data{
-						Data: &pb.Data{Value: src.Value},
-					},
-				},
+	// Special handling if src is optional.
+	if srcOpt, srcIsOpt := src.Value.(*pb.Data_Optional); srcIsOpt {
+		switch opt := srcOpt.Optional.Value.(type) {
+		case *pb.Optional_Data:
+			// Check whether src == dst with optional removed.
+			// E.g. meld(string, optional<string>) => optional<string>
+			if dataEqual(dst, opt.Data) {
+				// dst is just non-optional version of src, swap dst and src to make dst
+				// optional and return.
+				dst.Value, src.Value = src.Value, dst.Value
+				return nil
 			}
-		}
-		return nil
-	}
-
-	// If src is a none, drop the none and mark the dst value as optional.
-	if isNone(src) {
-		if !isOptional(dst) {
-			dst.Value = &pb.Data_Optional{
-				Optional: &pb.Optional{
-					Value: &pb.Optional_Data{
-						Data: &pb.Data{Value: dst.Value},
+		case *pb.Optional_None:
+			// If src is a none, drop the none and mark the dst value as optional.
+			if !isOptional(dst) {
+				dst.Value = &pb.Data_Optional{
+					Optional: &pb.Optional{
+						Value: &pb.Optional_Data{
+							Data: &pb.Data{Value: dst.Value},
+						},
 					},
-				},
+				}
 			}
+			return nil
 		}
-		return nil
 	}
 
 	switch v := dst.Value.(type) {
@@ -183,6 +180,33 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 			return meldList(v.List, srcList.List)
 		} else {
 			hasConflict = true
+			return recordConflict(dst, src)
+		}
+	case *pb.Data_Optional:
+		switch opt := v.Optional.Value.(type) {
+		case *pb.Optional_Data:
+			// Check whether src == dst with optional removed.
+			// E.g. meld(optional<string>, string) => optional<string>
+			if dataEqual(opt.Data, src) {
+				// Do nothing - src is just non-optional verison of dst.
+				return nil
+			}
+			return recordConflict(dst, src)
+		case *pb.Optional_None:
+			// If dst is a none, replace dst with an optional version of src.
+			if isOptional(src) {
+				dst.Value = src.Value
+			} else {
+				dst.Value = &pb.Data_Optional{
+					Optional: &pb.Optional{
+						Value: &pb.Optional_Data{
+							Data: &pb.Data{Value: src.Value},
+						},
+					},
+				}
+			}
+			return nil
+		default:
 			return recordConflict(dst, src)
 		}
 	case *pb.Data_Oneof:
@@ -237,6 +261,21 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		hasConflict = true
 		return recordConflict(dst, src)
 	}
+}
+
+func dataEqual(dst, src *pb.Data) bool {
+	srcExampleValues := src.ExampleValues
+	dstExampleValues := dst.ExampleValues
+	src.ExampleValues = nil
+	dst.ExampleValues = nil
+
+	defer func() {
+		// Reinstate original example values
+		src.ExampleValues = srcExampleValues
+		dst.ExampleValues = dstExampleValues
+	}()
+
+	return proto.Equal(dst, src)
 }
 
 func recordConflict(dst, src *pb.Data) error {
