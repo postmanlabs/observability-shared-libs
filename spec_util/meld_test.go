@@ -95,6 +95,15 @@ var tests = []testData{
 		},
 		"testdata/meld/meld_optional_required_2.pb.txt",
 	},
+	{
+		// meld(oneof(T1, T2), oneof(T3, T4)) => oneof(T1, T2, T3, T4)
+		"meld additive oneof",
+		[]string{
+			"testdata/meld/meld_additive_oneof_1.pb.txt",
+			"testdata/meld/meld_additive_oneof_2.pb.txt",
+		},
+		"testdata/meld/meld_additive_oneof_expected.pb.txt",
+	},
 }
 
 func TestMeldWithFormats(t *testing.T) {

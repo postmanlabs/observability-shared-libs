@@ -1,0 +1,66 @@
+# api_spec.Witness proto
+
+method: {
+  responses: {
+    key:"6JrDs8poHbU="
+    value: {
+      struct: {
+        fields: {
+          key:"name"
+          value: {
+            oneof: {
+              options: {
+                key:"H--6VaA31gw="
+                value: {
+                  primitive: {
+                    string_value: {
+                      value:"2020-01"
+                    }
+                    formats: {
+                      key:"ISOYearMonth"
+                      value:true
+                    }
+                  }
+                }
+              }
+              options: {
+                key: "naAThnYPT5A="
+                value: {
+                  struct: {
+                    fields: {
+                      key: "name"
+                      value: {
+                        primitive: {
+                          string_value: {
+                            value: "file_1"
+                          }
+                          formats: {
+                            key: "ISOYearMonth"
+                            value: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      meta: {
+        http: {
+          body: {
+            content_type:JSON
+          }
+          response_code:200
+        }
+      }
+    }
+  }
+  meta: {
+    http: {
+      method:"POST" path_template:"/api/create_file" host:"www.akibox.com"
+    }
+  }
+}

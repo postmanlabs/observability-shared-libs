@@ -122,11 +122,10 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		}
 	}()
 
-	// Check if src is already a oneof that encodes a conflict. This can happen if
-	// src is the collapsed element from a list originally containing elements
-	// with conflicting types.
-	if srcOf, ok := src.Value.(*pb.Data_Oneof); ok && srcOf.Oneof.GetPotentialConflict() {
-		if v, ok := dst.Value.(*pb.Data_Oneof); ok && v.Oneof.GetPotentialConflict() {
+	// Check if src is already a oneof. This can happen if src is the collapsed
+	// element from a list originally containing elements with conflicting types.
+	if srcOf, ok := src.Value.(*pb.Data_Oneof); ok {
+		if v, ok := dst.Value.(*pb.Data_Oneof); ok {
 			// If dst already encodes a conflict, merge the conflicts.
 			for k, d := range srcOf.Oneof.Options {
 				v.Oneof.Options[k] = d
@@ -211,52 +210,44 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		}
 	case *pb.Data_Oneof:
 		hasConflict = true
+		// Add src as a new option after clearing its meta field since for
+		// HTTP specs, oneof options all have the same metadata, recorded in the
+		// Data.Meta field of the containing Data.
+		srcNoMeta := proto.Clone(src).(*pb.Data)
+		srcNoMeta.Meta = nil
 
-		// Check if the oneof is an artificial one injected by us to record
-		// conflicts.
-		if v.Oneof.GetPotentialConflict() {
-			// Add src as a new option after clearing its meta field since for
-			// HTTP specs, oneof options all have the same metadata, recorded in the
-			// Data.Meta field of the containing Data.
-			srcNoMeta := proto.Clone(src).(*pb.Data)
-			srcNoMeta.Meta = nil
-
-			// See if we can meld the src into one of the options. For example,
-			// melding struct into struct or list into list.
-			_, srcIsStruct := srcNoMeta.Value.(*pb.Data_Struct)
-			_, srcIsList := srcNoMeta.Value.(*pb.Data_List)
-			for _, option := range v.Oneof.Options {
-				switch option.Value.(type) {
-				case *pb.Data_Struct:
-					if srcIsStruct {
-						return MeldData(option, srcNoMeta)
-					}
-				case *pb.Data_List:
-					if srcIsList {
-						return MeldData(option, srcNoMeta)
-					}
+		// See if we can meld the src into one of the options. For example,
+		// melding struct into struct or list into list.
+		_, srcIsStruct := srcNoMeta.Value.(*pb.Data_Struct)
+		_, srcIsList := srcNoMeta.Value.(*pb.Data_List)
+		for _, option := range v.Oneof.Options {
+			switch option.Value.(type) {
+			case *pb.Data_Struct:
+				if srcIsStruct {
+					return MeldData(option, srcNoMeta)
+				}
+			case *pb.Data_List:
+				if srcIsList {
+					return MeldData(option, srcNoMeta)
 				}
 			}
-
-			// Create a new conflict option.
-			h, err := pbhash.HashProto(srcNoMeta)
-			if err != nil {
-				return errors.Wrapf(err, "failed to hash data: %v", srcNoMeta)
-			}
-
-			if existing, ok := v.Oneof.Options[h]; ok {
-				// There might be an existing option with the same hash because we
-				// ignore example values in the hash. If this is the case, merge
-				// examples.
-				mergeExampleValues(existing, src)
-			} else {
-				v.Oneof.Options[h] = srcNoMeta
-			}
-			return nil
-		} else {
-			// This is a real oneof. Record type conflict if applicable.
-			return recordConflict(dst, src)
 		}
+
+		// Create a new conflict option.
+		h, err := pbhash.HashProto(srcNoMeta)
+		if err != nil {
+			return errors.Wrapf(err, "failed to hash data: %v", srcNoMeta)
+		}
+
+		if existing, ok := v.Oneof.Options[h]; ok {
+			// There might be an existing option with the same hash because we
+			// ignore example values in the hash. If this is the case, merge
+			// examples.
+			mergeExampleValues(existing, src)
+		} else {
+			v.Oneof.Options[h] = srcNoMeta
+		}
+		return nil
 	default:
 		hasConflict = true
 		return recordConflict(dst, src)
