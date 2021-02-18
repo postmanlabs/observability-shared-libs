@@ -110,6 +110,18 @@ func mergeExampleValues(dst, src *pb.Data) {
 	}
 }
 
+func makeOptional(d *pb.Data) {
+	if !isOptional(d) {
+		d.Value = &pb.Data_Optional{
+			Optional: &pb.Optional{
+				Value: &pb.Optional_Data{
+					Data: &pb.Data{Value: d.Value},
+				},
+			},
+		}
+	}
+}
+
 // Assumes that dst.Meta == src.Meta.
 func MeldData(dst, src *pb.Data) (retErr error) {
 	// Set to true if dst and src are recorded as a conflict.
@@ -142,25 +154,16 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 	if srcOpt, srcIsOpt := src.Value.(*pb.Data_Optional); srcIsOpt {
 		switch opt := srcOpt.Optional.Value.(type) {
 		case *pb.Optional_Data:
-			// Check whether src == dst with optional removed.
-			// E.g. meld(string, optional<string>) => optional<string>
-			if dataEqual(dst, opt.Data) {
-				// dst is just non-optional version of src, swap dst and src to make dst
-				// optional and return.
-				dst.Value, src.Value = src.Value, dst.Value
-				return nil
+			// Meld dst with the non-optional version of src first, then mark the
+			// result as optional.
+			if err := MeldData(dst, opt.Data); err != nil {
+				return err
 			}
+			makeOptional(dst)
+			return nil
 		case *pb.Optional_None:
 			// If src is a none, drop the none and mark the dst value as optional.
-			if !isOptional(dst) {
-				dst.Value = &pb.Data_Optional{
-					Optional: &pb.Optional{
-						Value: &pb.Optional_Data{
-							Data: &pb.Data{Value: dst.Value},
-						},
-					},
-				}
-			}
+			makeOptional(dst)
 			return nil
 		}
 	}
@@ -184,13 +187,8 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 	case *pb.Data_Optional:
 		switch opt := v.Optional.Value.(type) {
 		case *pb.Optional_Data:
-			// Check whether src == dst with optional removed.
-			// E.g. meld(optional<string>, string) => optional<string>
-			if dataEqual(opt.Data, src) {
-				// Do nothing - src is just non-optional verison of dst.
-				return nil
-			}
-			return recordConflict(dst, src)
+			// Meld src with the non-optional version of dst.
+			return MeldData(opt.Data, src)
 		case *pb.Optional_None:
 			// If dst is a none, replace dst with an optional version of src.
 			if isOptional(src) {

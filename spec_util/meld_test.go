@@ -113,6 +113,22 @@ var tests = []testData{
 		},
 		"testdata/meld/meld_oneof_with_primitive_expected.pb.txt",
 	},
+	{
+		"meld struct",
+		[]string{
+			"testdata/meld/meld_struct_1.pb.txt",
+			"testdata/meld/meld_struct_2.pb.txt",
+		},
+		"testdata/meld/meld_struct_2.pb.txt",
+	},
+	{
+		"meld list",
+		[]string{
+			"testdata/meld/meld_list_1.pb.txt",
+			"testdata/meld/meld_list_2.pb.txt",
+		},
+		"testdata/meld/meld_list_2.pb.txt",
+	},
 }
 
 func TestMeldWithFormats(t *testing.T) {
