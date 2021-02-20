@@ -142,7 +142,7 @@ type GetSpecMetadataResponse struct {
 	// IDs are included.
 	LearnSessionIDs []akid.LearnSessionID `json:"learn_session_ids,omitempty"`
 
-    Name string `json:"name"`
+	Name string `json:"name"`
 
 	State APISpecState `json:"state"`
 
@@ -161,7 +161,7 @@ type GetSpecResponse struct {
 	// IDs are included.
 	LearnSessionIDs []akid.LearnSessionID `json:"learn_session_ids,omitempty"`
 
-    Name string `json:"name"`
+	Name string `json:"name"`
 
 	State APISpecState `json:"state"`
 
