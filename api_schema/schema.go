@@ -132,6 +132,23 @@ type CreateSpecResponse struct {
 	ID akid.APISpecID `json:"id"`
 }
 
+type GetSpecMetadataResponse struct {
+	// TODO: remove
+	// If the spec was created from a learn session, the session's ID is included.
+	LearnSessionID *akid.LearnSessionID `json:"learn_session_id,omitempty"`
+
+	// If the spec was created from a learn session, the session's ID is included.
+	// If the spec was created by merging other API specs, those spec's session
+	// IDs are included.
+	LearnSessionIDs []akid.LearnSessionID `json:"learn_session_ids,omitempty"`
+
+    Name string `json:"name"`
+
+	State APISpecState `json:"state"`
+
+	Tags map[string]string `json:"tags"`
+}
+
 type GetSpecResponse struct {
 	Content string `json:"content"`
 
@@ -143,6 +160,8 @@ type GetSpecResponse struct {
 	// If the spec was created by merging other API specs, those spec's session
 	// IDs are included.
 	LearnSessionIDs []akid.LearnSessionID `json:"learn_session_ids,omitempty"`
+
+    Name string `json:"name"`
 
 	State APISpecState `json:"state"`
 
