@@ -129,6 +129,30 @@ var tests = []testData{
 		},
 		"testdata/meld/meld_list_2.pb.txt",
 	},
+	{
+		"example, example",
+		[]string{
+			"testdata/meld/meld_examples_1.pb.txt",
+			"testdata/meld/meld_examples_2.pb.txt",
+		},
+		"testdata/meld/meld_examples_3.pb.txt",
+	},
+	{
+		"3 examples, 3 examples",
+		[]string{
+			"testdata/meld/meld_examples_big_1.pb.txt",
+			"testdata/meld/meld_examples_big_2.pb.txt",
+		},
+		"testdata/meld/meld_examples_big_3.pb.txt",
+	},
+	{
+		"1 example, 0 examples",
+		[]string{
+			"testdata/meld/meld_no_examples_1.pb.txt",
+			"testdata/meld/meld_no_examples_2.pb.txt",
+		},
+		"testdata/meld/meld_no_examples_3.pb.txt",
+	},
 }
 
 func TestMeldWithFormats(t *testing.T) {

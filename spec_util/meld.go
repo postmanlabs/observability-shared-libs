@@ -1,6 +1,8 @@
 package spec_util
 
 import (
+	"sort"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -102,12 +104,27 @@ func isNone(d *pb.Data) bool {
 }
 
 func mergeExampleValues(dst, src *pb.Data) {
-	if dst.ExampleValues == nil {
-		dst.ExampleValues = make(map[string]*pb.ExampleValue, len(src.ExampleValues))
+	// Take at most one example each from src and dst.
+	examples := make(map[string]*pb.ExampleValue, 2)
+
+	exampleMaps := []map[string]*pb.ExampleValue{dst.ExampleValues, src.ExampleValues}
+	for _, exampleMap := range exampleMaps {
+		keys := make([]string, 0, len(exampleMap))
+		for k := range exampleMap {
+			keys = append(keys, k)
+		}
+
+		// Sort keys to ensure a stable selection.
+		sort.Strings(keys)
+
+		if len(keys) == 0 {
+			continue
+		}
+
+		examples[keys[0]] = exampleMap[keys[0]]
 	}
-	for k, v := range src.ExampleValues {
-		dst.ExampleValues[k] = v
-	}
+
+	dst.ExampleValues = examples
 }
 
 func makeOptional(d *pb.Data) {

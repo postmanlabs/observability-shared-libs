@@ -1,0 +1,57 @@
+# api_spec.Witness proto
+
+method: {
+  meta: {
+    http: {
+      method: "POST"
+      path_template: "/api/create_file/{arg3}"
+      host: "www.akibox.com"
+    }
+  }
+  args: {
+    key: ""
+    value: {
+      primitive: {
+        string_value: {
+          value: "f1"
+        }
+      }
+      meta: {
+        http: {
+          path: {
+            key: "arg3"
+          }
+        }
+      }
+    }
+  }
+  responses: {
+    key: "naAThnYPT5A="
+    value: {
+      struct: {
+        fields: {
+          key: "name"
+          value: {
+            primitive: {
+              string_value: {
+                value: "file_1"
+              }
+              formats: {
+                key: "ISOYearMonthDay"
+                value: true
+              }
+            }
+          }
+        }
+      }
+      meta: {
+        http: {
+          body: {
+            content_type: JSON
+          }
+          response_code: 200
+        }
+      }
+    }
+  }
+}
