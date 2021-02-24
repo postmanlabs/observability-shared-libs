@@ -20,6 +20,7 @@ func Summarize(spec *pb.APISpec) *Summary {
 			ResponseCodes:   make(map[int32]struct{}),
 			DataFormats:     make(map[string]struct{}),
 			DataKinds:       make(map[string]struct{}),
+			DataTypes:       make(map[string]struct{}),
 		},
 	}
 	vis.Apply(go_ast.PREORDER, &v, spec)
@@ -77,5 +78,6 @@ func (v *specSummaryVisitor) VisitPrimitive(_ vis.HttpRestSpecVisitorContext, p 
 	if k := p.GetFormatKind(); k != "" {
 		v.summary.DataKinds[k] = struct{}{}
 	}
+	v.summary.DataTypes[spec_util.TypeOfPrimitive(p)] = struct{}{}
 	return true
 }

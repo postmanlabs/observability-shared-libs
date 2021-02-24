@@ -11,4 +11,5 @@ type Summary struct {
 	ResponseCodes   map[int32]struct{}  `json:"response_codes"`
 	DataFormats     map[string]struct{} `json:"data_formats"`
 	DataKinds       map[string]struct{} `json:"data_kinds"`
+	DataTypes       map[string]struct{} `json:"data_types"`
 }
