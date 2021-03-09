@@ -11,30 +11,33 @@ import (
 
 func TestSummarize(t *testing.T) {
 	expected := &Summary{
-		Authentications: map[string]struct{}{
-			"BASIC": struct{}{},
+		Authentications: map[string]int{
+			"BASIC": 1,
 		},
-		HTTPMethods: map[string]struct{}{
-			"POST": struct{}{},
+		HTTPMethods: map[string]int{
+			"POST": 1,
 		},
-		Paths: map[string]struct{}{
-			"/v1/projects/{arg3}": struct{}{},
+		Paths: map[string]int{
+			"/v1/projects/{arg3}": 1,
 		},
-		Params: map[string]struct{}{
-			"X-My-Header": struct{}{},
+		Params: map[string]int{
+			"X-My-Header": 1,
 		},
-		Properties: map[string]struct{}{
-			"top-level-prop":       struct{}{},
-			"my-special-prop":      struct{}{},
-			"other-top-level-prop": struct{}{},
+		Properties: map[string]int{
+			"top-level-prop":       1,
+			"my-special-prop":      1,
+			"other-top-level-prop": 1,
 		},
-		ResponseCodes: map[int32]struct{}{
-			200: struct{}{},
+		ResponseCodes: map[string]int{
+			"200": 1,
 		},
-		DataFormats: map[string]struct{}{
-			"rfc3339": struct{}{},
+		DataFormats: map[string]int{
+			"rfc3339": 1,
 		},
-		DataKinds: map[string]struct{}{},
+		DataKinds: map[string]int{},
+		DataTypes: map[string]int{
+			"string": 1,
+		},
 	}
 
 	m1 := test.LoadMethodFromFileOrDie("testdata/method1.pb.txt")

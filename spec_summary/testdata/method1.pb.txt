@@ -45,6 +45,9 @@ responses: {
         key: "other-top-level-prop"
         value: {
           primitive: {
+            string_value: {
+              type: {}
+            }
             formats: {
               key: "rfc3339"
               value: true
