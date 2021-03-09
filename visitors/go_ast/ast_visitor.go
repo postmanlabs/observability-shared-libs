@@ -42,14 +42,16 @@ func (t *astVisitor) visit(c visitors.Context, m interface{}) bool {
 	if m == nil {
 		return true
 	}
-	var keepGoing bool
+	keepGoing := true
 
 	if t.order == PREORDER {
-		c, keepGoing = t.vm.Apply(c, t.vm.Visitor(), m)
+		keepGoing = t.vm.Apply(c, t.vm.Visitor(), m)
 		if !keepGoing {
 			return false
 		}
 	}
+
+	newContext := t.vm.ExtendContext(c, t.vm.Visitor(), m)
 
 	// Traverse m's children
 	mt := reflect.TypeOf(m)
@@ -74,21 +76,21 @@ func (t *astVisitor) visit(c visitors.Context, m interface{}) bool {
 			if !fv.IsValid() || unicode.IsLower([]rune(ft.Name)[0]) {
 				continue
 			}
-			keepGoing = t.visit(c.AppendPath(ft.Name), mv.Field(i).Interface())
+			keepGoing = t.visit(newContext.AppendPath(ft.Name), mv.Field(i).Interface())
 		}
 	} else if mt.Kind() == reflect.Array || mt.Kind() == reflect.Slice {
 		for i := 0; i < mv.Len(); i++ {
-			keepGoing = t.visit(c.AppendPath(strconv.Itoa(i)), mv.Index(i).Interface())
+			keepGoing = t.visit(newContext.AppendPath(strconv.Itoa(i)), mv.Index(i).Interface())
 		}
 	} else if mt.Kind() == reflect.Map {
 		// TODO(cs): Need to visit (k,v), then k, then v for each k, v.
 		for _, k := range mv.MapKeys() {
-			keepGoing = t.visit(c.AppendPath(fmt.Sprint(k.Interface())), mv.MapIndex(k).Interface())
+			keepGoing = t.visit(newContext.AppendPath(fmt.Sprint(k.Interface())), mv.MapIndex(k).Interface())
 		}
 	}
 
 	if t.order == POSTORDER && keepGoing {
-		_, keepGoing = t.vm.Apply(c, t.vm.Visitor(), m)
+		keepGoing = t.vm.Apply(c, t.vm.Visitor(), m)
 	}
 
 	return keepGoing

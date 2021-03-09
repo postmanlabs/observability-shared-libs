@@ -221,7 +221,7 @@ func (*DefaultHttpRestSpecVisitor) VisitPrimitive(c HttpRestSpecVisitorContext, 
 	return true
 }
 
-func visit(cin visitors.Context, rin interface{}, x interface{}) (visitors.Context, bool) {
+func extendContext(cin visitors.Context, rin interface{}, x interface{}) visitors.Context {
 	r, ok := rin.(HttpRestSpecVisitor)
 	c, ok := cin.(HttpRestSpecVisitorContext)
 	rc := cin
@@ -229,17 +229,13 @@ func visit(cin visitors.Context, rin interface{}, x interface{}) (visitors.Conte
 		panic(fmt.Sprintf("HttpRestSpecVisitor.Visit expected HttpRestSpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
 	}
-	keepGoing := true
 
 	// Dispatch on type and path.
 	switch x.(type) {
 	case pb.APISpec, pb.Method, pb.Data, pb.Primitive:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
-		rc, keepGoing = visit(c, r, &x)
-	case *pb.APISpec:
-		s, _ := x.(*pb.APISpec)
-		keepGoing = r.VisitAPISpec(c, s)
+		rc = extendContext(c, r, &x)
 	case *pb.Method:
 		m, _ := x.(*pb.Method)
 
@@ -250,8 +246,6 @@ func visit(cin visitors.Context, rin interface{}, x interface{}) (visitors.Conte
 			c = c.AppendRestPath(meta.GetHost()).AppendRestPath(meta.GetMethod()).AppendRestPath(meta.GetPathTemplate())
 			rc = c
 		}
-
-		keepGoing = r.VisitMethod(c, m)
 	case *pb.Data:
 		d, _ := x.(*pb.Data)
 
@@ -302,23 +296,50 @@ func visit(cin visitors.Context, rin interface{}, x interface{}) (visitors.Conte
 			c = c.AppendRestPath(astPath[len(astPath)-1])
 		}
 		rc = c
+	}
+
+	return rc
+}
+
+func visit(cin visitors.Context, rin interface{}, x interface{}) bool {
+	r, ok := rin.(HttpRestSpecVisitor)
+	c, ok := extendContext(cin, rin, x).(HttpRestSpecVisitorContext)
+	if !ok {
+		panic(fmt.Sprintf("HttpRestSpecVisitor.Visit expected HttpRestSpecVisitorContext, got %s",
+			reflect.TypeOf(cin)))
+	}
+	keepGoing := true
+
+	// Dispatch on type and path.
+	switch x.(type) {
+	case pb.APISpec, pb.Method, pb.Data, pb.Primitive:
+		// For simplicity, ensure we're operating on a pointer to any complex
+		// structure.
+		keepGoing = visit(c, r, &x)
+	case *pb.APISpec:
+		s, _ := x.(*pb.APISpec)
+		keepGoing = r.VisitAPISpec(c, s)
+	case *pb.Method:
+		m, _ := x.(*pb.Method)
+		keepGoing = r.VisitMethod(c, m)
+	case *pb.Data:
+		d, _ := x.(*pb.Data)
 		keepGoing = r.VisitData(c, d)
 	case *pb.Primitive:
 		p, _ := x.(*pb.Primitive)
 		keepGoing = r.VisitPrimitive(c, p)
 	default:
 		// Just keep going if we don't understand the type.
-		// fmt.Printf("WARNING: unexpected type in dispatch: %s\n", reflect.TypeOf(x))
 	}
 
-	return rc, keepGoing
+	return keepGoing
 }
 
 // Visits m with v.  Returns false if the visitor aborts traversal (by
 // returning false).  Order is either PREORDER or POSTORDER.
 func Apply(order go_ast.TraversalOrder, v HttpRestSpecVisitor, m interface{}) bool {
 	c := new(httpRestSpecVisitorContext)
-	vis := visitors.NewVisitorManager(c, v, visit)
+	vis := visitors.NewVisitorManager(c, v, visit, extendContext)
 	return go_ast.Apply(order, vis, m)
 }
 

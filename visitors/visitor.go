@@ -51,21 +51,28 @@ func NewContext() Context {
 // structure, and custom visitors for that data structure can simply overload
 // the methods on the vistor object they care about.  See
 // http_rest_spec_visitor for an example.
+//
+// ExtendContext creates a new context for a given term without visiting the
+// term.  This makes it possible to create the correct context for children
+// when applying a postorder traversal.
 type VisitorManager interface {
 	Context() Context
 	Visitor() interface{}
-	Apply(c Context, visitor interface{}, term interface{}) (Context, bool)
+	Apply(c Context, visitor interface{}, term interface{}) bool
+	ExtendContext(c Context, visitor interface{}, term interface{}) Context
 }
 
 func NewVisitorManager(
 	c Context,
 	v interface{},
-	apply func(c Context, visitor interface{}, term interface{}) (Context, bool),
+	apply func(c Context, visitor interface{}, term interface{}) bool,
+	extendContext func(c Context, visitor interface{}, term interface{}) Context,
 ) VisitorManager {
 	rv := visitor{
-		context: c,
-		visitor: v,
-		apply:   apply,
+		context:       c,
+		visitor:       v,
+		apply:         apply,
+		extendContext: extendContext,
 	}
 	return &rv
 }
@@ -83,9 +90,10 @@ func (c *context) GetPath() []string {
 }
 
 type visitor struct {
-	context Context
-	visitor interface{}
-	apply   func(c Context, visitor interface{}, term interface{}) (Context, bool)
+	context       Context
+	visitor       interface{}
+	apply         func(c Context, visitor interface{}, term interface{}) bool
+	extendContext func(c Context, visitor interface{}, term interface{}) Context
 }
 
 func (v *visitor) Context() Context {
@@ -96,6 +104,10 @@ func (v *visitor) Visitor() interface{} {
 	return v.visitor
 }
 
-func (v *visitor) Apply(c Context, visitor interface{}, term interface{}) (Context, bool) {
+func (v *visitor) Apply(c Context, visitor interface{}, term interface{}) bool {
 	return v.apply(c, visitor, term)
+}
+
+func (v *visitor) ExtendContext(c Context, visitor interface{}, term interface{}) Context {
+	return v.extendContext(c, visitor, term)
 }

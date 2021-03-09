@@ -60,7 +60,17 @@ var expectedPaths = []string{
 	"localhost:9000.GET./api/0/projects/.Response.200.Body.JSON.0.color.Data.api_spec.String",
 }
 
-func TestTraversal(t *testing.T) {
+func TestPreorderTraversal(t *testing.T) {
+	spec := test.LoadAPISpecFromFileOrDie("../testdata/sentry_ir_spec.pb.txt")
+
+	var visitor MyVisitor
+	Apply(go_ast.PREORDER, &visitor, spec)
+	sort.Strings(expectedPaths)
+	sort.Strings(visitor.actualPaths)
+	assert.Equal(t, expectedPaths, visitor.actualPaths)
+}
+
+func TestPostorderTraversal(t *testing.T) {
 	spec := test.LoadAPISpecFromFileOrDie("../testdata/sentry_ir_spec.pb.txt")
 
 	var visitor MyVisitor
