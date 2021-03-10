@@ -10,7 +10,36 @@ import (
 	vis "github.com/akitasoftware/akita-libs/visitors/http_rest"
 )
 
+type FilterMap map[string]map[string]map[*pb.Method]struct{}
+
+func (fm FilterMap) insert(filterKind string, filterValue string, method *pb.Method) {
+	methodsByFilterValue, ok := fm[filterKind]
+	if !ok {
+		methodsByFilterValue = make(map[string]map[*pb.Method]struct{})
+		fm[filterKind] = methodsByFilterValue
+	}
+
+	methods, ok := methodsByFilterValue[filterValue]
+	if !ok {
+		methods = make(map[*pb.Method]struct{})
+		methodsByFilterValue[filterValue] = methods
+	}
+
+	methods[method] = struct{}{}
+}
+
 func Summarize(spec *pb.APISpec) *Summary {
+	return SummarizeWithFilters(spec, nil)
+}
+
+// Produce a summary such that the count for each summary value reflects the
+// number of endpoints that would be present in the spec if that value were
+// applied as a filter, while considering other existing filters.
+//
+// For example, suppose filters were { response_codes: [404] }.  If the summary
+// included HTTPMethods: {"GET": 2}, it would mean that there are two GET
+// methods with 404 response codes.
+func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summary {
 	v := specSummaryVisitor{
 		methodSummary: &Summary{
 			Authentications: make(map[string]int),
@@ -34,9 +63,125 @@ func Summarize(spec *pb.APISpec) *Summary {
 			DataKinds:       make(map[string]int),
 			DataTypes:       make(map[string]int),
 		},
+		filtersToMethods: make(map[string]map[string]map[*pb.Method]struct{}),
 	}
 	vis.Apply(go_ast.POSTORDER, &v, spec)
-	return v.summary
+
+	// If there are no known filters, return the default count.
+	if filters == nil {
+		return v.summary
+	}
+	knownFilterKeys := map[string]struct{}{
+		"authentications": {},
+		"http_methods": {},
+		"paths": {},
+		"params": {},
+		"properties": {},
+		"response_codes": {},
+		"data_formats": {},
+		"data_kinds": {},
+		"data_types": {},
+	}
+	knownFiltersPresent := false
+	for filterKey, _ := range filters {
+		if _, ok := knownFilterKeys[filterKey]; ok {
+			knownFiltersPresent = true
+		}
+	}
+	if !knownFiltersPresent {
+		return v.summary
+	}
+
+	// The count for a given filter value is calculated as the number of
+	// methods that match it, assuming
+	// - no other values of the same filter are applied
+	// - all other filters are applied.
+	//
+	// For example, if the current filters are http_method=GET and response_code=200,
+	// then the count for response_code=404 is calculated as the number of methods
+	// with a 404 response code a GET http method.
+
+	counts := make(map[string]map[string]int, len(v.filtersToMethods))
+
+	allMethods := make(map[*pb.Method]struct{})
+	for _, methodsByFilterVal := range v.filtersToMethods {
+		for _, methods := range methodsByFilterVal {
+			for m, _ := range methods {
+				allMethods[m] = struct{}{}
+			}
+		}
+	}
+
+	for filterKind, methodsByFilterVal := range v.filtersToMethods {
+		// Get set of all methods that match all other filters.
+		methodSets := []map[*pb.Method]struct{}{allMethods}
+		for otherFilterKind, otherMethodsByFilterVal := range v.filtersToMethods {
+			if filterKind == otherFilterKind {
+				continue
+			}
+
+			appliedFilterValues, ok := filters[otherFilterKind]
+
+			// If no filters are being applied for this filter kind, then there are no
+			// restrictions on the set of methods.
+			if !ok {
+				continue
+			}
+
+			// Otherwise, collect the methods for the filter values being applied.
+			methodSet := make(map[*pb.Method]struct{})
+			for _, appliedFilterVal := range appliedFilterValues {
+				if methods, ok := otherMethodsByFilterVal[appliedFilterVal]; ok {
+					for m, _ := range methods {
+						methodSet[m] = struct{}{}
+					}
+				}
+			}
+			methodSets = append(methodSets, methodSet)
+		}
+
+		otherMethods := intersect(methodSets)
+
+		// For each filter value, get the intersection of its methods with
+		// otherMethods.  The size of the intersection is the count for the
+		// filter value.
+		for filterVal, methods := range methodsByFilterVal {
+			commonMethods := intersect([]map[*pb.Method]struct{}{otherMethods, methods})
+
+			countsByFilterVal, ok := counts[filterKind]
+			if !ok {
+				countsByFilterVal = make(map[string]int)
+				counts[filterKind] = countsByFilterVal
+			}
+			countsByFilterVal[filterVal] = len(commonMethods)
+		}
+	}
+
+	summary := Summary{}
+	for filterKind, countsByFilterVal := range counts {
+		switch filterKind {
+		case "authentications":
+			summary.Authentications = countsByFilterVal
+		case "data_kinds":
+			summary.DataKinds = countsByFilterVal
+		case "data_formats":
+			summary.DataFormats = countsByFilterVal
+		case "data_types":
+			summary.DataTypes = countsByFilterVal
+		case "http_methods":
+			summary.HTTPMethods = countsByFilterVal
+		case "params":
+			summary.Params = countsByFilterVal
+		case "paths":
+			summary.Paths = countsByFilterVal
+		case "properties":
+			summary.Properties = countsByFilterVal
+		case "response_codes":
+			summary.ResponseCodes = countsByFilterVal
+		}
+	}
+
+	return &summary
 }
 
 type specSummaryVisitor struct {
@@ -47,12 +192,19 @@ type specSummaryVisitor struct {
 
 	// Count the number of methods in which each term occurs.
 	summary *Summary
+
+	// Reverse mapping from filters to methods that match them.
+	filtersToMethods FilterMap
 }
 
 func (v *specSummaryVisitor) VisitMethod(_ vis.HttpRestSpecVisitorContext, m *pb.Method) bool {
 	if meta := spec_util.HTTPMetaFromMethod(m); meta != nil {
-		v.summary.HTTPMethods[strings.ToUpper(meta.GetMethod())] += 1
+		methodName := strings.ToUpper(meta.GetMethod())
+		v.summary.HTTPMethods[methodName] += 1
+		v.filtersToMethods.insert("http_methods", methodName, m)
+
 		v.summary.Paths[meta.GetPathTemplate()] += 1
+		v.filtersToMethods.insert("paths", meta.GetPathTemplate(), m)
 	}
 
 	// For each term that occurs at least once in this method, increment the
@@ -76,6 +228,18 @@ func (v *specSummaryVisitor) VisitMethod(_ vis.HttpRestSpecVisitorContext, m *pb
 		for key, count := range summaryPair.src {
 			if count > 0 {
 				summaryPair.dst[key] += 1
+
+				methodsByFilterValue, ok := v.filtersToMethods[summaryPair.kind]
+				if !ok {
+					methodsByFilterValue = make(map[string]map[*pb.Method]struct{})
+					v.filtersToMethods[summaryPair.kind] = methodsByFilterValue
+				}
+				methods, ok := methodsByFilterValue[key]
+				if !ok {
+					methods = make(map[*pb.Method]struct{})
+					methodsByFilterValue[key] = methods
+				}
+				methods[m] = struct{}{}
 			}
 			delete(summaryPair.src, key)
 		}
@@ -123,4 +287,31 @@ func (v *specSummaryVisitor) VisitPrimitive(_ vis.HttpRestSpecVisitorContext, p 
 	}
 	v.methodSummary.DataTypes[spec_util.TypeOfPrimitive(p)] += 1
 	return true
+}
+
+func intersect(methodSets []map[*pb.Method]struct{}) map[*pb.Method]struct{} {
+	result := make(map[*pb.Method]struct{})
+	if len(methodSets) == 0 {
+		return result
+	}
+
+	isFirst := true
+	for _, methods := range methodSets {
+		if isFirst {
+			// Initialize result with contents of first map.
+			for m, _ := range methods {
+				result[m] = struct{}{}
+			}
+			isFirst = false
+		} else {
+			// Remove methods in result not in each other filter.
+			for m, _ := range result {
+				if _, ok := methods[m]; !ok {
+					delete(result, m)
+				}
+			}
+		}
+	}
+
+	return result
 }

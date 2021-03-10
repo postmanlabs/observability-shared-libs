@@ -43,3 +43,29 @@ func TestSummarize(t *testing.T) {
 	m1 := test.LoadMethodFromFileOrDie("testdata/method1.pb.txt")
 	assert.Equal(t, expected, Summarize(&pb.APISpec{Methods: []*pb.Method{m1}}))
 }
+
+func TestIntersect(t *testing.T) {
+	m1 := test.LoadMethodFromFileOrDie("testdata/method1.pb.txt")
+	m2 := test.LoadMethodFromFileOrDie("testdata/method1.pb.txt")
+
+	setM1 := make(map[*pb.Method]struct{})
+	setM1[m1] = struct{}{}
+
+	setM2 := make(map[*pb.Method]struct{})
+	setM2[m2] = struct{}{}
+
+	setM12 := make(map[*pb.Method]struct{})
+	setM12[m1] = struct{}{}
+	setM12[m2] = struct{}{}
+
+	emptyset := make(map[*pb.Method]struct{})
+
+	assert.Equal(t, emptyset, intersect([]map[*pb.Method]struct{}{setM1, setM2}))
+	assert.Equal(t, emptyset, intersect([]map[*pb.Method]struct{}{emptyset, setM2}))
+	assert.Equal(t, emptyset, intersect([]map[*pb.Method]struct{}{setM1, emptyset}))
+	assert.Equal(t, setM1, intersect([]map[*pb.Method]struct{}{setM1, setM12}))
+	assert.Equal(t, setM1, intersect([]map[*pb.Method]struct{}{setM12, setM1}))
+	assert.Equal(t, setM2, intersect([]map[*pb.Method]struct{}{setM2, setM12}))
+	assert.Equal(t, setM2, intersect([]map[*pb.Method]struct{}{setM12, setM2}))
+	assert.Equal(t, setM12, intersect([]map[*pb.Method]struct{}{setM12, setM12}))
+}
