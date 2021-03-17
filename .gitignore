@@ -16,3 +16,7 @@
 
 # vim
 *.swp
+
+# IntelliJ
+*.iml
+.idea/
