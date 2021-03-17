@@ -207,8 +207,14 @@ func (v *specSummaryVisitor) VisitMethod(_ vis.HttpRestSpecVisitorContext, m *pb
 		v.filtersToMethods.insert("paths", meta.GetPathTemplate(), m)
 	}
 
+	// If this method has no authentications, increment Authentications["None"].
+	if len(v.methodSummary.Authentications) == 0 {
+		v.summary.Authentications["None"] += 1
+		v.filtersToMethods.insert("authentications", "None", m)
+	}
+
 	// For each term that occurs at least once in this method, increment the
-	// summary count by one.
+	// summary count by one and clear the method-level summary.
 	summaryPairs := []struct {
 		dst  map[string]int
 		src map[string]int
@@ -228,18 +234,7 @@ func (v *specSummaryVisitor) VisitMethod(_ vis.HttpRestSpecVisitorContext, m *pb
 		for key, count := range summaryPair.src {
 			if count > 0 {
 				summaryPair.dst[key] += 1
-
-				methodsByFilterValue, ok := v.filtersToMethods[summaryPair.kind]
-				if !ok {
-					methodsByFilterValue = make(map[string]map[*pb.Method]struct{})
-					v.filtersToMethods[summaryPair.kind] = methodsByFilterValue
-				}
-				methods, ok := methodsByFilterValue[key]
-				if !ok {
-					methods = make(map[*pb.Method]struct{})
-					methodsByFilterValue[key] = methods
-				}
-				methods[m] = struct{}{}
+				v.filtersToMethods.insert(summaryPair.kind, key, m)
 			}
 			delete(summaryPair.src, key)
 		}
