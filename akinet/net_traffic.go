@@ -14,12 +14,19 @@ import (
 
 // Represents a generic network traffic that has been parsed from the wire.
 type ParsedNetworkTraffic struct {
-	SrcIP           net.IP
-	SrcPort         int
-	DstIP           net.IP
-	DstPort         int
-	Content         ParsedNetworkContent
+	SrcIP   net.IP
+	SrcPort int
+	DstIP   net.IP
+	DstPort int
+	Content ParsedNetworkContent
+
+	// The time at which the first packet was observed
 	ObservationTime time.Time
+
+	// The time at which the final packet arrived, for
+	// multi-packet content.  Equal to ObservationTime
+	// for single packets.
+	FinalPacketTime time.Time
 }
 
 // Interface implemented by all types of data that can be parsed from the
