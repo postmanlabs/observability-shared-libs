@@ -9,19 +9,23 @@ import (
 func singleMethodSpec(operation string, template string) *pb.APISpec {
 	return &pb.APISpec{
 		Methods: []*pb.Method{
-			&pb.Method{
-				Id: &pb.MethodID{
-					Name:    "fake_name",
-					ApiType: pb.ApiType_HTTP_REST,
-				},
-				Meta: &pb.MethodMeta{
-					Meta: &pb.MethodMeta_Http{
-						Http: &pb.HTTPMethodMeta{
-							Method:       operation,
-							PathTemplate: template,
-							Host:         "",
-						},
-					},
+			testMethod(operation, template),
+		},
+	}
+}
+
+func testMethod(operation string, template string) *pb.Method {
+	return &pb.Method{
+		Id: &pb.MethodID{
+			Name:    "fake_name",
+			ApiType: pb.ApiType_HTTP_REST,
+		},
+		Meta: &pb.MethodMeta{
+			Meta: &pb.MethodMeta_Http{
+				Http: &pb.HTTPMethodMeta{
+					Method:       operation,
+					PathTemplate: template,
+					Host:         "",
 				},
 			},
 		},
@@ -101,6 +105,58 @@ func TestMethodMatching(t *testing.T) {
 			if actual != tc.TestPath {
 				t.Errorf("in case %q, expected original path but got %q", tc.Name, actual)
 			}
+		}
+	}
+}
+
+func TestMultipleMethodMatching(t *testing.T) {
+	spec := &pb.APISpec{
+		Methods: []*pb.Method{
+			testMethod("GET", "/users/{arg2}"),
+			testMethod("POST", "/users/{arg2}/files"),
+			testMethod("GET", "/users/{arg2}/files"),
+			testMethod("GET", "/users/{arg2}/files/{arg4}"),
+		},
+	}
+	m, err := NewMethodMatcher(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testCases := []struct {
+		TestOperation string
+		TestPath      string
+		ExpectedMatch string
+	}{
+		{
+			"GET",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d93ba",
+			"/users/{arg2}",
+		},
+		{
+			"POST",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d93ba/files",
+			"/users/{arg2}/files",
+		},
+		{
+			"GET",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d93ba/files",
+			"/users/{arg2}/files",
+		},
+		{
+			"GET",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d93ba/files/7b1ddce4-9d70-11eb-9870-0bc4cfc23f34",
+			"/users/{arg2}/files/{arg4}",
+		},
+		{
+			"POST",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d93ba/files/7b1ddce4-9d70-11eb-9870-0bc4cfc23f34",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d93ba/files/7b1ddce4-9d70-11eb-9870-0bc4cfc23f34",
+		},
+	}
+	for _, tc := range testCases {
+		actual := m.Lookup(tc.TestOperation, tc.TestPath)
+		if actual != tc.ExpectedMatch {
+			t.Errorf("expected %q but got %q for input %s %s", tc.ExpectedMatch, actual, tc.TestOperation, tc.TestPath)
 		}
 	}
 }

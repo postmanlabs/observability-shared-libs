@@ -42,7 +42,7 @@ const (
 	// according to RFC3986.  I'm not accepting the reserved characters
 	// : / ? # [ ] @ ! $ & ' ( ) *  + , ; =
 	//
-	uriPathCharacters = "[A-Za-z0-9.,_~%]+"
+	uriPathCharacters = "[A-Za-z0-9-._~%]+"
 	uriArgument       = "\\{.*?\\}" // non-greedy match
 )
 
@@ -63,6 +63,7 @@ func templateToRegexp(pathTemplate string) (*regexp.Regexp, error) {
 	// If the path ends with an argument we should get an empty literal at
 	// the end.
 	var buf strings.Builder
+	buf.WriteString("^")
 	first := true
 	for _, l := range literals {
 		if first {
@@ -72,6 +73,7 @@ func templateToRegexp(pathTemplate string) (*regexp.Regexp, error) {
 		}
 		buf.WriteString(regexp.QuoteMeta(l))
 	}
+	buf.WriteString("$")
 	re, err := regexp.Compile(buf.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not convert template %q to regexp", pathTemplate)
