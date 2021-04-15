@@ -45,7 +45,11 @@ type URI struct {
 }
 
 func (u URI) String() string {
-	return fmt.Sprintf(Scheme+"%s:%s:%s", u.ServiceName, u.ObjectType, u.ObjectName)
+	objectPart := ""
+	if u.ObjectName != "" {
+		objectPart = fmt.Sprintf(":%s", u.ObjectName)
+	}
+	return fmt.Sprintf(Scheme+"%s:%s%s", u.ServiceName, u.ObjectType, objectPart)
 }
 
 func (u URI) MarshalText() ([]byte, error) {
@@ -59,8 +63,8 @@ func (u *URI) UnmarshalText(data []byte) error {
 	}
 
 	parts := strings.Split(text[len(Scheme):], ":")
-	if len(parts) != 3 {
-		return fmt.Errorf("%q does not have 3 parts", text)
+	if !(2 <= len(parts) && len(parts) <= 3) {
+		return fmt.Errorf("%q does not have 2 or 3 parts", text)
 	}
 
 	objT := stringToObjectType(parts[1])
@@ -70,7 +74,11 @@ func (u *URI) UnmarshalText(data []byte) error {
 
 	u.ServiceName = parts[0]
 	u.ObjectType = objT
-	u.ObjectName = parts[2]
+	if len(parts) >= 3 {
+		u.ObjectName = parts[2]
+	} else {
+		u.ObjectName = ""
+	}
 
 	return nil
 }
