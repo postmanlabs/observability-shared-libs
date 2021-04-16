@@ -1,5 +1,12 @@
 package akiuri
 
+// There are three kinds of URIs supported here:
+//  * akita://serviceName
+//      For these, the ObjectType will be nil and the ObjectName will be empty.
+//  * akita://serviceName:objectType
+//      For these, the ObjectName will be empty.
+//  * akita://serviceName:objectType:objectName
+
 import (
 	"fmt"
 	"strings"
@@ -12,19 +19,26 @@ const (
 type ObjectType int
 
 const (
-	UNKNOWN_TYPE ObjectType = iota
-	SPEC
-	TRACE // aka learn session
+	SPEC  ObjectType = iota
+	TRACE            // aka learn session
 )
 
-func stringToObjectType(s string) ObjectType {
+func (o ObjectType) Ptr() *ObjectType {
+	return &o
+}
+
+func (o1 *ObjectType) Is(o2 ObjectType) bool {
+	return o1 != nil && *o1 == o2
+}
+
+func stringToObjectType(s string) (*ObjectType, error) {
 	switch s {
 	case "spec":
-		return SPEC
+		return SPEC.Ptr(), nil
 	case "trace":
-		return TRACE
+		return TRACE.Ptr(), nil
 	}
-	return UNKNOWN_TYPE
+	return nil, fmt.Errorf("%q is an unknown object type", s)
 }
 
 func (o ObjectType) String() string {
@@ -41,15 +55,25 @@ func (o ObjectType) String() string {
 type URI struct {
 	ServiceName string
 	ObjectName  string
-	ObjectType  ObjectType
+	ObjectType  *ObjectType
 }
 
 func (u URI) String() string {
-	objectPart := ""
-	if u.ObjectName != "" {
-		objectPart = fmt.Sprintf(":%s", u.ObjectName)
+	var sb strings.Builder
+	sb.WriteString(Scheme)
+	sb.WriteString(u.ServiceName)
+
+	if u.ObjectType != nil {
+		sb.WriteString(":")
+		sb.WriteString(u.ObjectType.String())
+
+		if u.ObjectName != "" {
+			sb.WriteString(":")
+			sb.WriteString(u.ObjectName)
+		}
 	}
-	return fmt.Sprintf(Scheme+"%s:%s%s", u.ServiceName, u.ObjectType, objectPart)
+
+	return sb.String()
 }
 
 func (u URI) MarshalText() ([]byte, error) {
@@ -63,13 +87,17 @@ func (u *URI) UnmarshalText(data []byte) error {
 	}
 
 	parts := strings.Split(text[len(Scheme):], ":")
-	if !(2 <= len(parts) && len(parts) <= 3) {
-		return fmt.Errorf("%q does not have 2 or 3 parts", text)
+	if len(parts) > 3 {
+		return fmt.Errorf("%q has more than 3 parts", text)
 	}
 
-	objT := stringToObjectType(parts[1])
-	if objT == UNKNOWN_TYPE {
-		return fmt.Errorf("%q is an unknown object type", parts[1])
+	var objT *ObjectType = nil
+	if len(parts) > 1 {
+		objType, err := stringToObjectType(parts[1])
+		if err != nil {
+			return err
+		}
+		objT = objType
 	}
 
 	u.ServiceName = parts[0]

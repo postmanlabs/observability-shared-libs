@@ -6,23 +6,52 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParse(t *testing.T) {
-	expected := URI{
-		ServiceName: "my_service",
-		ObjectName:  "foobar",
-		ObjectType:  SPEC,
+func TestParseUnparse(t *testing.T) {
+	tests := []struct {
+		string
+		URI
+	}{
+		{"akita://my_service:spec:foobar",
+			URI{
+				ServiceName: "my_service",
+				ObjectName:  "foobar",
+				ObjectType:  SPEC.Ptr(),
+			}},
+		{"akita://my_service:trace:foobar",
+			URI{
+				ServiceName: "my_service",
+				ObjectName:  "foobar",
+				ObjectType:  TRACE.Ptr(),
+			}},
+		{"akita://my_service:spec",
+			URI{
+				ServiceName: "my_service",
+				ObjectName:  "",
+				ObjectType:  SPEC.Ptr(),
+			}},
+		{"akita://my_service:trace",
+			URI{
+				ServiceName: "my_service",
+				ObjectName:  "",
+				ObjectType:  TRACE.Ptr(),
+			}},
+		{"akita://my_service",
+			URI{
+				ServiceName: "my_service",
+				ObjectName:  "",
+				ObjectType:  nil,
+			}},
 	}
 
-	u, err := Parse("akita://my_service:spec:foobar")
-	assert.NoError(t, err)
-	assert.Equal(t, expected, u)
-}
+	for _, test := range tests {
+		t.Run("Parse "+test.string, func(t *testing.T) {
+			u, err := Parse(test.string)
+			assert.NoError(t, err)
+			assert.Equal(t, test.URI, u)
+		})
 
-func TestString(t *testing.T) {
-	u := URI{
-		ServiceName: "my_service",
-		ObjectName:  "foobar",
-		ObjectType:  SPEC,
+		t.Run("Unparse "+test.string, func(t *testing.T) {
+			assert.Equal(t, test.string, test.URI.String())
+		})
 	}
-	assert.Equal(t, "akita://my_service:spec:foobar", u.String())
 }
