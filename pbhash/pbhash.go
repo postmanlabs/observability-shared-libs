@@ -12,6 +12,9 @@ var (
 		protohash.BasicHashFunction(protohash.XXHASH64),
 		// Example values can fluctuate between runs, so we ignore them.
 		protohash.IgnoreFieldName("example_values"),
+		// Do not include latency when deduplicating by hash
+		// for a learning sessions
+		protohash.IgnoreFieldName("processing_latency"),
 	)
 )
 
