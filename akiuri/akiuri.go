@@ -27,9 +27,21 @@ func (o ObjectType) Ptr() *ObjectType {
 	return &o
 }
 
+// Inspection methods *********************************************************
+
 func (o1 *ObjectType) Is(o2 ObjectType) bool {
 	return o1 != nil && *o1 == o2
 }
+
+func (o *ObjectType) IsSpec() bool {
+	return o.Is(SPEC)
+}
+
+func (o *ObjectType) IsTrace() bool {
+	return o.Is(TRACE)
+}
+
+// ****************************************************************************
 
 func stringToObjectType(s string) (*ObjectType, error) {
 	switch s {
