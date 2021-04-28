@@ -10,11 +10,19 @@ import (
 var (
 	ph = protohash.NewHasher(
 		protohash.BasicHashFunction(protohash.XXHASH64),
+
 		// Example values can fluctuate between runs, so we ignore them.
 		protohash.IgnoreFieldName("example_values"),
+
 		// Do not include latency when deduplicating by hash
 		// for a learning sessions
 		protohash.IgnoreFieldName("processing_latency"),
+
+		// XXX: MethodId.name currently holds the OpenAPI3 operationId, which
+		// is optional and only used for documentation.  In the future,
+		// we should move that to metadata and either use a meaningful method name
+		// or remove the field.
+		protohash.IgnoreFieldName("name"),
 	)
 )
 
