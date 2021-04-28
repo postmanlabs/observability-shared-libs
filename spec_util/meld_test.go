@@ -106,7 +106,7 @@ var tests = []testData{
 	},
 	{
 		// meld(oneof(T1, T2), T3) => oneof(T1, T2, T3)
-		"meld additive oneof",
+		"meld additive oneof with primitive",
 		[]string{
 			"testdata/meld/meld_oneof_with_primitive_1.pb.txt",
 			"testdata/meld/meld_oneof_with_primitive_2.pb.txt",

@@ -14,7 +14,7 @@ method: {
       oneof: {
         potential_conflict: true
         options: {
-          key: "struct1"
+          key: "ZnMYW-0YN9c="
           value: {
             struct: {
               fields: {
@@ -29,7 +29,7 @@ method: {
           }
         }
         options: {
-          key: "null1"
+          key: "DbM2pDwZ79k="
           value: {
             optional: {
               none: {}
