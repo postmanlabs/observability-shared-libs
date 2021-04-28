@@ -19,8 +19,16 @@ func (vis *hashOneOfVisitor) VisitData(c http_rest.HttpRestSpecVisitorContext, p
 	if oneOf == nil {
 		return true
 	}
+
 	options := p.GetOneof().Options
-	for k, v := range options {
+	keys := make([]string, 0, len(options))
+
+	for k, _ := range options {
+		keys = append(keys, k)
+	}
+
+	for _, k := range keys {
+		v := options[k]
 		h, err := pbhash.HashProto(v)
 		if err != nil {
 			vis.err = err
@@ -52,7 +60,12 @@ func RewriteHashKeys(spec *pb.APISpec) error {
 	// Hash Args and Responses for each method.
 	for _, method := range spec.Methods {
 		for _, m := range []map[string]*pb.Data{method.Args, method.Responses} {
-			for k, arg := range m {
+			keys := make([]string, 0, len(m))
+			for k, _ := range m {
+				keys = append(keys, k)
+			}
+			for _, k := range keys {
+				arg := m[k]
 				h, err := pbhash.HashProto(arg)
 				if err != nil {
 					return errors.Wrap(err, "failed to compute hash of method argument")
