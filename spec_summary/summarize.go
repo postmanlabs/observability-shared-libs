@@ -6,7 +6,7 @@ import (
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/spec_util"
-	"github.com/akitasoftware/akita-libs/visitors/go_ast"
+	. "github.com/akitasoftware/akita-libs/visitors"
 	vis "github.com/akitasoftware/akita-libs/visitors/http_rest"
 )
 
@@ -65,7 +65,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 		},
 		filtersToMethods: make(map[string]map[string]map[*pb.Method]struct{}),
 	}
-	vis.Apply(go_ast.POSTORDER, &v, spec)
+	vis.Apply(&v, spec)
 
 	// If there are no known filters, return the default count.
 	if filters == nil {
@@ -73,14 +73,14 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 	}
 	knownFilterKeys := map[string]struct{}{
 		"authentications": {},
-		"http_methods": {},
-		"paths": {},
-		"params": {},
-		"properties": {},
-		"response_codes": {},
-		"data_formats": {},
-		"data_kinds": {},
-		"data_types": {},
+		"http_methods":    {},
+		"paths":           {},
+		"params":          {},
+		"properties":      {},
+		"response_codes":  {},
+		"data_formats":    {},
+		"data_kinds":      {},
+		"data_types":      {},
 	}
 	knownFiltersPresent := false
 	for filterKey, _ := range filters {
@@ -197,7 +197,7 @@ type specSummaryVisitor struct {
 	filtersToMethods FilterMap
 }
 
-func (v *specSummaryVisitor) VisitMethod(_ vis.HttpRestSpecVisitorContext, m *pb.Method) bool {
+func (v *specSummaryVisitor) LeaveMethod(_ vis.HttpRestSpecVisitorContext, m *pb.Method, cont Cont) Cont {
 	if meta := spec_util.HTTPMetaFromMethod(m); meta != nil {
 		methodName := strings.ToUpper(meta.GetMethod())
 		v.summary.HTTPMethods[methodName] += 1
@@ -217,7 +217,7 @@ func (v *specSummaryVisitor) VisitMethod(_ vis.HttpRestSpecVisitorContext, m *pb
 	// summary count by one and clear the method-level summary.
 	summaryPairs := []struct {
 		dst  map[string]int
-		src map[string]int
+		src  map[string]int
 		kind string
 	}{
 		{dst: v.summary.Authentications, src: v.methodSummary.Authentications, kind: "authentications"},
@@ -240,10 +240,10 @@ func (v *specSummaryVisitor) VisitMethod(_ vis.HttpRestSpecVisitorContext, m *pb
 		}
 	}
 
-	return true
+	return cont
 }
 
-func (v *specSummaryVisitor) VisitData(_ vis.HttpRestSpecVisitorContext, d *pb.Data) bool {
+func (v *specSummaryVisitor) LeaveData(_ vis.HttpRestSpecVisitorContext, d *pb.Data, cont Cont) Cont {
 	// Handle auth vs params vs properties.
 	if meta := spec_util.HTTPAuthFromData(d); meta != nil {
 		v.methodSummary.Authentications[meta.Type.String()] += 1
@@ -270,10 +270,10 @@ func (v *specSummaryVisitor) VisitData(_ vis.HttpRestSpecVisitorContext, d *pb.D
 		}
 	}
 
-	return true
+	return cont
 }
 
-func (v *specSummaryVisitor) VisitPrimitive(_ vis.HttpRestSpecVisitorContext, p *pb.Primitive) bool {
+func (v *specSummaryVisitor) LeavePrimitive(_ vis.HttpRestSpecVisitorContext, p *pb.Primitive, cont Cont) Cont {
 	for f := range p.GetFormats() {
 		v.methodSummary.DataFormats[f] += 1
 	}
@@ -281,7 +281,7 @@ func (v *specSummaryVisitor) VisitPrimitive(_ vis.HttpRestSpecVisitorContext, p 
 		v.methodSummary.DataKinds[k] += 1
 	}
 	v.methodSummary.DataTypes[spec_util.TypeOfPrimitive(p)] += 1
-	return true
+	return cont
 }
 
 func intersect(methodSets []map[*pb.Method]struct{}) map[*pb.Method]struct{} {

@@ -10,19 +10,19 @@ import (
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/test"
 
-	"github.com/akitasoftware/akita-libs/visitors/go_ast"
+	. "github.com/akitasoftware/akita-libs/visitors"
 )
 
 /* You can extend DefaultHttpRestSpecVisitor with a custom reader that
- * implements a subset of the visitor methods.  For example, MyVisitor
+ * implements a subset of the visitor methods.  For example, MyPreorderVisitor
  * only visits Primitives in the spec and ignores other terms.
  */
-type MyVisitor struct {
+type MyPreorderVisitor struct {
 	DefaultHttpRestSpecVisitor
 	actualPaths []string
 }
 
-func (v *MyVisitor) VisitPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) bool {
+func (v *MyPreorderVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) Cont {
 	// Prints the path through the REST request/response to this primitive,
 	// including the host/operation/path, response code (if present), parameter
 	// name, etc.
@@ -30,7 +30,23 @@ func (v *MyVisitor) VisitPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive
 		pathWithType := append(c.GetRestPath(), GetPrimitiveType(p).String())
 		v.actualPaths = append(v.actualPaths, strings.Join(pathWithType, "."))
 	}
-	return true
+	return Continue
+}
+
+type MyPostorderVisitor struct {
+	DefaultHttpRestSpecVisitor
+	actualPaths []string
+}
+
+func (v *MyPostorderVisitor) LeavePrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive, cont Cont) Cont {
+	// Prints the path through the REST request/response to this primitive,
+	// including the host/operation/path, response code (if present), parameter
+	// name, etc.
+	if c.IsResponse() && c.GetRestPath()[2] == "/api/0/projects/" {
+		pathWithType := append(c.GetRestPath(), GetPrimitiveType(p).String())
+		v.actualPaths = append(v.actualPaths, strings.Join(pathWithType, "."))
+	}
+	return cont
 }
 
 var expectedPaths = []string{
@@ -63,8 +79,8 @@ var expectedPaths = []string{
 func TestPreorderTraversal(t *testing.T) {
 	spec := test.LoadAPISpecFromFileOrDie("../testdata/sentry_ir_spec.pb.txt")
 
-	var visitor MyVisitor
-	Apply(go_ast.PREORDER, &visitor, spec)
+	var visitor MyPreorderVisitor
+	Apply(&visitor, spec)
 	sort.Strings(expectedPaths)
 	sort.Strings(visitor.actualPaths)
 	assert.Equal(t, expectedPaths, visitor.actualPaths)
@@ -73,8 +89,8 @@ func TestPreorderTraversal(t *testing.T) {
 func TestPostorderTraversal(t *testing.T) {
 	spec := test.LoadAPISpecFromFileOrDie("../testdata/sentry_ir_spec.pb.txt")
 
-	var visitor MyVisitor
-	Apply(go_ast.PREORDER, &visitor, spec)
+	var visitor MyPostorderVisitor
+	Apply(&visitor, spec)
 	sort.Strings(expectedPaths)
 	sort.Strings(visitor.actualPaths)
 	assert.Equal(t, expectedPaths, visitor.actualPaths)
@@ -85,12 +101,12 @@ type queryOnlyVisitor struct {
 	actualPaths []string
 }
 
-func (v *queryOnlyVisitor) VisitPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) bool {
+func (v *queryOnlyVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) Cont {
 	if c.IsArg() && c.GetRestPath()[2] == "/api/1/store/" && c.GetValueType() == QUERY {
 		pathWithType := append(c.GetRestPath(), GetPrimitiveType(p).String())
 		v.actualPaths = append(v.actualPaths, strings.Join(pathWithType, "."))
 	}
-	return true
+	return Continue
 }
 
 func TestFilterByValueType(t *testing.T) {
@@ -102,7 +118,7 @@ func TestFilterByValueType(t *testing.T) {
 	}
 
 	var visitor queryOnlyVisitor
-	Apply(go_ast.PREORDER, &visitor, spec)
+	Apply(&visitor, spec)
 	sort.Strings(expectedPaths)
 	sort.Strings(visitor.actualPaths)
 	assert.Equal(t, expectedPaths, visitor.actualPaths)
@@ -113,14 +129,14 @@ type responsePathVisitor struct {
 	actualPaths []string
 }
 
-func (v *responsePathVisitor) VisitPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) bool {
+func (v *responsePathVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) Cont {
 	// The path is specifically picked to contain response values with nested Data
 	// objects.
 	if c.IsResponse() && c.GetRestPath()[2] == "/api/0/projects/{organization_slug}/{project_slug}/users/" {
 		pathWithType := append(c.GetResponsePath(), GetPrimitiveType(p).String())
 		v.actualPaths = append(v.actualPaths, strings.Join(pathWithType, "."))
 	}
-	return true
+	return Continue
 }
 
 func TestGetDataPath(t *testing.T) {
@@ -140,7 +156,7 @@ func TestGetDataPath(t *testing.T) {
 	}
 
 	var visitor responsePathVisitor
-	Apply(go_ast.PREORDER, &visitor, spec)
+	Apply(&visitor, spec)
 	sort.Strings(expectedPaths)
 	sort.Strings(visitor.actualPaths)
 	assert.Equal(t, expectedPaths, visitor.actualPaths)

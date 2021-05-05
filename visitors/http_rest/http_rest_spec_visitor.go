@@ -8,326 +8,316 @@ import (
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 
-	"github.com/akitasoftware/akita-libs/visitors"
+	. "github.com/akitasoftware/akita-libs/visitors"
 	"github.com/akitasoftware/akita-libs/visitors/go_ast"
 )
 
-// Describes which part of an HTTP request/response a value belongs to.
-type HttpValueType int
-
-const (
-	UNKNOWN HttpValueType = iota
-	PATH
-	QUERY
-	HEADER
-	COOKIE
-	BODY
-)
-
-func (t HttpValueType) String() string {
-	return []string{"Unknown", "Path", "Query", "Header", "Cookie", "Body"}[t]
-}
-
-type HttpRestSpecVisitorContext interface {
-	visitors.Context
-
-	// Used by the visitor infrastructure to construct a REST path by replacing
-	// parts of the AST path with names from DataMeta.
-	AppendRestPath(string) HttpRestSpecVisitorContext
-
-	// Gets the REST path, which is similar to the AST path but using names
-	// from DataMeta and MethodMeta objects where appropriate, as well as
-	// hiding names of container data structures.
-	//
-	// For example, the AST path to a path parameter might be:
-	//
-	//   Methods 0 Args arg-headers-0 Value Primitive
-	//
-	// These are the names of the fields in the AST.  In contrast, the REST
-	// path might be:
-	//
-	//   localhost:9000 GET /api/0/issues/{issue_id}/events/ Header Authorization
-	//
-	GetRestPath() []string
-
-	// Returns the REST operation name of the method being traversed, if the
-	// visitor is visiting a method or its descendent nodes.
-	GetRestOperation() string
-	setRestOperation(string)
-
-	// Returns true if the message is a descendent of Method.Args.
-	IsArg() bool
-
-	// Returns true if the message is a descendent of Method.Responses.
-	IsResponse() bool
-
-	GetValueType() HttpValueType
-
-	// Like GetRestPath, except only including the portion about the argument
-	// value.
-	GetArgPath() []string
-
-	// Like GetRestPath, except only including the portion about the argument
-	// value.
-	GetResponsePath() []string
-
-	// Returns the endpoint path, e.g. the "/v1/users" part of
-	// "localhost GET /v1/users".
-	GetEndpointPath() string
-
-	// Returns the host.
-	GetHost() string
-
-	setIsArg(bool)
-	setValueType(HttpValueType)
-	setTopLevelDataIndex(int)
-}
-
-type httpRestSpecVisitorContext struct {
-	path     []string
-	restPath []string
-
-	// nil means we're not sure if this is an arg or response value.
-	isArg *bool
-
-	valueType HttpValueType
-
-	// Index within restPath of the start of the section describing arg or
-	// response.
-	topDataIndex int
-
-	restOperation string
-}
-
-func (c *httpRestSpecVisitorContext) AppendPath(s string) visitors.Context {
-	rv := *c
-	rv.path = append(c.GetPath(), s)
-	return &rv
-}
-
-func (c *httpRestSpecVisitorContext) GetPath() []string {
-	return c.path
-}
-
-func (c *httpRestSpecVisitorContext) AppendRestPath(s string) HttpRestSpecVisitorContext {
-	rv := *c
-	rv.restPath = append(c.GetRestPath(), s)
-	return &rv
-}
-
-func (c *httpRestSpecVisitorContext) GetRestPath() []string {
-	return c.restPath
-}
-
-func (c *httpRestSpecVisitorContext) GetRestOperation() string {
-	return c.restOperation
-}
-
-func (c *httpRestSpecVisitorContext) setRestOperation(op string) {
-	c.restOperation = op
-}
-
-func (c *httpRestSpecVisitorContext) IsArg() bool {
-	if c.isArg != nil {
-		return *c.isArg
-	}
-	return false
-}
-
-func (c *httpRestSpecVisitorContext) IsResponse() bool {
-	if c.isArg != nil {
-		return !*c.isArg
-	}
-	return false
-}
-
-func (c *httpRestSpecVisitorContext) GetValueType() HttpValueType {
-	return c.valueType
-}
-
-func (c *httpRestSpecVisitorContext) GetArgPath() []string {
-	if !c.IsArg() {
-		return nil
-	}
-	return c.getTopLevelDataPath()
-}
-
-func (c *httpRestSpecVisitorContext) GetResponsePath() []string {
-	if !c.IsResponse() {
-		return nil
-	}
-	return c.getTopLevelDataPath()
-}
-
-func (c *httpRestSpecVisitorContext) GetEndpointPath() string {
-	if len(c.restPath) < 3 {
-		return ""
-	}
-	return c.restPath[2]
-}
-
-func (c *httpRestSpecVisitorContext) GetHost() string {
-	if len(c.restPath) < 1 {
-		return ""
-	}
-	return c.restPath[0]
-}
-
-func (c *httpRestSpecVisitorContext) getTopLevelDataPath() []string {
-	p := c.GetRestPath()
-	if len(p) > c.topDataIndex+1 {
-		return p[c.topDataIndex+1:]
-	}
-	return nil
-}
-
-func (c *httpRestSpecVisitorContext) setIsArg(isArg bool) {
-	c.isArg = &isArg
-}
-
-func (c *httpRestSpecVisitorContext) setValueType(vt HttpValueType) {
-	c.valueType = vt
-}
-
-func (c *httpRestSpecVisitorContext) setTopLevelDataIndex(i int) {
-	c.topDataIndex = i
-}
-
-// VisitorManager that lets you read each message in an APISpec, starting with the
-// APISpec message itself.  Returning false stops the traversal.
+// VisitorManager that lets you read each message in an APISpec, starting with
+// the APISpec message itself.  Returning false stops the traversal.
 type HttpRestSpecVisitor interface {
-	VisitAPISpec(HttpRestSpecVisitorContext, *pb.APISpec) bool
-	VisitMethod(HttpRestSpecVisitorContext, *pb.Method) bool
-	VisitData(HttpRestSpecVisitorContext, *pb.Data) bool
-	VisitPrimitive(HttpRestSpecVisitorContext, *pb.Primitive) bool
+	EnterAPISpec(HttpRestSpecVisitorContext, *pb.APISpec) Cont
+	LeaveAPISpec(HttpRestSpecVisitorContext, *pb.APISpec, Cont) Cont
+
+	EnterMethod(HttpRestSpecVisitorContext, *pb.Method) Cont
+	LeaveMethod(HttpRestSpecVisitorContext, *pb.Method, Cont) Cont
+
+	EnterMethodMeta(HttpRestSpecVisitorContext, *pb.MethodMeta) Cont
+	LeaveMethodMeta(HttpRestSpecVisitorContext, *pb.MethodMeta, Cont) Cont
+
+	EnterHTTPMethodMeta(HttpRestSpecVisitorContext, *pb.HTTPMethodMeta) Cont
+	LeaveHTTPMethodMeta(HttpRestSpecVisitorContext, *pb.HTTPMethodMeta, Cont) Cont
+
+	EnterData(HttpRestSpecVisitorContext, *pb.Data) Cont
+	LeaveData(HttpRestSpecVisitorContext, *pb.Data, Cont) Cont
+
+	EnterDataMeta(HttpRestSpecVisitorContext, *pb.DataMeta) Cont
+	LeaveDataMeta(HttpRestSpecVisitorContext, *pb.DataMeta, Cont) Cont
+
+	EnterHTTPMeta(HttpRestSpecVisitorContext, *pb.HTTPMeta) Cont
+	LeaveHTTPMeta(HttpRestSpecVisitorContext, *pb.HTTPMeta, Cont) Cont
+
+	EnterHTTPPath(HttpRestSpecVisitorContext, *pb.HTTPPath) Cont
+	LeaveHTTPPath(HttpRestSpecVisitorContext, *pb.HTTPPath, Cont) Cont
+
+	EnterHTTPQuery(HttpRestSpecVisitorContext, *pb.HTTPQuery) Cont
+	LeaveHTTPQuery(HttpRestSpecVisitorContext, *pb.HTTPQuery, Cont) Cont
+
+	EnterHTTPHeader(HttpRestSpecVisitorContext, *pb.HTTPHeader) Cont
+	LeaveHTTPHeader(HttpRestSpecVisitorContext, *pb.HTTPHeader, Cont) Cont
+
+	EnterHTTPCookie(HttpRestSpecVisitorContext, *pb.HTTPCookie) Cont
+	LeaveHTTPCookie(HttpRestSpecVisitorContext, *pb.HTTPCookie, Cont) Cont
+
+	EnterHTTPBody(HttpRestSpecVisitorContext, *pb.HTTPBody) Cont
+	LeaveHTTPBody(HttpRestSpecVisitorContext, *pb.HTTPBody, Cont) Cont
+
+	EnterHTTPEmpty(HttpRestSpecVisitorContext, *pb.HTTPEmpty) Cont
+	LeaveHTTPEmpty(HttpRestSpecVisitorContext, *pb.HTTPEmpty, Cont) Cont
+
+	EnterHTTPAuth(HttpRestSpecVisitorContext, *pb.HTTPAuth) Cont
+	LeaveHTTPAuth(HttpRestSpecVisitorContext, *pb.HTTPAuth, Cont) Cont
+
+	EnterHTTPMultipart(HttpRestSpecVisitorContext, *pb.HTTPMultipart) Cont
+	LeaveHTTPMultipart(HttpRestSpecVisitorContext, *pb.HTTPMultipart, Cont) Cont
+
+	EnterPrimitive(HttpRestSpecVisitorContext, *pb.Primitive) Cont
+	LeavePrimitive(HttpRestSpecVisitorContext, *pb.Primitive, Cont) Cont
 }
 
 // Defines nops for all visitor methods in HttpRestSpecVisitor.
 type DefaultHttpRestSpecVisitor struct{}
 
-func (*DefaultHttpRestSpecVisitor) VisitAPISpec(c HttpRestSpecVisitorContext, spec *pb.APISpec) bool {
-	return true
+func (*DefaultHttpRestSpecVisitor) EnterAPISpec(c HttpRestSpecVisitorContext, spec *pb.APISpec) Cont {
+	return Continue
 }
 
-func (*DefaultHttpRestSpecVisitor) VisitMethod(c HttpRestSpecVisitorContext, m *pb.Method) bool {
-	return true
+func (*DefaultHttpRestSpecVisitor) LeaveAPISpec(c HttpRestSpecVisitorContext, spec *pb.APISpec, cont Cont) Cont {
+	return cont
 }
 
-func (*DefaultHttpRestSpecVisitor) VisitData(c HttpRestSpecVisitorContext, d *pb.Data) bool {
-	return true
+func (*DefaultHttpRestSpecVisitor) EnterMethod(c HttpRestSpecVisitorContext, m *pb.Method) Cont {
+	return Continue
 }
 
-func (*DefaultHttpRestSpecVisitor) VisitPrimitive(c HttpRestSpecVisitorContext, d *pb.Primitive) bool {
-	return true
+func (*DefaultHttpRestSpecVisitor) LeaveMethod(c HttpRestSpecVisitorContext, m *pb.Method, cont Cont) Cont {
+	return cont
 }
 
-func extendContext(cin visitors.Context, rin interface{}, x interface{}) visitors.Context {
-	r, ok := rin.(HttpRestSpecVisitor)
-	c, ok := cin.(HttpRestSpecVisitorContext)
-	rc := cin
+func (*DefaultHttpRestSpecVisitor) EnterMethodMeta(c HttpRestSpecVisitorContext, m *pb.MethodMeta) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveMethodMeta(c HttpRestSpecVisitorContext, m *pb.MethodMeta, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPMethodMeta(c HttpRestSpecVisitorContext, m *pb.HTTPMethodMeta) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPMethodMeta(c HttpRestSpecVisitorContext, m *pb.HTTPMethodMeta, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterData(c HttpRestSpecVisitorContext, d *pb.Data) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveData(c HttpRestSpecVisitorContext, d *pb.Data, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterDataMeta(c HttpRestSpecVisitorContext, d *pb.DataMeta) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveDataMeta(c HttpRestSpecVisitorContext, d *pb.DataMeta, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPMeta(c HttpRestSpecVisitorContext, m *pb.HTTPMeta) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPMeta(c HttpRestSpecVisitorContext, m *pb.HTTPMeta, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPPath(c HttpRestSpecVisitorContext, p *pb.HTTPPath) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPPath(c HttpRestSpecVisitorContext, p *pb.HTTPPath, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPQuery(c HttpRestSpecVisitorContext, q *pb.HTTPQuery) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPQuery(c HttpRestSpecVisitorContext, q *pb.HTTPQuery, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPHeader(c HttpRestSpecVisitorContext, b *pb.HTTPHeader) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPHeader(c HttpRestSpecVisitorContext, b *pb.HTTPHeader, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPCookie(c HttpRestSpecVisitorContext, ck *pb.HTTPCookie) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPCookie(c HttpRestSpecVisitorContext, ck *pb.HTTPCookie, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPBody(c HttpRestSpecVisitorContext, b *pb.HTTPBody) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPBody(c HttpRestSpecVisitorContext, b *pb.HTTPBody, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPEmpty(c HttpRestSpecVisitorContext, e *pb.HTTPEmpty) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPEmpty(c HttpRestSpecVisitorContext, e *pb.HTTPEmpty, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPAuth(c HttpRestSpecVisitorContext, a *pb.HTTPAuth) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPAuth(c HttpRestSpecVisitorContext, a *pb.HTTPAuth, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterHTTPMultipart(c HttpRestSpecVisitorContext, m *pb.HTTPMultipart) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveHTTPMultipart(c HttpRestSpecVisitorContext, m *pb.HTTPMultipart, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultHttpRestSpecVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, d *pb.Primitive) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) LeavePrimitive(c HttpRestSpecVisitorContext, d *pb.Primitive, cont Cont) Cont {
+	return cont
+}
+
+// extendContext implementation for HttpRestSpecVisitor.
+func extendContext(cin Context, visitor interface{}, node interface{}) Context {
+	v, _ := visitor.(HttpRestSpecVisitor)
+	ctx, ok := cin.(HttpRestSpecVisitorContext)
+	result := cin
 	if !ok {
 		panic(fmt.Sprintf("HttpRestSpecVisitor.Visit expected HttpRestSpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
 	}
 
 	// Dispatch on type and path.
-	switch x.(type) {
+	switch node := node.(type) {
 	case pb.APISpec, pb.Method, pb.Data, pb.Primitive:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
-		rc = extendContext(c, r, &x)
+		result = extendContext(ctx, v, &node)
 	case *pb.Method:
-		m, _ := x.(*pb.Method)
-
 		// Update the RestPath in the context
-		meta := m.GetMeta().GetHttp()
+		meta := node.GetMeta().GetHttp()
 		if meta != nil {
-			c.setRestOperation(meta.GetMethod())
-			c = c.AppendRestPath(meta.GetHost()).AppendRestPath(meta.GetMethod()).AppendRestPath(meta.GetPathTemplate())
-			rc = c
+			ctx.setRestOperation(meta.GetMethod())
+			ctx = ctx.AppendRestPath(meta.GetHost()).AppendRestPath(meta.GetMethod()).AppendRestPath(meta.GetPathTemplate())
+			result = ctx
 		}
 	case *pb.Data:
-		d, _ := x.(*pb.Data)
-
 		// Update the RestPath in the context
 		// HTTPMeta is only valid for the top-level Data object.
-		if d.GetMeta() != nil && d.GetMeta().GetHttp() != nil {
-			c.setTopLevelDataIndex(len(c.GetRestPath()) - 1)
+		if node.GetMeta() != nil && node.GetMeta().GetHttp() != nil {
+			ctx.setTopLevelDataIndex(len(ctx.GetRestPath()) - 1)
 
-			meta := d.GetMeta().GetHttp()
+			meta := node.GetMeta().GetHttp()
 			switch rc := meta.GetResponseCode(); rc {
 			case 0: // arg
-				c.setIsArg(true)
-				c = c.AppendRestPath("Arg")
+				ctx.setIsArg(true)
+				ctx = ctx.AppendRestPath("Arg")
 			default:
-				c.setIsArg(false)
-				c = c.AppendRestPath("Response")
+				ctx.setIsArg(false)
+				ctx = ctx.AppendRestPath("Response")
 				if rc == -1 {
-					c = c.AppendRestPath("default")
+					ctx = ctx.AppendRestPath("default")
 				} else {
-					c = c.AppendRestPath(strconv.Itoa(int(rc)))
+					ctx = ctx.AppendRestPath(strconv.Itoa(int(rc)))
 				}
 			}
 
 			var valueKey string
 			if x := meta.GetPath(); x != nil {
-				c.setValueType(PATH)
+				ctx.setValueType(PATH)
 				valueKey = x.GetKey()
 			} else if x := meta.GetQuery(); x != nil {
-				c.setValueType(QUERY)
+				ctx.setValueType(QUERY)
 				valueKey = x.GetKey()
 			} else if x := meta.GetHeader(); x != nil {
-				c.setValueType(HEADER)
+				ctx.setValueType(HEADER)
 				valueKey = x.GetKey()
 			} else if x := meta.GetCookie(); x != nil {
-				c.setValueType(COOKIE)
+				ctx.setValueType(COOKIE)
 				valueKey = x.GetKey()
 			} else if x := meta.GetBody(); x != nil {
-				c.setValueType(BODY)
+				ctx.setValueType(BODY)
 				valueKey = x.GetContentType().String()
 			}
 
-			c = c.AppendRestPath(c.GetValueType().String())
-			c = c.AppendRestPath(valueKey)
+			ctx = ctx.AppendRestPath(ctx.GetValueType().String())
+			ctx = ctx.AppendRestPath(valueKey)
 
 			// Do nothing for HTTPEmpty
 		} else {
-			astPath := c.GetPath()
-			c = c.AppendRestPath(astPath[len(astPath)-1])
+			astPath := ctx.GetPath()
+			ctx = ctx.AppendRestPath(astPath[len(astPath)-1])
 		}
-		rc = c
+		result = ctx
 	}
 
-	return rc
+	return result
 }
 
-func visit(cin visitors.Context, rin interface{}, x interface{}) bool {
-	r, ok := rin.(HttpRestSpecVisitor)
-	c, ok := extendContext(cin, rin, x).(HttpRestSpecVisitorContext)
+// enter implementation for HttpRestSpecVisitor.
+func enter(cin Context, visitor interface{}, node interface{}) Cont {
+	v, _ := visitor.(HttpRestSpecVisitor)
+	ctx, ok := extendContext(cin, visitor, node).(HttpRestSpecVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("HttpRestSpecVisitor.Visit expected HttpRestSpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
 	}
-	keepGoing := true
+	keepGoing := Continue
 
 	// Dispatch on type and path.
-	switch x.(type) {
-	case pb.APISpec, pb.Method, pb.Data, pb.Primitive:
+	switch node := node.(type) {
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
-		keepGoing = visit(c, r, &x)
+		keepGoing = enter(ctx, v, &node)
 	case *pb.APISpec:
-		s, _ := x.(*pb.APISpec)
-		keepGoing = r.VisitAPISpec(c, s)
+		keepGoing = v.EnterAPISpec(ctx, node)
 	case *pb.Method:
-		m, _ := x.(*pb.Method)
-		keepGoing = r.VisitMethod(c, m)
+		keepGoing = v.EnterMethod(ctx, node)
+	case *pb.MethodMeta:
+		keepGoing = v.EnterMethodMeta(ctx, node)
+	case *pb.HTTPMethodMeta:
+		keepGoing = v.EnterHTTPMethodMeta(ctx, node)
 	case *pb.Data:
-		d, _ := x.(*pb.Data)
-		keepGoing = r.VisitData(c, d)
+		keepGoing = v.EnterData(ctx, node)
+	case *pb.DataMeta:
+		keepGoing = v.EnterDataMeta(ctx, node)
+	case *pb.HTTPPath:
+		keepGoing = v.EnterHTTPPath(ctx, node)
+	case *pb.HTTPQuery:
+		keepGoing = v.EnterHTTPQuery(ctx, node)
+	case *pb.HTTPHeader:
+		keepGoing = v.EnterHTTPHeader(ctx, node)
+	case *pb.HTTPCookie:
+		keepGoing = v.EnterHTTPCookie(ctx, node)
+	case *pb.HTTPBody:
+		keepGoing = v.EnterHTTPBody(ctx, node)
+	case *pb.HTTPEmpty:
+		keepGoing = v.EnterHTTPEmpty(ctx, node)
+	case *pb.HTTPAuth:
+		keepGoing = v.EnterHTTPAuth(ctx, node)
+	case *pb.HTTPMultipart:
+		keepGoing = v.EnterHTTPMultipart(ctx, node)
 	case *pb.Primitive:
-		p, _ := x.(*pb.Primitive)
-		keepGoing = r.VisitPrimitive(c, p)
+		keepGoing = v.EnterPrimitive(ctx, node)
 	default:
 		// Just keep going if we don't understand the type.
 	}
@@ -335,12 +325,64 @@ func visit(cin visitors.Context, rin interface{}, x interface{}) bool {
 	return keepGoing
 }
 
-// Visits m with v.  Returns false if the visitor aborts traversal (by
-// returning false).  Order is either PREORDER or POSTORDER.
-func Apply(order go_ast.TraversalOrder, v HttpRestSpecVisitor, m interface{}) bool {
+// leave implementation for HttpRestSpecVisitor.
+func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
+	v, _ := visitor.(HttpRestSpecVisitor)
+	ctx, ok := extendContext(cin, visitor, node).(HttpRestSpecVisitorContext)
+	if !ok {
+		panic(fmt.Sprintf("HttpRestSpecVisitor.Visit expected HttpRestSpecVisitorContext, got %s",
+			reflect.TypeOf(cin)))
+	}
+	keepGoing := cont
+
+	// Dispatch on type and path.
+	switch node := node.(type) {
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
+		// For simplicity, ensure we're operating on a pointer to any complex
+		// structure.
+		keepGoing = leave(ctx, v, &node, cont)
+	case *pb.APISpec:
+		keepGoing = v.LeaveAPISpec(ctx, node, cont)
+	case *pb.Method:
+		keepGoing = v.LeaveMethod(ctx, node, cont)
+	case *pb.MethodMeta:
+		keepGoing = v.LeaveMethodMeta(ctx, node, cont)
+	case *pb.HTTPMethodMeta:
+		keepGoing = v.LeaveHTTPMethodMeta(ctx, node, cont)
+	case *pb.Data:
+		keepGoing = v.LeaveData(ctx, node, cont)
+	case *pb.DataMeta:
+		keepGoing = v.LeaveDataMeta(ctx, node, cont)
+	case *pb.HTTPPath:
+		keepGoing = v.LeaveHTTPPath(ctx, node, cont)
+	case *pb.HTTPQuery:
+		keepGoing = v.LeaveHTTPQuery(ctx, node, cont)
+	case *pb.HTTPHeader:
+		keepGoing = v.LeaveHTTPHeader(ctx, node, cont)
+	case *pb.HTTPCookie:
+		keepGoing = v.LeaveHTTPCookie(ctx, node, cont)
+	case *pb.HTTPBody:
+		keepGoing = v.LeaveHTTPBody(ctx, node, cont)
+	case *pb.HTTPEmpty:
+		keepGoing = v.LeaveHTTPEmpty(ctx, node, cont)
+	case *pb.HTTPAuth:
+		keepGoing = v.LeaveHTTPAuth(ctx, node, cont)
+	case *pb.HTTPMultipart:
+		keepGoing = v.LeaveHTTPMultipart(ctx, node, cont)
+	case *pb.Primitive:
+		keepGoing = v.LeavePrimitive(ctx, node, cont)
+	default:
+		// Just keep going if we don't understand the type.
+	}
+
+	return keepGoing
+}
+
+// Visits m with v.
+func Apply(v HttpRestSpecVisitor, m interface{}) Cont {
 	c := new(httpRestSpecVisitorContext)
-	vis := visitors.NewVisitorManager(c, v, visit, extendContext)
-	return go_ast.Apply(order, vis, m)
+	vis := NewVisitorManager(c, v, enter, leave, extendContext)
+	return go_ast.Apply(vis, m)
 }
 
 func GetPrimitiveType(p *pb.Primitive) reflect.Type {
@@ -395,12 +437,12 @@ type PrintVisitor struct {
 	DefaultHttpRestSpecVisitor
 }
 
-func (*PrintVisitor) VisitData(ctx HttpRestSpecVisitorContext, d *pb.Data) bool {
+func (*PrintVisitor) EnterData(ctx HttpRestSpecVisitorContext, d *pb.Data) Cont {
 	fmt.Printf("%s %s\n", strings.Join(ctx.GetRestPath(), "."), d)
-	return true
+	return Continue
 }
 
-func (*PrintVisitor) VisitPrimitive(ctx HttpRestSpecVisitorContext, p *pb.Primitive) bool {
+func (*PrintVisitor) EnterPrimitive(ctx HttpRestSpecVisitorContext, p *pb.Primitive) Cont {
 	fmt.Printf("%s %s (%s)\n", strings.Join(ctx.GetRestPath(), "."), GetPrimitiveValue(p), GetPrimitiveType(p))
-	return true
+	return Continue
 }

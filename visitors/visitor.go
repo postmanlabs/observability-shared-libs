@@ -36,11 +36,32 @@ func NewContext() Context {
 	return new(context)
 }
 
+// An enum to indicate how a visitor's traversal should continue.
+type Cont int
+
+const (
+	// Indicates that the visitor should continue with normal traversal.
+	Continue Cont = iota
+
+	// Indicates that the visitor should end its traversal, but perform 'leave'
+	// operations as the traversal stack is unwound back to the root node.
+	Stop
+
+	// Indicates that the visitor should stop its traversal immediately. No
+	// 'leave' operations will be performed as the traversal stack is unwound
+	// back to the root node.
+	Abort
+
+	// Indicates that the visitor should not visit the children of the current
+	// node.
+	SkipChildren
+)
+
 // A visitor is made up of a context (which may extend the Context defined
 // above), an arbitrary visitor object, and an Apply function that takes the
 // context, the visitor object, and a term to visit.  It returns the context
-// passed in (possibly with modifications) as well as a boolean value
-// indicating whether to continue the traversal (false means stop).
+// passed in (possibly with modifications) as well as a value indicating how to
+// continue the traversal.
 //
 // Typically, the Apply method will use the context and the term to figure
 // out which method of the visitor object to call, and then call it with
@@ -48,7 +69,7 @@ func NewContext() Context {
 //
 // Factoring out the dispatch logic into Apply means the logic for figuring
 // out which visitor method to call is implemented once for a given data
-// structure, and custom visitors for that data structure can simply overload
+// structure, and custom visitors for that data structure can simply override
 // the methods on the vistor object they care about.  See
 // http_rest_spec_visitor for an example.
 //
@@ -58,20 +79,34 @@ func NewContext() Context {
 type VisitorManager interface {
 	Context() Context
 	Visitor() interface{}
-	Apply(c Context, visitor interface{}, term interface{}) bool
+
+	// Provides functionality for entering a node, before visiting the node's
+	// children.
+	EnterNode(c Context, visitor interface{}, node interface{}) Cont
+
+	// Provides functionality for leaving a node, after visiting the node's
+	// children.
+	//
+	// The given cont can be Continue, Stop, or SkipChildren, indicating the
+	// state of the traversal before leaving the node. Most implementations will
+	// want to return this value unchanged: for convenience, if SkipChildren is
+	// returned, the visitor framework will interpret this as Continue.
+	LeaveNode(c Context, visitor interface{}, node interface{}, cont Cont) Cont
 	ExtendContext(c Context, visitor interface{}, term interface{}) Context
 }
 
 func NewVisitorManager(
 	c Context,
 	v interface{},
-	apply func(c Context, visitor interface{}, term interface{}) bool,
+	enter func(c Context, visitor interface{}, term interface{}) Cont,
+	leave func(c Context, visitor interface{}, term interface{}, cont Cont) Cont,
 	extendContext func(c Context, visitor interface{}, term interface{}) Context,
 ) VisitorManager {
 	rv := visitor{
 		context:       c,
 		visitor:       v,
-		apply:         apply,
+		enter:         enter,
+		leave:         leave,
 		extendContext: extendContext,
 	}
 	return &rv
@@ -92,7 +127,8 @@ func (c *context) GetPath() []string {
 type visitor struct {
 	context       Context
 	visitor       interface{}
-	apply         func(c Context, visitor interface{}, term interface{}) bool
+	enter         func(c Context, visitor interface{}, term interface{}) Cont
+	leave         func(c Context, visitor interface{}, term interface{}, cont Cont) Cont
 	extendContext func(c Context, visitor interface{}, term interface{}) Context
 }
 
@@ -104,8 +140,12 @@ func (v *visitor) Visitor() interface{} {
 	return v.visitor
 }
 
-func (v *visitor) Apply(c Context, visitor interface{}, term interface{}) bool {
-	return v.apply(c, visitor, term)
+func (v *visitor) EnterNode(c Context, visitor interface{}, term interface{}) Cont {
+	return v.enter(c, visitor, term)
+}
+
+func (v *visitor) LeaveNode(c Context, visitor interface{}, term interface{}, cont Cont) Cont {
+	return v.leave(c, visitor, term, cont)
 }
 
 func (v *visitor) ExtendContext(c Context, visitor interface{}, term interface{}) Context {

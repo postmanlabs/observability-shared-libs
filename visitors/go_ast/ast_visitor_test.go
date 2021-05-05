@@ -5,29 +5,39 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/akitasoftware/akita-libs/visitors"
+	. "github.com/akitasoftware/akita-libs/visitors"
 )
 
 type Counter struct {
-	count int
+	enterCount int
+	leaveCount int
 }
 
-func countInt(c visitors.Context, v interface{}, x interface{}) bool {
+func countIntEnter(c Context, v interface{}, x interface{}) Cont {
 	counter := v.(*Counter)
 	if _, ok := x.(int); ok {
-		counter.count++
+		counter.enterCount++
 	}
-	return true
+	return Continue
 }
 
-func extendContext(c visitors.Context, v interface{}, x interface{}) visitors.Context {
+func countIntLeave(c Context, v interface{}, x interface{}, cont Cont) Cont {
+	counter := v.(*Counter)
+	if _, ok := x.(int); ok {
+		counter.leaveCount++
+	}
+	return cont
+}
+
+func extendContext(c Context, v interface{}, x interface{}) Context {
 	return c
 }
 
 func TestApply(t *testing.T) {
 	counter := new(Counter)
-	vm := visitors.NewVisitorManager(visitors.NewContext(), counter, countInt, extendContext)
+	vm := NewVisitorManager(NewContext(), counter, countIntEnter, countIntLeave, extendContext)
 	d := []int{1, 2, 3}
-	Apply(PREORDER, vm, d)
-	assert.Equal(t, 3, counter.count)
+	Apply(vm, d)
+	assert.Equal(t, 3, counter.enterCount)
+	assert.Equal(t, 3, counter.leaveCount)
 }

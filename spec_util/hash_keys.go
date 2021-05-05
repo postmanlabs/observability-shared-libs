@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/akitasoftware/akita-libs/pbhash"
-	"github.com/akitasoftware/akita-libs/visitors/go_ast"
+	. "github.com/akitasoftware/akita-libs/visitors"
 	"github.com/akitasoftware/akita-libs/visitors/http_rest"
 )
 
@@ -14,10 +14,10 @@ type hashOneOfVisitor struct {
 	err error
 }
 
-func (vis *hashOneOfVisitor) VisitData(c http_rest.HttpRestSpecVisitorContext, p *pb.Data) bool {
+func (vis *hashOneOfVisitor) LeaveData(c http_rest.HttpRestSpecVisitorContext, p *pb.Data, cont Cont) Cont {
 	oneOf := p.GetOneof()
 	if oneOf == nil {
-		return true
+		return cont
 	}
 
 	options := p.GetOneof().Options
@@ -32,14 +32,14 @@ func (vis *hashOneOfVisitor) VisitData(c http_rest.HttpRestSpecVisitorContext, p
 		h, err := pbhash.HashProto(v)
 		if err != nil {
 			vis.err = err
-			return false
+			return Abort
 		}
 		if k != h {
 			delete(options, k)
 			options[h] = v
 		}
 	}
-	return true
+	return cont
 }
 
 // Three maps in the IR use hashes of the values as keys (i.e. map[hash(v)] = v):
@@ -52,7 +52,7 @@ func RewriteHashKeys(spec *pb.APISpec) error {
 	// Hash OneOf values in postorder, so that children are updated before computing the
 	// new hash for the parent.
 	v := &hashOneOfVisitor{}
-	http_rest.Apply(go_ast.POSTORDER, v, spec)
+	http_rest.Apply(v, spec)
 	if v.err != nil {
 		return errors.Wrap(v.err, "failed to compute hash of oneOf data")
 	}
