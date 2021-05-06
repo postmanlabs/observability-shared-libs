@@ -84,6 +84,9 @@ type VisitorManager interface {
 	// children.
 	EnterNode(c Context, visitor interface{}, node interface{}) Cont
 
+	// Visits a node's children with the given context.
+	VisitChildren(c Context, vm VisitorManager, node interface{}) Cont
+
 	// Provides functionality for leaving a node, after visiting the node's
 	// children.
 	//
@@ -99,6 +102,7 @@ func NewVisitorManager(
 	c Context,
 	v interface{},
 	enter func(c Context, visitor interface{}, term interface{}) Cont,
+	visitChildren func(c Context, vm VisitorManager, term interface{}) Cont,
 	leave func(c Context, visitor interface{}, term interface{}, cont Cont) Cont,
 	extendContext func(c Context, visitor interface{}, term interface{}) Context,
 ) VisitorManager {
@@ -106,6 +110,7 @@ func NewVisitorManager(
 		context:       c,
 		visitor:       v,
 		enter:         enter,
+		visitChildren: visitChildren,
 		leave:         leave,
 		extendContext: extendContext,
 	}
@@ -128,6 +133,7 @@ type visitor struct {
 	context       Context
 	visitor       interface{}
 	enter         func(c Context, visitor interface{}, term interface{}) Cont
+	visitChildren func(c Context, vm VisitorManager, term interface{}) Cont
 	leave         func(c Context, visitor interface{}, term interface{}, cont Cont) Cont
 	extendContext func(c Context, visitor interface{}, term interface{}) Context
 }
@@ -142,6 +148,10 @@ func (v *visitor) Visitor() interface{} {
 
 func (v *visitor) EnterNode(c Context, visitor interface{}, term interface{}) Cont {
 	return v.enter(c, visitor, term)
+}
+
+func (v *visitor) VisitChildren(c Context, vm VisitorManager, term interface{}) Cont {
+	return v.visitChildren(c, vm, term)
 }
 
 func (v *visitor) LeaveNode(c Context, visitor interface{}, term interface{}, cont Cont) Cont {

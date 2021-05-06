@@ -35,7 +35,7 @@ func extendContext(c Context, v interface{}, x interface{}) Context {
 
 func TestApply(t *testing.T) {
 	counter := new(Counter)
-	vm := NewVisitorManager(NewContext(), counter, countIntEnter, countIntLeave, extendContext)
+	vm := NewVisitorManager(NewContext(), counter, countIntEnter, DefaultVisitChildren, countIntLeave, extendContext)
 	d := []int{1, 2, 3}
 	Apply(vm, d)
 	assert.Equal(t, 3, counter.enterCount)

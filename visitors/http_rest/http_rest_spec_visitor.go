@@ -16,179 +16,297 @@ import (
 // the APISpec message itself.  Returning false stops the traversal.
 type HttpRestSpecVisitor interface {
 	EnterAPISpec(HttpRestSpecVisitorContext, *pb.APISpec) Cont
+	VisitAPISpecChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.APISpec) Cont
 	LeaveAPISpec(HttpRestSpecVisitorContext, *pb.APISpec, Cont) Cont
 
 	EnterMethod(HttpRestSpecVisitorContext, *pb.Method) Cont
+	VisitMethodChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.Method) Cont
 	LeaveMethod(HttpRestSpecVisitorContext, *pb.Method, Cont) Cont
 
 	EnterMethodMeta(HttpRestSpecVisitorContext, *pb.MethodMeta) Cont
+	VisitMethodMetaChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.MethodMeta) Cont
 	LeaveMethodMeta(HttpRestSpecVisitorContext, *pb.MethodMeta, Cont) Cont
 
 	EnterHTTPMethodMeta(HttpRestSpecVisitorContext, *pb.HTTPMethodMeta) Cont
+	VisitHTTPMethodMetaChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPMethodMeta) Cont
 	LeaveHTTPMethodMeta(HttpRestSpecVisitorContext, *pb.HTTPMethodMeta, Cont) Cont
 
 	EnterData(HttpRestSpecVisitorContext, *pb.Data) Cont
+	VisitDataChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.Data) Cont
 	LeaveData(HttpRestSpecVisitorContext, *pb.Data, Cont) Cont
 
 	EnterDataMeta(HttpRestSpecVisitorContext, *pb.DataMeta) Cont
+	VisitDataMetaChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.DataMeta) Cont
 	LeaveDataMeta(HttpRestSpecVisitorContext, *pb.DataMeta, Cont) Cont
 
 	EnterHTTPMeta(HttpRestSpecVisitorContext, *pb.HTTPMeta) Cont
+	VisitHTTPMetaChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPMeta) Cont
 	LeaveHTTPMeta(HttpRestSpecVisitorContext, *pb.HTTPMeta, Cont) Cont
 
 	EnterHTTPPath(HttpRestSpecVisitorContext, *pb.HTTPPath) Cont
+	VisitHTTPPathChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPPath) Cont
 	LeaveHTTPPath(HttpRestSpecVisitorContext, *pb.HTTPPath, Cont) Cont
 
 	EnterHTTPQuery(HttpRestSpecVisitorContext, *pb.HTTPQuery) Cont
+	VisitHTTPQueryChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPQuery) Cont
 	LeaveHTTPQuery(HttpRestSpecVisitorContext, *pb.HTTPQuery, Cont) Cont
 
 	EnterHTTPHeader(HttpRestSpecVisitorContext, *pb.HTTPHeader) Cont
+	VisitHTTPHeaderChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPHeader) Cont
 	LeaveHTTPHeader(HttpRestSpecVisitorContext, *pb.HTTPHeader, Cont) Cont
 
 	EnterHTTPCookie(HttpRestSpecVisitorContext, *pb.HTTPCookie) Cont
+	VisitHTTPCookieChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPCookie) Cont
 	LeaveHTTPCookie(HttpRestSpecVisitorContext, *pb.HTTPCookie, Cont) Cont
 
 	EnterHTTPBody(HttpRestSpecVisitorContext, *pb.HTTPBody) Cont
+	VisitHTTPBodyChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPBody) Cont
 	LeaveHTTPBody(HttpRestSpecVisitorContext, *pb.HTTPBody, Cont) Cont
 
 	EnterHTTPEmpty(HttpRestSpecVisitorContext, *pb.HTTPEmpty) Cont
+	VisitHTTPEmptyChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPEmpty) Cont
 	LeaveHTTPEmpty(HttpRestSpecVisitorContext, *pb.HTTPEmpty, Cont) Cont
 
 	EnterHTTPAuth(HttpRestSpecVisitorContext, *pb.HTTPAuth) Cont
+	VisitHTTPAuthChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPAuth) Cont
 	LeaveHTTPAuth(HttpRestSpecVisitorContext, *pb.HTTPAuth, Cont) Cont
 
 	EnterHTTPMultipart(HttpRestSpecVisitorContext, *pb.HTTPMultipart) Cont
+	VisitHTTPMultipartChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.HTTPMultipart) Cont
 	LeaveHTTPMultipart(HttpRestSpecVisitorContext, *pb.HTTPMultipart, Cont) Cont
 
 	EnterPrimitive(HttpRestSpecVisitorContext, *pb.Primitive) Cont
+	VisitPrimitiveChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.Primitive) Cont
 	LeavePrimitive(HttpRestSpecVisitorContext, *pb.Primitive, Cont) Cont
+
+	DefaultVisitChildren(HttpRestSpecVisitorContext, VisitorManager, interface{}) Cont
 }
 
 // Defines nops for all visitor methods in HttpRestSpecVisitor.
 type DefaultHttpRestSpecVisitor struct{}
 
+func (*DefaultHttpRestSpecVisitor) DefaultVisitChildren(c HttpRestSpecVisitorContext, vm VisitorManager, node interface{}) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, node)
+}
+
+// == APISpec =================================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterAPISpec(c HttpRestSpecVisitorContext, spec *pb.APISpec) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitAPISpecChildren(c HttpRestSpecVisitorContext, vm VisitorManager, spec *pb.APISpec) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, spec)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveAPISpec(c HttpRestSpecVisitorContext, spec *pb.APISpec, cont Cont) Cont {
 	return cont
 }
 
+// == Method ==================================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterMethod(c HttpRestSpecVisitorContext, m *pb.Method) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitMethodChildren(c HttpRestSpecVisitorContext, vm VisitorManager, m *pb.Method) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, m)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveMethod(c HttpRestSpecVisitorContext, m *pb.Method, cont Cont) Cont {
 	return cont
 }
 
+// == MethodMeta ==============================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterMethodMeta(c HttpRestSpecVisitorContext, m *pb.MethodMeta) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitMethodMetaChildren(c HttpRestSpecVisitorContext, vm VisitorManager, m *pb.MethodMeta) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, m)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveMethodMeta(c HttpRestSpecVisitorContext, m *pb.MethodMeta, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPMethodMeta ==========================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPMethodMeta(c HttpRestSpecVisitorContext, m *pb.HTTPMethodMeta) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPMethodMetaChildren(c HttpRestSpecVisitorContext, vm VisitorManager, m *pb.HTTPMethodMeta) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, m)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPMethodMeta(c HttpRestSpecVisitorContext, m *pb.HTTPMethodMeta, cont Cont) Cont {
 	return cont
 }
 
+// == Data =====================================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterData(c HttpRestSpecVisitorContext, d *pb.Data) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitDataChildren(c HttpRestSpecVisitorContext, vm VisitorManager, d *pb.Data) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, d)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveData(c HttpRestSpecVisitorContext, d *pb.Data, cont Cont) Cont {
 	return cont
 }
 
+// == DataMeta ================================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterDataMeta(c HttpRestSpecVisitorContext, d *pb.DataMeta) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitDataMetaChildren(c HttpRestSpecVisitorContext, vm VisitorManager, d *pb.DataMeta) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, d)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveDataMeta(c HttpRestSpecVisitorContext, d *pb.DataMeta, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPMeta ================================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPMeta(c HttpRestSpecVisitorContext, m *pb.HTTPMeta) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPMetaChildren(c HttpRestSpecVisitorContext, vm VisitorManager, m *pb.HTTPMeta) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, m)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPMeta(c HttpRestSpecVisitorContext, m *pb.HTTPMeta, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPPath ================================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPPath(c HttpRestSpecVisitorContext, p *pb.HTTPPath) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPPathChildren(c HttpRestSpecVisitorContext, vm VisitorManager, p *pb.HTTPPath) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, p)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPPath(c HttpRestSpecVisitorContext, p *pb.HTTPPath, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPQuery ===============================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPQuery(c HttpRestSpecVisitorContext, q *pb.HTTPQuery) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPQueryChildren(c HttpRestSpecVisitorContext, vm VisitorManager, q *pb.HTTPQuery) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, q)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPQuery(c HttpRestSpecVisitorContext, q *pb.HTTPQuery, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPHeader ==============================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPHeader(c HttpRestSpecVisitorContext, b *pb.HTTPHeader) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPHeaderChildren(c HttpRestSpecVisitorContext, vm VisitorManager, b *pb.HTTPHeader) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, b)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPHeader(c HttpRestSpecVisitorContext, b *pb.HTTPHeader, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPCookie ==============================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPCookie(c HttpRestSpecVisitorContext, ck *pb.HTTPCookie) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPCookieChildren(c HttpRestSpecVisitorContext, vm VisitorManager, ck *pb.HTTPCookie) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, ck)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPCookie(c HttpRestSpecVisitorContext, ck *pb.HTTPCookie, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPBody ================================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPBody(c HttpRestSpecVisitorContext, b *pb.HTTPBody) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPBodyChildren(c HttpRestSpecVisitorContext, vm VisitorManager, b *pb.HTTPBody) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, b)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPBody(c HttpRestSpecVisitorContext, b *pb.HTTPBody, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPEmpty ===============================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPEmpty(c HttpRestSpecVisitorContext, e *pb.HTTPEmpty) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPEmptyChildren(c HttpRestSpecVisitorContext, vm VisitorManager, e *pb.HTTPEmpty) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, e)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPEmpty(c HttpRestSpecVisitorContext, e *pb.HTTPEmpty, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPAuth ================================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPAuth(c HttpRestSpecVisitorContext, a *pb.HTTPAuth) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPAuthChildren(c HttpRestSpecVisitorContext, vm VisitorManager, a *pb.HTTPAuth) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, a)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPAuth(c HttpRestSpecVisitorContext, a *pb.HTTPAuth, cont Cont) Cont {
 	return cont
 }
 
+// == HTTPMultipart ===========================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterHTTPMultipart(c HttpRestSpecVisitorContext, m *pb.HTTPMultipart) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitHTTPMultipartChildren(c HttpRestSpecVisitorContext, vm VisitorManager, m *pb.HTTPMultipart) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, m)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeaveHTTPMultipart(c HttpRestSpecVisitorContext, m *pb.HTTPMultipart, cont Cont) Cont {
 	return cont
 }
 
+// == Primitive ===============================================================
+
 func (*DefaultHttpRestSpecVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, d *pb.Primitive) Cont {
 	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitPrimitiveChildren(c HttpRestSpecVisitorContext, vm VisitorManager, d *pb.Primitive) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, d)
 }
 
 func (*DefaultHttpRestSpecVisitor) LeavePrimitive(c HttpRestSpecVisitorContext, d *pb.Primitive, cont Cont) Cont {
@@ -201,7 +319,7 @@ func extendContext(cin Context, visitor interface{}, node interface{}) Context {
 	ctx, ok := cin.(HttpRestSpecVisitorContext)
 	result := cin
 	if !ok {
-		panic(fmt.Sprintf("HttpRestSpecVisitor.Visit expected HttpRestSpecVisitorContext, got %s",
+		panic(fmt.Sprintf("http_rest.extendContext expected HttpRestSpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
 	}
 
@@ -277,7 +395,7 @@ func enter(cin Context, visitor interface{}, node interface{}) Cont {
 	v, _ := visitor.(HttpRestSpecVisitor)
 	ctx, ok := extendContext(cin, visitor, node).(HttpRestSpecVisitorContext)
 	if !ok {
-		panic(fmt.Sprintf("HttpRestSpecVisitor.Visit expected HttpRestSpecVisitorContext, got %s",
+		panic(fmt.Sprintf("http_rest.enter expected HttpRestSpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
 	}
 	keepGoing := Continue
@@ -325,12 +443,63 @@ func enter(cin Context, visitor interface{}, node interface{}) Cont {
 	return keepGoing
 }
 
+// visitChildren implementation for HttpRestSpecVisitor.
+func visitChildren(cin Context, vm VisitorManager, node interface{}) Cont {
+	visitor := vm.Visitor()
+	v, _ := visitor.(HttpRestSpecVisitor)
+	ctx, ok := cin.(HttpRestSpecVisitorContext)
+	if !ok {
+		panic(fmt.Sprintf("http_rest.visitChildren expected HttpRestSpecVisitorContext, got %s",
+			reflect.TypeOf(cin)))
+	}
+
+	// Dispatch on type and path.
+	switch node := node.(type) {
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
+		// For simplicity, ensure we're operating on a pointer to any complex
+		// structure.
+		return visitChildren(ctx, vm, &node)
+	case *pb.APISpec:
+		return v.VisitAPISpecChildren(ctx, vm, node)
+	case *pb.Method:
+		return v.VisitMethodChildren(ctx, vm, node)
+	case *pb.MethodMeta:
+		return v.VisitMethodMetaChildren(ctx, vm, node)
+	case *pb.HTTPMethodMeta:
+		return v.VisitHTTPMethodMetaChildren(ctx, vm, node)
+	case *pb.Data:
+		return v.VisitDataChildren(ctx, vm, node)
+	case *pb.DataMeta:
+		return v.VisitDataMetaChildren(ctx, vm, node)
+	case *pb.HTTPPath:
+		return v.VisitHTTPPathChildren(ctx, vm, node)
+	case *pb.HTTPQuery:
+		return v.VisitHTTPQueryChildren(ctx, vm, node)
+	case *pb.HTTPHeader:
+		return v.VisitHTTPHeaderChildren(ctx, vm, node)
+	case *pb.HTTPCookie:
+		return v.VisitHTTPCookieChildren(ctx, vm, node)
+	case *pb.HTTPBody:
+		return v.VisitHTTPBodyChildren(ctx, vm, node)
+	case *pb.HTTPEmpty:
+		return v.VisitHTTPEmptyChildren(ctx, vm, node)
+	case *pb.HTTPAuth:
+		return v.VisitHTTPAuthChildren(ctx, vm, node)
+	case *pb.HTTPMultipart:
+		return v.VisitHTTPMultipartChildren(ctx, vm, node)
+	case *pb.Primitive:
+		return v.VisitPrimitiveChildren(ctx, vm, node)
+	default:
+		return v.DefaultVisitChildren(ctx, vm, node)
+	}
+}
+
 // leave implementation for HttpRestSpecVisitor.
 func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 	v, _ := visitor.(HttpRestSpecVisitor)
 	ctx, ok := extendContext(cin, visitor, node).(HttpRestSpecVisitorContext)
 	if !ok {
-		panic(fmt.Sprintf("HttpRestSpecVisitor.Visit expected HttpRestSpecVisitorContext, got %s",
+		panic(fmt.Sprintf("http_rest.leave expected HttpRestSpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
 	}
 	keepGoing := cont
@@ -381,7 +550,7 @@ func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 // Visits m with v.
 func Apply(v HttpRestSpecVisitor, m interface{}) Cont {
 	c := new(httpRestSpecVisitorContext)
-	vis := NewVisitorManager(c, v, enter, leave, extendContext)
+	vis := NewVisitorManager(c, v, enter, visitChildren, leave, extendContext)
 	return go_ast.Apply(vis, m)
 }
 

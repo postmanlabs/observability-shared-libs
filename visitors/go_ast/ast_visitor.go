@@ -43,33 +43,10 @@ func (t *astVisitor) visit(c Context, m interface{}) Cont {
 		panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
 	}
 
-	newContext := t.vm.ExtendContext(c, t.vm.Visitor(), m)
-
 	// Don't visit children if we are stopping or skipping children.
 	if keepGoing == Continue {
-		// Traverse m's children.
-		mt := reflect.TypeOf(m)
-		mv := reflect.ValueOf(m)
-
-		// If we visited a pointer, don't also visit the object; just descend into
-		// it.
-		for mt.Kind() == reflect.Ptr {
-			if mv.IsNil() {
-				return Continue
-			}
-			mt = mt.Elem()
-			mv = mv.Elem()
-		}
-
-		// Recurse into data structures.  Extend the context when visiting
-		// children, but not between siblings.
-		if mt.Kind() == reflect.Struct {
-			keepGoing = t.visitStructChildren(newContext, mt, mv, keepGoing)
-		} else if mt.Kind() == reflect.Array || mt.Kind() == reflect.Slice {
-			keepGoing = t.visitArrayChildren(newContext, mv, keepGoing)
-		} else if mt.Kind() == reflect.Map {
-			keepGoing = t.visitMapChildren(newContext, mv, keepGoing)
-		}
+		newContext := t.vm.ExtendContext(c, t.vm.Visitor(), m)
+		keepGoing = t.vm.VisitChildren(newContext, t.vm, m)
 	}
 
 	keepGoing = t.vm.LeaveNode(c, t.vm.Visitor(), m, keepGoing)
@@ -82,9 +59,42 @@ func (t *astVisitor) visit(c Context, m interface{}) Cont {
 	return keepGoing
 }
 
+func DefaultVisitChildren(newContext Context, vm VisitorManager, m interface{}) Cont {
+	mt := reflect.TypeOf(m)
+	mv := reflect.ValueOf(m)
+
+	// If we visited a pointer, don't also visit the object; just descend into
+	// it.
+	for mt.Kind() == reflect.Ptr {
+		if mv.IsNil() {
+			return Continue
+		}
+		mt = mt.Elem()
+		mv = mv.Elem()
+	}
+
+	// Recurse into data structures.  Extend the context when visiting
+	// children, but not between siblings.
+	astv := astVisitor{vm: vm}
+	if mt.Kind() == reflect.Struct {
+		return astv.visitStructChildren(newContext, mt, mv)
+	}
+
+	if mt.Kind() == reflect.Array || mt.Kind() == reflect.Slice {
+		return astv.visitArrayChildren(newContext, mv)
+	}
+
+	if mt.Kind() == reflect.Map {
+		return astv.visitMapChildren(newContext, mv)
+	}
+
+	return Continue
+}
+
 // Helper for visiting the children of a struct mv having type mt in context
 // ctx.
-func (t *astVisitor) visitStructChildren(ctx Context, mt reflect.Type, mv reflect.Value, keepGoing Cont) Cont {
+func (t *astVisitor) visitStructChildren(ctx Context, mt reflect.Type, mv reflect.Value) Cont {
+	keepGoing := Continue
 	for i := 0; i < mt.NumField(); i++ {
 		ft := mt.Field(i)
 		fv := mv.Field(i)
@@ -101,7 +111,7 @@ func (t *astVisitor) visitStructChildren(ctx Context, mt reflect.Type, mv reflec
 			return keepGoing
 		case Continue:
 		case SkipChildren:
-			panic(fmt.Sprintf("astVisitor.visit returned SkipChildren"))
+			panic("astVisitor.visit returned SkipChildren")
 		default:
 			panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
 		}
@@ -111,7 +121,8 @@ func (t *astVisitor) visitStructChildren(ctx Context, mt reflect.Type, mv reflec
 }
 
 // Helper for visiting the children of an array mv in context ctx.
-func (t *astVisitor) visitArrayChildren(ctx Context, mv reflect.Value, keepGoing Cont) Cont {
+func (t *astVisitor) visitArrayChildren(ctx Context, mv reflect.Value) Cont {
+	keepGoing := Continue
 	for i := 0; i < mv.Len(); i++ {
 		keepGoing = t.visit(ctx.AppendPath(strconv.Itoa(i)), mv.Index(i).Interface())
 		switch keepGoing {
@@ -119,9 +130,9 @@ func (t *astVisitor) visitArrayChildren(ctx Context, mv reflect.Value, keepGoing
 			return Abort
 		case Continue:
 		case SkipChildren:
-			panic(fmt.Sprintf("astVisitor.visit returned SkipChildren"))
+			panic("astVisitor.visit returned SkipChildren")
 		case Stop:
-			break
+			return Stop
 		default:
 			panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
 		}
@@ -131,8 +142,9 @@ func (t *astVisitor) visitArrayChildren(ctx Context, mv reflect.Value, keepGoing
 }
 
 // Helper for visiting the children of a map mv in context ctx.
-func (t *astVisitor) visitMapChildren(ctx Context, mv reflect.Value, keepGoing Cont) Cont {
+func (t *astVisitor) visitMapChildren(ctx Context, mv reflect.Value) Cont {
 	// TODO(cs): Need to visit (k,v), then k, then v for each k, v.
+	keepGoing := Continue
 	for _, k := range mv.MapKeys() {
 		keepGoing = t.visit(ctx.AppendPath(fmt.Sprint(k.Interface())), mv.MapIndex(k).Interface())
 		switch keepGoing {
@@ -140,9 +152,9 @@ func (t *astVisitor) visitMapChildren(ctx Context, mv reflect.Value, keepGoing C
 			return Abort
 		case Continue:
 		case SkipChildren:
-			panic(fmt.Sprintf("astVisitor.visit returned SkipChildren"))
+			panic("astVisitor.visit returned SkipChildren")
 		case Stop:
-			break
+			return Stop
 		default:
 			panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
 		}
