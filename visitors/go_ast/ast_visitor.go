@@ -11,15 +11,14 @@ import (
 	. "github.com/akitasoftware/akita-libs/visitors"
 )
 
-// Structurally recurses through `a`.  At each term, invokes
-//
-//   c, keepGoing := v.Apply(c, v.Visitor(), t)
-//
-// Aborts the traversal if v.Apply returns false.
-//
-func Apply(v VisitorManager, a interface{}) Cont {
+// Structurally recurses through `node`.
+func Apply(v VisitorManager, node interface{}) Cont {
+	return ApplyWithContext(v, v.Context(), node)
+}
+
+func ApplyWithContext(v VisitorManager, ctx Context, node interface{}) Cont {
 	astv := astVisitor{vm: v}
-	return astv.visit(v.Context(), a)
+	return astv.visit(ctx, node)
 }
 
 type astVisitor struct {
