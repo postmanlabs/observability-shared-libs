@@ -77,6 +77,22 @@ type HttpRestSpecPairVisitor interface {
 	VisitPrimitiveChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.Primitive, *pb.Primitive) Cont
 	LeavePrimitives(HttpRestSpecPairVisitorContext, *pb.Primitive, *pb.Primitive, Cont) Cont
 
+	EnterStructs(HttpRestSpecPairVisitorContext, *pb.Struct, *pb.Struct) Cont
+	VisitStructChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.Struct, *pb.Struct) Cont
+	LeaveStructs(HttpRestSpecPairVisitorContext, *pb.Struct, *pb.Struct, Cont) Cont
+
+	EnterLists(HttpRestSpecPairVisitorContext, *pb.List, *pb.List) Cont
+	VisitListChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.List, *pb.List) Cont
+	LeaveLists(HttpRestSpecPairVisitorContext, *pb.List, *pb.List, Cont) Cont
+
+	EnterOptionals(HttpRestSpecPairVisitorContext, *pb.Optional, *pb.Optional) Cont
+	VisitOptionalChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.Optional, *pb.Optional) Cont
+	LeaveOptionals(HttpRestSpecPairVisitorContext, *pb.Optional, *pb.Optional, Cont) Cont
+
+	EnterOneOfs(HttpRestSpecPairVisitorContext, *pb.OneOf, *pb.OneOf) Cont
+	VisitOneOfChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.OneOf, *pb.OneOf) Cont
+	LeaveOneOfs(HttpRestSpecPairVisitorContext, *pb.OneOf, *pb.OneOf, Cont) Cont
+
 	DefaultVisitChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, interface{}, interface{}) Cont
 
 	// Used when the visitor tries to enter two nodes with different types. This
@@ -317,6 +333,62 @@ func (*DefaultHttpRestSpecPairVisitor) LeavePrimitives(c HttpRestSpecPairVisitor
 	return cont
 }
 
+// == Struct ===================================================================
+
+func (*DefaultHttpRestSpecPairVisitor) EnterStructs(c HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecPairVisitor) VisitStructChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Struct) Cont {
+	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+}
+
+func (*DefaultHttpRestSpecPairVisitor) LeaveStructs(c HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
+	return cont
+}
+
+// == List =====================================================================
+
+func (*DefaultHttpRestSpecPairVisitor) EnterLists(c HttpRestSpecPairVisitorContext, left, right *pb.List) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecPairVisitor) VisitListChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.List) Cont {
+	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+}
+
+func (*DefaultHttpRestSpecPairVisitor) LeaveLists(c HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
+	return cont
+}
+
+// == Optional =================================================================
+
+func (*DefaultHttpRestSpecPairVisitor) EnterOptionals(c HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecPairVisitor) VisitOptionalChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Optional) Cont {
+	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+}
+
+func (*DefaultHttpRestSpecPairVisitor) LeaveOptionals(c HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
+	return cont
+}
+
+// == OneOf ====================================================================
+
+func (*DefaultHttpRestSpecPairVisitor) EnterOneOfs(c HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecPairVisitor) VisitOneOfChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
+	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+}
+
+func (*DefaultHttpRestSpecPairVisitor) LeaveOneOfs(c HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
+	return cont
+}
+
 // == Different types =========================================================
 
 func (*DefaultHttpRestSpecPairVisitor) EnterDifferentTypes(c HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
@@ -356,7 +428,7 @@ func enterPair(cin PairContext, visitor interface{}, left, right interface{}) Co
 
 	// Dispatch on type and path.
 	switch leftNode := left.(type) {
-	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
 		return enterPair(ctx, v, &leftNode, &right)
@@ -420,6 +492,22 @@ func enterPair(cin PairContext, visitor interface{}, left, right interface{}) Co
 	case *pb.Primitive:
 		rightNode := right.(*pb.Primitive)
 		return v.EnterPrimitives(ctx, leftNode, rightNode)
+
+	case *pb.Struct:
+		rightNode := right.(*pb.Struct)
+		return v.EnterStructs(ctx, leftNode, rightNode)
+
+	case *pb.List:
+		rightNode := right.(*pb.List)
+		return v.EnterLists(ctx, leftNode, rightNode)
+
+	case *pb.Optional:
+		rightNode := right.(*pb.Optional)
+		return v.EnterOptionals(ctx, leftNode, rightNode)
+
+	case *pb.OneOf:
+		rightNode := right.(*pb.OneOf)
+		return v.EnterOneOfs(ctx, leftNode, rightNode)
 	}
 
 	// Didn't understand the type. Just keep going.
@@ -441,7 +529,7 @@ func visitPairChildren(cin PairContext, vm PairVisitorManager, left, right inter
 
 	// Dispatch on type and path.
 	switch leftNode := left.(type) {
-	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
 		return visitPairChildren(ctx, vm, &left, &right)
@@ -506,6 +594,22 @@ func visitPairChildren(cin PairContext, vm PairVisitorManager, left, right inter
 		rightNode := right.(*pb.Primitive)
 		return v.VisitPrimitiveChildren(ctx, vm, leftNode, rightNode)
 
+	case *pb.Struct:
+		rightNode := right.(*pb.Struct)
+		return v.VisitStructChildren(ctx, vm, leftNode, rightNode)
+
+	case *pb.List:
+		rightNode := right.(*pb.List)
+		return v.VisitListChildren(ctx, vm, leftNode, rightNode)
+
+	case *pb.Optional:
+		rightNode := right.(*pb.Optional)
+		return v.VisitOptionalChildren(ctx, vm, leftNode, rightNode)
+
+	case *pb.OneOf:
+		rightNode := right.(*pb.OneOf)
+		return v.VisitOneOfChildren(ctx, vm, leftNode, rightNode)
+
 	default:
 		return v.DefaultVisitChildren(ctx, vm, left, right)
 	}
@@ -527,7 +631,7 @@ func leavePair(cin PairContext, visitor interface{}, left, right interface{}, co
 
 	// Dispatch on type and path.
 	switch leftNode := left.(type) {
-	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
 		return leavePair(ctx, v, &left, &right, cont)
@@ -591,6 +695,22 @@ func leavePair(cin PairContext, visitor interface{}, left, right interface{}, co
 	case *pb.Primitive:
 		rightNode := right.(*pb.Primitive)
 		return v.LeavePrimitives(ctx, leftNode, rightNode, cont)
+
+	case *pb.Struct:
+		rightNode := right.(*pb.Struct)
+		return v.LeaveStructs(ctx, leftNode, rightNode, cont)
+
+	case *pb.List:
+		rightNode := right.(*pb.List)
+		return v.LeaveLists(ctx, leftNode, rightNode, cont)
+
+	case *pb.Optional:
+		rightNode := right.(*pb.Optional)
+		return v.LeaveOptionals(ctx, leftNode, rightNode, cont)
+
+	case *pb.OneOf:
+		rightNode := right.(*pb.OneOf)
+		return v.LeaveOneOfs(ctx, leftNode, rightNode, cont)
 	}
 
 	// Didn't understand the type. Just keep going.

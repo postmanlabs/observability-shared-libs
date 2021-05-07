@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"unicode"
 
 	. "github.com/akitasoftware/akita-libs/visitors"
@@ -130,6 +131,12 @@ func (t *astPairVisitor) visitStructChildren(ctx PairContext, leftT reflect.Type
 			continue
 		}
 
+		// XXX Skip Protobuf-generated fields, identified by names beginning with
+		// "XXX_"
+		if strings.HasPrefix(fieldName, "XXX_") {
+			continue
+		}
+
 		namesVisited[fieldName] = struct{}{}
 
 		rightFieldV := rightV.FieldByName(fieldName)
@@ -161,6 +168,12 @@ func (t *astPairVisitor) visitStructChildren(ctx PairContext, leftT reflect.Type
 		// Skip private fields and invalid values.
 		rightFieldV := rightV.Field(i)
 		if !rightFieldV.IsValid() || unicode.IsLower([]rune(fieldName)[0]) {
+			continue
+		}
+
+		// XXX Skip Protobuf-generated fields, identified by names beginning with
+		// "XXX_"
+		if strings.HasPrefix(fieldName, "XXX_") {
 			continue
 		}
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"unicode"
 
 	. "github.com/akitasoftware/akita-libs/visitors"
@@ -100,6 +101,12 @@ func (t *astVisitor) visitStructChildren(ctx Context, mt reflect.Type, mv reflec
 
 		// Skip private fields and invalid values.
 		if !fv.IsValid() || unicode.IsLower([]rune(ft.Name)[0]) {
+			continue
+		}
+
+		// XXX Skip Protobuf-generated fields, identified by names beginning with
+		// "XXX_"
+		if strings.HasPrefix(ft.Name, "XXX_") {
 			continue
 		}
 

@@ -79,6 +79,22 @@ type HttpRestSpecVisitor interface {
 	VisitPrimitiveChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.Primitive) Cont
 	LeavePrimitive(HttpRestSpecVisitorContext, *pb.Primitive, Cont) Cont
 
+	EnterStruct(HttpRestSpecVisitorContext, *pb.Struct) Cont
+	VisitStructChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.Struct) Cont
+	LeaveStruct(HttpRestSpecVisitorContext, *pb.Struct, Cont) Cont
+
+	EnterList(HttpRestSpecVisitorContext, *pb.List) Cont
+	VisitListChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.List) Cont
+	LeaveList(HttpRestSpecVisitorContext, *pb.List, Cont) Cont
+
+	EnterOptional(HttpRestSpecVisitorContext, *pb.Optional) Cont
+	VisitOptionalChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.Optional) Cont
+	LeaveOptional(HttpRestSpecVisitorContext, *pb.Optional, Cont) Cont
+
+	EnterOneOf(HttpRestSpecVisitorContext, *pb.OneOf) Cont
+	VisitOneOfChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.OneOf) Cont
+	LeaveOneOf(HttpRestSpecVisitorContext, *pb.OneOf, Cont) Cont
+
 	DefaultVisitChildren(HttpRestSpecVisitorContext, VisitorManager, interface{}) Cont
 }
 
@@ -313,6 +329,62 @@ func (*DefaultHttpRestSpecVisitor) LeavePrimitive(c HttpRestSpecVisitorContext, 
 	return cont
 }
 
+// == Struct ==================================================================
+
+func (*DefaultHttpRestSpecVisitor) EnterStruct(c HttpRestSpecVisitorContext, d *pb.Struct) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitStructChildren(c HttpRestSpecVisitorContext, vm VisitorManager, d *pb.Struct) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, d)
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveStruct(c HttpRestSpecVisitorContext, d *pb.Struct, cont Cont) Cont {
+	return cont
+}
+
+// == List =====================================================================
+
+func (*DefaultHttpRestSpecVisitor) EnterList(c HttpRestSpecVisitorContext, d *pb.List) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitListChildren(c HttpRestSpecVisitorContext, vm VisitorManager, d *pb.List) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, d)
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveList(c HttpRestSpecVisitorContext, d *pb.List, cont Cont) Cont {
+	return cont
+}
+
+// == Optional ================================================================
+
+func (*DefaultHttpRestSpecVisitor) EnterOptional(c HttpRestSpecVisitorContext, d *pb.Optional) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitOptionalChildren(c HttpRestSpecVisitorContext, vm VisitorManager, d *pb.Optional) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, d)
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveOptional(c HttpRestSpecVisitorContext, d *pb.Optional, cont Cont) Cont {
+	return cont
+}
+
+// == OneOf ===================================================================
+
+func (*DefaultHttpRestSpecVisitor) EnterOneOf(c HttpRestSpecVisitorContext, d *pb.OneOf) Cont {
+	return Continue
+}
+
+func (*DefaultHttpRestSpecVisitor) VisitOneOfChildren(c HttpRestSpecVisitorContext, vm VisitorManager, d *pb.OneOf) Cont {
+	return go_ast.DefaultVisitChildren(c, vm, d)
+}
+
+func (*DefaultHttpRestSpecVisitor) LeaveOneOf(c HttpRestSpecVisitorContext, d *pb.OneOf, cont Cont) Cont {
+	return cont
+}
+
 // extendContext implementation for HttpRestSpecVisitor.
 func extendContext(cin Context, node interface{}) Context {
 	ctx, ok := cin.(HttpRestSpecVisitorContext)
@@ -324,7 +396,7 @@ func extendContext(cin Context, node interface{}) Context {
 
 	// Dispatch on type and path.
 	switch node := node.(type) {
-	case pb.APISpec, pb.Method, pb.Data, pb.Primitive:
+	case pb.APISpec, pb.Method, pb.Data, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
 		result = extendContext(ctx, &node)
@@ -401,7 +473,7 @@ func enter(cin Context, visitor interface{}, node interface{}) Cont {
 
 	// Dispatch on type and path.
 	switch node := node.(type) {
-	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
 		keepGoing = enter(ctx, v, &node)
@@ -435,6 +507,14 @@ func enter(cin Context, visitor interface{}, node interface{}) Cont {
 		keepGoing = v.EnterHTTPMultipart(ctx, node)
 	case *pb.Primitive:
 		keepGoing = v.EnterPrimitive(ctx, node)
+	case *pb.Struct:
+		keepGoing = v.EnterStruct(ctx, node)
+	case *pb.List:
+		keepGoing = v.EnterList(ctx, node)
+	case *pb.Optional:
+		keepGoing = v.EnterOptional(ctx, node)
+	case *pb.OneOf:
+		keepGoing = v.EnterOneOf(ctx, node)
 	default:
 		// Just keep going if we don't understand the type.
 	}
@@ -454,7 +534,7 @@ func visitChildren(cin Context, vm VisitorManager, node interface{}) Cont {
 
 	// Dispatch on type and path.
 	switch node := node.(type) {
-	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
 		return visitChildren(ctx, vm, &node)
@@ -488,6 +568,14 @@ func visitChildren(cin Context, vm VisitorManager, node interface{}) Cont {
 		return v.VisitHTTPMultipartChildren(ctx, vm, node)
 	case *pb.Primitive:
 		return v.VisitPrimitiveChildren(ctx, vm, node)
+	case *pb.Struct:
+		return v.VisitStructChildren(ctx, vm, node)
+	case *pb.List:
+		return v.VisitListChildren(ctx, vm, node)
+	case *pb.Optional:
+		return v.VisitOptionalChildren(ctx, vm, node)
+	case *pb.OneOf:
+		return v.VisitOneOfChildren(ctx, vm, node)
 	default:
 		return v.DefaultVisitChildren(ctx, vm, node)
 	}
@@ -505,7 +593,7 @@ func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 
 	// Dispatch on type and path.
 	switch node := node.(type) {
-	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive:
+	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
 		keepGoing = leave(ctx, v, &node, cont)
@@ -539,6 +627,14 @@ func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 		keepGoing = v.LeaveHTTPMultipart(ctx, node, cont)
 	case *pb.Primitive:
 		keepGoing = v.LeavePrimitive(ctx, node, cont)
+	case *pb.Struct:
+		keepGoing = v.LeaveStruct(ctx, node, cont)
+	case *pb.List:
+		keepGoing = v.LeaveList(ctx, node, cont)
+	case *pb.Optional:
+		keepGoing = v.LeaveOptional(ctx, node, cont)
+	case *pb.OneOf:
+		keepGoing = v.LeaveOneOf(ctx, node, cont)
 	default:
 		// Just keep going if we don't understand the type.
 	}
