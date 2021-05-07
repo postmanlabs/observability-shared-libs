@@ -104,7 +104,7 @@ func NewVisitorManager(
 	enter func(c Context, visitor interface{}, term interface{}) Cont,
 	visitChildren func(c Context, vm VisitorManager, term interface{}) Cont,
 	leave func(c Context, visitor interface{}, term interface{}, cont Cont) Cont,
-	extendContext func(c Context, visitor interface{}, term interface{}) Context,
+	extendContext func(c Context, term interface{}) Context,
 ) VisitorManager {
 	rv := visitor{
 		context:       c,
@@ -135,7 +135,7 @@ type visitor struct {
 	enter         func(c Context, visitor interface{}, term interface{}) Cont
 	visitChildren func(c Context, vm VisitorManager, term interface{}) Cont
 	leave         func(c Context, visitor interface{}, term interface{}, cont Cont) Cont
-	extendContext func(c Context, visitor interface{}, term interface{}) Context
+	extendContext func(c Context, term interface{}) Context
 }
 
 func (v *visitor) Context() Context {
@@ -159,5 +159,5 @@ func (v *visitor) LeaveNode(c Context, visitor interface{}, term interface{}, co
 }
 
 func (v *visitor) ExtendContext(c Context, visitor interface{}, term interface{}) Context {
-	return v.extendContext(c, visitor, term)
+	return v.extendContext(c, term)
 }

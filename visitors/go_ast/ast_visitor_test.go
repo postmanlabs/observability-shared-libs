@@ -29,7 +29,7 @@ func countIntLeave(c Context, v interface{}, x interface{}, cont Cont) Cont {
 	return cont
 }
 
-func extendContext(c Context, v interface{}, x interface{}) Context {
+func extendContext(c Context, x interface{}) Context {
 	return c
 }
 

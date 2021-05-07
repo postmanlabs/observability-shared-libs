@@ -13,7 +13,7 @@ import (
 )
 
 // VisitorManager that lets you read each message in an APISpec, starting with
-// the APISpec message itself.  Returning false stops the traversal.
+// the APISpec message itself.
 type HttpRestSpecVisitor interface {
 	EnterAPISpec(HttpRestSpecVisitorContext, *pb.APISpec) Cont
 	VisitAPISpecChildren(HttpRestSpecVisitorContext, VisitorManager, *pb.APISpec) Cont
@@ -314,8 +314,7 @@ func (*DefaultHttpRestSpecVisitor) LeavePrimitive(c HttpRestSpecVisitorContext, 
 }
 
 // extendContext implementation for HttpRestSpecVisitor.
-func extendContext(cin Context, visitor interface{}, node interface{}) Context {
-	v, _ := visitor.(HttpRestSpecVisitor)
+func extendContext(cin Context, node interface{}) Context {
 	ctx, ok := cin.(HttpRestSpecVisitorContext)
 	result := cin
 	if !ok {
@@ -328,7 +327,7 @@ func extendContext(cin Context, visitor interface{}, node interface{}) Context {
 	case pb.APISpec, pb.Method, pb.Data, pb.Primitive:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
-		result = extendContext(ctx, v, &node)
+		result = extendContext(ctx, &node)
 	case *pb.Method:
 		// Update the RestPath in the context
 		meta := node.GetMeta().GetHttp()
@@ -393,7 +392,7 @@ func extendContext(cin Context, visitor interface{}, node interface{}) Context {
 // enter implementation for HttpRestSpecVisitor.
 func enter(cin Context, visitor interface{}, node interface{}) Cont {
 	v, _ := visitor.(HttpRestSpecVisitor)
-	ctx, ok := extendContext(cin, visitor, node).(HttpRestSpecVisitorContext)
+	ctx, ok := extendContext(cin, node).(HttpRestSpecVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.enter expected HttpRestSpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
@@ -497,7 +496,7 @@ func visitChildren(cin Context, vm VisitorManager, node interface{}) Cont {
 // leave implementation for HttpRestSpecVisitor.
 func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 	v, _ := visitor.(HttpRestSpecVisitor)
-	ctx, ok := extendContext(cin, visitor, node).(HttpRestSpecVisitorContext)
+	ctx, ok := extendContext(cin, node).(HttpRestSpecVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.leave expected HttpRestSpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
