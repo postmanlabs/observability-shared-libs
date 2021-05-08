@@ -719,7 +719,7 @@ func leavePair(cin PairContext, visitor interface{}, left, right interface{}, co
 
 // Visits left and right with v in tandem.
 func ApplyPair(v HttpRestSpecPairVisitor, left, right interface{}) Cont {
-	c := new(httpRestSpecPairVisitorContext)
+	c := newHttpRestSpecPairVisitorContext()
 	vis := NewPairVisitorManager(c, v, enterPair, visitPairChildren, leavePair, extendPairContext)
 	return go_ast_pair.Apply(vis, left, right)
 }
