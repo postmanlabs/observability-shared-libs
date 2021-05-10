@@ -25,7 +25,11 @@ type astPairVisitor struct {
 }
 
 // Visits the nodes left and right in tandem, whose context is c. At least one
-// of left or right must be non-nil. This should never return SkipChildren.
+// of left or right must be non-nil. When the visitor finds a structural
+// difference between the two sides (e.g., one side is nil or the two sides
+// have different kinds), the nodes are entered, but their children are not.
+//
+// This should never return SkipChildren.
 func (t *astPairVisitor) visit(c PairContext, left, right interface{}) Cont {
 	if left == nil && right == nil {
 		return Continue

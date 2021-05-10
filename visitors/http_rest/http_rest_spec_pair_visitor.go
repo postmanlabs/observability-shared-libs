@@ -10,8 +10,11 @@ import (
 	"github.com/akitasoftware/akita-libs/visitors/go_ast_pair"
 )
 
-// PairVisitorManager that lets you read each message in a pair of APISpecs,
-// starting with the APISpec messages themselves.
+// A PairVisitorManager that lets you read each message in a pair of APISpecs,
+// starting with the APISpec messages themselves. When the visitor encounters
+// a type difference between the two halves of the pair, EnterDifferentTypes
+// and LeaveDifferentTypes is used to enter and leave the nodes, but the nodes'
+// children are not visited; EnterDifferentTypes must never return Continue.
 type HttpRestSpecPairVisitor interface {
 	EnterAPISpecs(HttpRestSpecPairVisitorContext, *pb.APISpec, *pb.APISpec) Cont
 	VisitAPISpecChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.APISpec, *pb.APISpec) Cont
