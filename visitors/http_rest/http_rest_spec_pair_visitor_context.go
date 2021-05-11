@@ -10,6 +10,9 @@ type HttpRestSpecPairVisitorContext interface {
 	ExtendLeftContext(leftNode interface{})
 	ExtendRightContext(rightNode interface{})
 
+	GetLeftContext() HttpRestSpecVisitorContext
+	GetRightContext() HttpRestSpecVisitorContext
+
 	AppendRestPaths(string, string) HttpRestSpecPairVisitorContext
 	GetRestPaths() ([]string, []string)
 	GetRestOperations() (string, string)
@@ -44,6 +47,14 @@ func (c *httpRestSpecPairVisitorContext) ExtendLeftContext(leftNode interface{})
 
 func (c *httpRestSpecPairVisitorContext) ExtendRightContext(rightNode interface{}) {
 	c.right = extendContext(c.right, rightNode).(*httpRestSpecVisitorContext)
+}
+
+func (c *httpRestSpecPairVisitorContext) GetLeftContext() HttpRestSpecVisitorContext {
+	return c.left
+}
+
+func (c *httpRestSpecPairVisitorContext) GetRightContext() HttpRestSpecVisitorContext {
+	return c.right
 }
 
 func (c *httpRestSpecPairVisitorContext) AppendPaths(left, right string) visitors.PairContext {
