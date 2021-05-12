@@ -15,390 +15,393 @@ import (
 // a type difference between the two halves of the pair, EnterDifferentTypes
 // and LeaveDifferentTypes is used to enter and leave the nodes, but the nodes'
 // children are not visited; EnterDifferentTypes must never return Continue.
+//
+// Go lacks virtual functions, so all functions here take the visitor itself as
+// an argument, and call functions on that instance.
 type HttpRestSpecPairVisitor interface {
-	EnterAPISpecs(HttpRestSpecPairVisitorContext, *pb.APISpec, *pb.APISpec) Cont
-	VisitAPISpecChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.APISpec, *pb.APISpec) Cont
-	LeaveAPISpecs(HttpRestSpecPairVisitorContext, *pb.APISpec, *pb.APISpec, Cont) Cont
+	EnterAPISpecs(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.APISpec) Cont
+	VisitAPISpecChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.APISpec) Cont
+	LeaveAPISpecs(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.APISpec, cont Cont) Cont
 
-	EnterMethods(HttpRestSpecPairVisitorContext, *pb.Method, *pb.Method) Cont
-	VisitMethodChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.Method, *pb.Method) Cont
-	LeaveMethods(HttpRestSpecPairVisitorContext, *pb.Method, *pb.Method, Cont) Cont
+	EnterMethods(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Method) Cont
+	VisitMethodChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Method) Cont
+	LeaveMethods(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Method, cont Cont) Cont
 
-	EnterMethodMetas(HttpRestSpecPairVisitorContext, *pb.MethodMeta, *pb.MethodMeta) Cont
-	VisitMethodMetaChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.MethodMeta, *pb.MethodMeta) Cont
-	LeaveMethodMetas(HttpRestSpecPairVisitorContext, *pb.MethodMeta, *pb.MethodMeta, Cont) Cont
+	EnterMethodMetas(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.MethodMeta) Cont
+	VisitMethodMetaChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.MethodMeta) Cont
+	LeaveMethodMetas(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.MethodMeta, cont Cont) Cont
 
-	EnterHTTPMethodMetas(HttpRestSpecPairVisitorContext, *pb.HTTPMethodMeta, *pb.HTTPMethodMeta) Cont
-	VisitHTTPMethodMetaChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPMethodMeta, *pb.HTTPMethodMeta) Cont
-	LeaveHTTPMethodMetas(HttpRestSpecPairVisitorContext, *pb.HTTPMethodMeta, *pb.HTTPMethodMeta, Cont) Cont
+	EnterHTTPMethodMetas(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPMethodMeta) Cont
+	VisitHTTPMethodMetaChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMethodMeta) Cont
+	LeaveHTTPMethodMetas(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPMethodMeta, cont Cont) Cont
 
-	EnterData(HttpRestSpecPairVisitorContext, *pb.Data, *pb.Data) Cont
-	VisitDataChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.Data, *pb.Data) Cont
-	LeaveData(HttpRestSpecPairVisitorContext, *pb.Data, *pb.Data, Cont) Cont
+	EnterData(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont
+	VisitDataChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Data) Cont
+	LeaveData(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont
 
-	EnterDataMetas(HttpRestSpecPairVisitorContext, *pb.DataMeta, *pb.DataMeta) Cont
-	VisitDataMetaChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.DataMeta, *pb.DataMeta) Cont
-	LeaveDataMetas(HttpRestSpecPairVisitorContext, *pb.DataMeta, *pb.DataMeta, Cont) Cont
+	EnterDataMetas(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.DataMeta) Cont
+	VisitDataMetaChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.DataMeta) Cont
+	LeaveDataMetas(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.DataMeta, cont Cont) Cont
 
-	EnterHTTPMetas(HttpRestSpecPairVisitorContext, *pb.HTTPMeta, *pb.HTTPMeta) Cont
-	VisitHTTPMetaChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPMeta, *pb.HTTPMeta) Cont
-	LeaveHTTPMetas(HttpRestSpecPairVisitorContext, *pb.HTTPMeta, *pb.HTTPMeta, Cont) Cont
+	EnterHTTPMetas(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPMeta) Cont
+	VisitHTTPMetaChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMeta) Cont
+	LeaveHTTPMetas(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPMeta, cont Cont) Cont
 
-	EnterHTTPPaths(HttpRestSpecPairVisitorContext, *pb.HTTPPath, *pb.HTTPPath) Cont
-	VisitHTTPPathChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPPath, *pb.HTTPPath) Cont
-	LeaveHTTPPaths(HttpRestSpecPairVisitorContext, *pb.HTTPPath, *pb.HTTPPath, Cont) Cont
+	EnterHTTPPaths(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPPath) Cont
+	VisitHTTPPathChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPPath) Cont
+	LeaveHTTPPaths(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPPath, cont Cont) Cont
 
-	EnterHTTPQueries(HttpRestSpecPairVisitorContext, *pb.HTTPQuery, *pb.HTTPQuery) Cont
-	VisitHTTPQueryChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPQuery, *pb.HTTPQuery) Cont
-	LeaveHTTPQueries(HttpRestSpecPairVisitorContext, *pb.HTTPQuery, *pb.HTTPQuery, Cont) Cont
+	EnterHTTPQueries(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPQuery) Cont
+	VisitHTTPQueryChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPQuery) Cont
+	LeaveHTTPQueries(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPQuery, cont Cont) Cont
 
-	EnterHTTPHeaders(HttpRestSpecPairVisitorContext, *pb.HTTPHeader, *pb.HTTPHeader) Cont
-	VisitHTTPHeaderChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPHeader, *pb.HTTPHeader) Cont
-	LeaveHTTPHeaders(HttpRestSpecPairVisitorContext, *pb.HTTPHeader, *pb.HTTPHeader, Cont) Cont
+	EnterHTTPHeaders(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPHeader) Cont
+	VisitHTTPHeaderChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPHeader) Cont
+	LeaveHTTPHeaders(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPHeader, cont Cont) Cont
 
-	EnterHTTPCookies(HttpRestSpecPairVisitorContext, *pb.HTTPCookie, *pb.HTTPCookie) Cont
-	VisitHTTPCookieChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPCookie, *pb.HTTPCookie) Cont
-	LeaveHTTPCookies(HttpRestSpecPairVisitorContext, *pb.HTTPCookie, *pb.HTTPCookie, Cont) Cont
+	EnterHTTPCookies(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPCookie) Cont
+	VisitHTTPCookieChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPCookie) Cont
+	LeaveHTTPCookies(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPCookie, cont Cont) Cont
 
-	EnterHTTPBodies(HttpRestSpecPairVisitorContext, *pb.HTTPBody, *pb.HTTPBody) Cont
-	VisitHTTPBodyChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPBody, *pb.HTTPBody) Cont
-	LeaveHTTPBodies(HttpRestSpecPairVisitorContext, *pb.HTTPBody, *pb.HTTPBody, Cont) Cont
+	EnterHTTPBodies(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPBody) Cont
+	VisitHTTPBodyChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPBody) Cont
+	LeaveHTTPBodies(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPBody, cont Cont) Cont
 
-	EnterHTTPEmpties(HttpRestSpecPairVisitorContext, *pb.HTTPEmpty, *pb.HTTPEmpty) Cont
-	VisitHTTPEmptyChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPEmpty, *pb.HTTPEmpty) Cont
-	LeaveHTTPEmpties(HttpRestSpecPairVisitorContext, *pb.HTTPEmpty, *pb.HTTPEmpty, Cont) Cont
+	EnterHTTPEmpties(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPEmpty) Cont
+	VisitHTTPEmptyChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPEmpty) Cont
+	LeaveHTTPEmpties(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPEmpty, cont Cont) Cont
 
-	EnterHTTPAuths(HttpRestSpecPairVisitorContext, *pb.HTTPAuth, *pb.HTTPAuth) Cont
-	VisitHTTPAuthChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPAuth, *pb.HTTPAuth) Cont
-	LeaveHTTPAuths(HttpRestSpecPairVisitorContext, *pb.HTTPAuth, *pb.HTTPAuth, Cont) Cont
+	EnterHTTPAuths(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
+	VisitHTTPAuthChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPAuth) Cont
+	LeaveHTTPAuths(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont
 
-	EnterHTTPMultiparts(HttpRestSpecPairVisitorContext, *pb.HTTPMultipart, *pb.HTTPMultipart) Cont
-	VisitHTTPMultipartChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.HTTPMultipart, *pb.HTTPMultipart) Cont
-	LeaveHTTPMultiparts(HttpRestSpecPairVisitorContext, *pb.HTTPMultipart, *pb.HTTPMultipart, Cont) Cont
+	EnterHTTPMultiparts(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPMultipart) Cont
+	VisitHTTPMultipartChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMultipart) Cont
+	LeaveHTTPMultiparts(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.HTTPMultipart, cont Cont) Cont
 
-	EnterPrimitives(HttpRestSpecPairVisitorContext, *pb.Primitive, *pb.Primitive) Cont
-	VisitPrimitiveChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.Primitive, *pb.Primitive) Cont
-	LeavePrimitives(HttpRestSpecPairVisitorContext, *pb.Primitive, *pb.Primitive, Cont) Cont
+	EnterPrimitives(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont
+	VisitPrimitiveChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Primitive) Cont
+	LeavePrimitives(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont
 
-	EnterStructs(HttpRestSpecPairVisitorContext, *pb.Struct, *pb.Struct) Cont
-	VisitStructChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.Struct, *pb.Struct) Cont
-	LeaveStructs(HttpRestSpecPairVisitorContext, *pb.Struct, *pb.Struct, Cont) Cont
+	EnterStructs(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont
+	VisitStructChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Struct) Cont
+	LeaveStructs(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont
 
-	EnterLists(HttpRestSpecPairVisitorContext, *pb.List, *pb.List) Cont
-	VisitListChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.List, *pb.List) Cont
-	LeaveLists(HttpRestSpecPairVisitorContext, *pb.List, *pb.List, Cont) Cont
+	EnterLists(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.List) Cont
+	VisitListChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.List) Cont
+	LeaveLists(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont
 
-	EnterOptionals(HttpRestSpecPairVisitorContext, *pb.Optional, *pb.Optional) Cont
-	VisitOptionalChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.Optional, *pb.Optional) Cont
-	LeaveOptionals(HttpRestSpecPairVisitorContext, *pb.Optional, *pb.Optional, Cont) Cont
+	EnterOptionals(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont
+	VisitOptionalChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Optional) Cont
+	LeaveOptionals(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont
 
-	EnterOneOfs(HttpRestSpecPairVisitorContext, *pb.OneOf, *pb.OneOf) Cont
-	VisitOneOfChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, *pb.OneOf, *pb.OneOf) Cont
-	LeaveOneOfs(HttpRestSpecPairVisitorContext, *pb.OneOf, *pb.OneOf, Cont) Cont
+	EnterOneOfs(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont
+	VisitOneOfChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont
+	LeaveOneOfs(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont
 
-	DefaultVisitChildren(HttpRestSpecPairVisitorContext, PairVisitorManager, interface{}, interface{}) Cont
+	DefaultVisitChildren(self interface{}, ctxt HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right interface{}) Cont
 
 	// Used when the visitor tries to enter two nodes with different types. This
 	// cannot return Continue; otherwise, visitChildren will panic.
-	EnterDifferentTypes(HttpRestSpecPairVisitorContext, interface{}, interface{}) Cont
+	EnterDifferentTypes(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right interface{}) Cont
 
 	// Used when the visitor tries to leave two nodes with different types.
-	LeaveDifferentTypes(HttpRestSpecPairVisitorContext, interface{}, interface{}, Cont) Cont
+	LeaveDifferentTypes(self interface{}, ctxt HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont
 }
 
 type DefaultHttpRestSpecPairVisitor struct{}
 
-func (*DefaultHttpRestSpecPairVisitor) DefaultVisitChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right interface{}) Cont {
+func (*DefaultHttpRestSpecPairVisitor) DefaultVisitChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right interface{}) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
 // == APISpec =================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterAPISpecs(c HttpRestSpecPairVisitorContext, left, right *pb.APISpec) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterAPISpecs(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.APISpec) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitAPISpecChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.APISpec) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitAPISpecChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.APISpec) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveAPISpecs(c HttpRestSpecPairVisitorContext, left, right *pb.APISpec, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveAPISpecs(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.APISpec, cont Cont) Cont {
 	return cont
 }
 
 // == Method ==================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterMethods(c HttpRestSpecPairVisitorContext, left, right *pb.Method) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterMethods(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Method) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitMethodChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Method) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitMethodChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Method) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveMethods(c HttpRestSpecPairVisitorContext, left, right *pb.Method, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveMethods(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Method, cont Cont) Cont {
 	return cont
 }
 
 // == MethodMeta ==============================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterMethodMetas(c HttpRestSpecPairVisitorContext, left, right *pb.MethodMeta) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterMethodMetas(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.MethodMeta) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitMethodMetaChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.MethodMeta) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitMethodMetaChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.MethodMeta) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveMethodMetas(c HttpRestSpecPairVisitorContext, left, right *pb.MethodMeta, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveMethodMetas(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.MethodMeta, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPMethodMeta ==========================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPMethodMetas(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMethodMeta) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPMethodMetas(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMethodMeta) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPMethodMetaChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMethodMeta) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPMethodMetaChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMethodMeta) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPMethodMetas(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMethodMeta, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPMethodMetas(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMethodMeta, cont Cont) Cont {
 	return cont
 }
 
 // == Data =====================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterData(c HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterData(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitDataChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Data) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitDataChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Data) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveData(c HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveData(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont {
 	return cont
 }
 
 // == DataMeta ================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterDataMetas(c HttpRestSpecPairVisitorContext, left, right *pb.DataMeta) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterDataMetas(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.DataMeta) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitDataMetaChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.DataMeta) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitDataMetaChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.DataMeta) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveDataMetas(c HttpRestSpecPairVisitorContext, left, right *pb.DataMeta, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveDataMetas(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.DataMeta, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPMeta ================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPMetas(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMeta) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPMetas(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMeta) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPMetaChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMeta) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPMetaChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMeta) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPMetas(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMeta, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPMetas(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMeta, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPPath ================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPPaths(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPPath) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPPaths(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPPath) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPPathChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPPath) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPPathChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPPath) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPPaths(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPPath, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPPaths(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPPath, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPQuery ===============================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPQueries(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPQuery) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPQueries(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPQuery) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPQueryChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPQuery) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPQueryChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPQuery) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPQueries(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPQuery, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPQueries(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPQuery, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPHeader ==============================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPHeaders(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPHeader) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPHeaders(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPHeader) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPHeaderChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPHeader) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPHeaderChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPHeader) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPHeaders(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPHeader, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPHeaders(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPHeader, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPCookie ==============================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPCookies(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPCookie) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPCookies(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPCookie) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPCookieChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPCookie) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPCookieChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPCookie) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPCookies(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPCookie, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPCookies(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPCookie, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPBody ================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPBodies(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPBody) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPBodies(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPBody) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPBodyChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPBody) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPBodyChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPBody) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPBodies(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPBody, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPBodies(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPBody, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPEmpty ===============================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPEmpties(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPEmpty) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPEmpties(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPEmpty) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPEmptyChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPEmpty) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPEmptyChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPEmpty) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPEmpties(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPEmpty, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPEmpties(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPEmpty, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPAuth ================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPAuths(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPAuths(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPAuthChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPAuth) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPAuthChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPAuth) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPAuths(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPAuths(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
 	return cont
 }
 
 // == HTTPMultipart ===========================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterHTTPMultiparts(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMultipart) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterHTTPMultiparts(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMultipart) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitHTTPMultipartChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMultipart) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitHTTPMultipartChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMultipart) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPMultiparts(c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMultipart, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveHTTPMultiparts(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.HTTPMultipart, cont Cont) Cont {
 	return cont
 }
 
 // == Primitive ===============================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterPrimitives(c HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterPrimitives(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitPrimitiveChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Primitive) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitPrimitiveChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Primitive) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeavePrimitives(c HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeavePrimitives(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
 	return cont
 }
 
-// == Struct ===================================================================
+// == Struct ==================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterStructs(c HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterStructs(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitStructChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Struct) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitStructChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Struct) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveStructs(c HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveStructs(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
 	return cont
 }
 
-// == List =====================================================================
+// == List ====================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterLists(c HttpRestSpecPairVisitorContext, left, right *pb.List) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterLists(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.List) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitListChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.List) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitListChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.List) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveLists(c HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveLists(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
 	return cont
 }
 
-// == Optional =================================================================
+// == Optional ================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterOptionals(c HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterOptionals(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitOptionalChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Optional) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitOptionalChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Optional) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveOptionals(c HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveOptionals(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
 	return cont
 }
 
-// == OneOf ====================================================================
+// == OneOf ===================================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterOneOfs(c HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterOneOfs(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont {
 	return Continue
 }
 
-func (*DefaultHttpRestSpecPairVisitor) VisitOneOfChildren(c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
+func (*DefaultHttpRestSpecPairVisitor) VisitOneOfChildren(self interface{}, c HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
 	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveOneOfs(c HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveOneOfs(self interface{}, c HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
 	return cont
 }
 
 // == Different types =========================================================
 
-func (*DefaultHttpRestSpecPairVisitor) EnterDifferentTypes(c HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
+func (*DefaultHttpRestSpecPairVisitor) EnterDifferentTypes(self interface{}, c HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
 	return SkipChildren
 }
 
-func (*DefaultHttpRestSpecPairVisitor) LeaveDifferentTypes(c HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
+func (*DefaultHttpRestSpecPairVisitor) LeaveDifferentTypes(self interface{}, c HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
 	return cont
 }
 
@@ -426,7 +429,7 @@ func enterPair(cin PairContext, visitor interface{}, left, right interface{}) Co
 	keepGoing := Continue
 
 	if reflect.TypeOf(left) != reflect.TypeOf(right) {
-		return v.EnterDifferentTypes(ctx, left, right)
+		return v.EnterDifferentTypes(v, ctx, left, right)
 	}
 
 	// Dispatch on type and path.
@@ -434,83 +437,83 @@ func enterPair(cin PairContext, visitor interface{}, left, right interface{}) Co
 	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
-		return enterPair(ctx, v, &leftNode, &right)
+		return enterPair(ctx, visitor, &leftNode, &right)
 
 	case *pb.APISpec:
 		rightNode := right.(*pb.APISpec)
-		return v.EnterAPISpecs(ctx, leftNode, rightNode)
+		return v.EnterAPISpecs(visitor, ctx, leftNode, rightNode)
 
 	case *pb.Method:
 		rightNode := right.(*pb.Method)
-		return v.EnterMethods(ctx, leftNode, rightNode)
+		return v.EnterMethods(visitor, ctx, leftNode, rightNode)
 
 	case *pb.MethodMeta:
 		rightNode := right.(*pb.MethodMeta)
-		return v.EnterMethodMetas(ctx, leftNode, rightNode)
+		return v.EnterMethodMetas(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPMethodMeta:
 		rightNode := right.(*pb.HTTPMethodMeta)
-		return v.EnterHTTPMethodMetas(ctx, leftNode, rightNode)
+		return v.EnterHTTPMethodMetas(visitor, ctx, leftNode, rightNode)
 
 	case *pb.Data:
 		rightNode := right.(*pb.Data)
-		return v.EnterData(ctx, leftNode, rightNode)
+		return v.EnterData(visitor, ctx, leftNode, rightNode)
 
 	case *pb.DataMeta:
 		rightNode := right.(*pb.DataMeta)
-		return v.EnterDataMetas(ctx, leftNode, rightNode)
+		return v.EnterDataMetas(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPPath:
 		rightNode := right.(*pb.HTTPPath)
-		return v.EnterHTTPPaths(ctx, leftNode, rightNode)
+		return v.EnterHTTPPaths(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPQuery:
 		rightNode := right.(*pb.HTTPQuery)
-		return v.EnterHTTPQueries(ctx, leftNode, rightNode)
+		return v.EnterHTTPQueries(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPHeader:
 		rightNode := right.(*pb.HTTPHeader)
-		return v.EnterHTTPHeaders(ctx, leftNode, rightNode)
+		return v.EnterHTTPHeaders(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPCookie:
 		rightNode := right.(*pb.HTTPCookie)
-		return v.EnterHTTPCookies(ctx, leftNode, rightNode)
+		return v.EnterHTTPCookies(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPBody:
 		rightNode := right.(*pb.HTTPBody)
-		return v.EnterHTTPBodies(ctx, leftNode, rightNode)
+		return v.EnterHTTPBodies(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPEmpty:
 		rightNode := right.(*pb.HTTPEmpty)
-		return v.EnterHTTPEmpties(ctx, leftNode, rightNode)
+		return v.EnterHTTPEmpties(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPAuth:
 		rightNode := right.(*pb.HTTPAuth)
-		return v.EnterHTTPAuths(ctx, leftNode, rightNode)
+		return v.EnterHTTPAuths(visitor, ctx, leftNode, rightNode)
 
 	case *pb.HTTPMultipart:
 		rightNode := right.(*pb.HTTPMultipart)
-		return v.EnterHTTPMultiparts(ctx, leftNode, rightNode)
+		return v.EnterHTTPMultiparts(visitor, ctx, leftNode, rightNode)
 
 	case *pb.Primitive:
 		rightNode := right.(*pb.Primitive)
-		return v.EnterPrimitives(ctx, leftNode, rightNode)
+		return v.EnterPrimitives(visitor, ctx, leftNode, rightNode)
 
 	case *pb.Struct:
 		rightNode := right.(*pb.Struct)
-		return v.EnterStructs(ctx, leftNode, rightNode)
+		return v.EnterStructs(visitor, ctx, leftNode, rightNode)
 
 	case *pb.List:
 		rightNode := right.(*pb.List)
-		return v.EnterLists(ctx, leftNode, rightNode)
+		return v.EnterLists(visitor, ctx, leftNode, rightNode)
 
 	case *pb.Optional:
 		rightNode := right.(*pb.Optional)
-		return v.EnterOptionals(ctx, leftNode, rightNode)
+		return v.EnterOptionals(visitor, ctx, leftNode, rightNode)
 
 	case *pb.OneOf:
 		rightNode := right.(*pb.OneOf)
-		return v.EnterOneOfs(ctx, leftNode, rightNode)
+		return v.EnterOneOfs(visitor, ctx, leftNode, rightNode)
 	}
 
 	// Didn't understand the type. Just keep going.
@@ -539,82 +542,82 @@ func visitPairChildren(cin PairContext, vm PairVisitorManager, left, right inter
 
 	case *pb.APISpec:
 		rightNode := right.(*pb.APISpec)
-		return v.VisitAPISpecChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitAPISpecChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.Method:
 		rightNode := right.(*pb.Method)
-		return v.VisitMethodChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitMethodChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.MethodMeta:
 		rightNode := right.(*pb.MethodMeta)
-		return v.VisitMethodMetaChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitMethodMetaChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPMethodMeta:
 		rightNode := right.(*pb.HTTPMethodMeta)
-		return v.VisitHTTPMethodMetaChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPMethodMetaChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.Data:
 		rightNode := right.(*pb.Data)
-		return v.VisitDataChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitDataChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.DataMeta:
 		rightNode := right.(*pb.DataMeta)
-		return v.VisitDataMetaChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitDataMetaChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPPath:
 		rightNode := right.(*pb.HTTPPath)
-		return v.VisitHTTPPathChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPPathChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPQuery:
 		rightNode := right.(*pb.HTTPQuery)
-		return v.VisitHTTPQueryChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPQueryChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPHeader:
 		rightNode := right.(*pb.HTTPHeader)
-		return v.VisitHTTPHeaderChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPHeaderChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPCookie:
 		rightNode := right.(*pb.HTTPCookie)
-		return v.VisitHTTPCookieChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPCookieChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPBody:
 		rightNode := right.(*pb.HTTPBody)
-		return v.VisitHTTPBodyChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPBodyChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPEmpty:
 		rightNode := right.(*pb.HTTPEmpty)
-		return v.VisitHTTPEmptyChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPEmptyChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPAuth:
 		rightNode := right.(*pb.HTTPAuth)
-		return v.VisitHTTPAuthChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPAuthChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.HTTPMultipart:
 		rightNode := right.(*pb.HTTPMultipart)
-		return v.VisitHTTPMultipartChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitHTTPMultipartChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.Primitive:
 		rightNode := right.(*pb.Primitive)
-		return v.VisitPrimitiveChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitPrimitiveChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.Struct:
 		rightNode := right.(*pb.Struct)
-		return v.VisitStructChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitStructChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.List:
 		rightNode := right.(*pb.List)
-		return v.VisitListChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitListChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.Optional:
 		rightNode := right.(*pb.Optional)
-		return v.VisitOptionalChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitOptionalChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	case *pb.OneOf:
 		rightNode := right.(*pb.OneOf)
-		return v.VisitOneOfChildren(ctx, vm, leftNode, rightNode)
+		return v.VisitOneOfChildren(visitor, ctx, vm, leftNode, rightNode)
 
 	default:
-		return v.DefaultVisitChildren(ctx, vm, left, right)
+		return v.DefaultVisitChildren(visitor, ctx, vm, left, right)
 	}
 }
 
@@ -629,7 +632,7 @@ func leavePair(cin PairContext, visitor interface{}, left, right interface{}, co
 	keepGoing := cont
 
 	if reflect.TypeOf(left) != reflect.TypeOf(right) {
-		return v.LeaveDifferentTypes(ctx, left, right, cont)
+		return v.LeaveDifferentTypes(visitor, ctx, left, right, cont)
 	}
 
 	// Dispatch on type and path.
@@ -637,83 +640,83 @@ func leavePair(cin PairContext, visitor interface{}, left, right interface{}, co
 	case pb.APISpec, pb.Method, pb.MethodMeta, pb.HTTPMethodMeta, pb.Data, pb.DataMeta, pb.HTTPMeta, pb.HTTPPath, pb.HTTPQuery, pb.HTTPHeader, pb.HTTPCookie, pb.HTTPBody, pb.HTTPAuth, pb.HTTPMultipart, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
-		return leavePair(ctx, v, &left, &right, cont)
+		return leavePair(ctx, visitor, &left, &right, cont)
 
 	case *pb.APISpec:
 		rightNode := right.(*pb.APISpec)
-		return v.LeaveAPISpecs(ctx, leftNode, rightNode, cont)
+		return v.LeaveAPISpecs(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.Method:
 		rightNode := right.(*pb.Method)
-		return v.LeaveMethods(ctx, leftNode, rightNode, cont)
+		return v.LeaveMethods(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.MethodMeta:
 		rightNode := right.(*pb.MethodMeta)
-		return v.LeaveMethodMetas(ctx, leftNode, rightNode, cont)
+		return v.LeaveMethodMetas(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPMethodMeta:
 		rightNode := right.(*pb.HTTPMethodMeta)
-		return v.LeaveHTTPMethodMetas(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPMethodMetas(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.Data:
 		rightNode := right.(*pb.Data)
-		return v.LeaveData(ctx, leftNode, rightNode, cont)
+		return v.LeaveData(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.DataMeta:
 		rightNode := right.(*pb.DataMeta)
-		return v.LeaveDataMetas(ctx, leftNode, rightNode, cont)
+		return v.LeaveDataMetas(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPPath:
 		rightNode := right.(*pb.HTTPPath)
-		return v.LeaveHTTPPaths(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPPaths(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPQuery:
 		rightNode := right.(*pb.HTTPQuery)
-		return v.LeaveHTTPQueries(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPQueries(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPHeader:
 		rightNode := right.(*pb.HTTPHeader)
-		return v.LeaveHTTPHeaders(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPHeaders(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPCookie:
 		rightNode := right.(*pb.HTTPCookie)
-		return v.LeaveHTTPCookies(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPCookies(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPBody:
 		rightNode := right.(*pb.HTTPBody)
-		return v.LeaveHTTPBodies(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPBodies(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPEmpty:
 		rightNode := right.(*pb.HTTPEmpty)
-		return v.LeaveHTTPEmpties(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPEmpties(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPAuth:
 		rightNode := right.(*pb.HTTPAuth)
-		return v.LeaveHTTPAuths(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPAuths(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.HTTPMultipart:
 		rightNode := right.(*pb.HTTPMultipart)
-		return v.LeaveHTTPMultiparts(ctx, leftNode, rightNode, cont)
+		return v.LeaveHTTPMultiparts(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.Primitive:
 		rightNode := right.(*pb.Primitive)
-		return v.LeavePrimitives(ctx, leftNode, rightNode, cont)
+		return v.LeavePrimitives(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.Struct:
 		rightNode := right.(*pb.Struct)
-		return v.LeaveStructs(ctx, leftNode, rightNode, cont)
+		return v.LeaveStructs(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.List:
 		rightNode := right.(*pb.List)
-		return v.LeaveLists(ctx, leftNode, rightNode, cont)
+		return v.LeaveLists(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.Optional:
 		rightNode := right.(*pb.Optional)
-		return v.LeaveOptionals(ctx, leftNode, rightNode, cont)
+		return v.LeaveOptionals(visitor, ctx, leftNode, rightNode, cont)
 
 	case *pb.OneOf:
 		rightNode := right.(*pb.OneOf)
-		return v.LeaveOneOfs(ctx, leftNode, rightNode, cont)
+		return v.LeaveOneOfs(visitor, ctx, leftNode, rightNode, cont)
 	}
 
 	// Didn't understand the type. Just keep going.

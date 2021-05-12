@@ -16,12 +16,12 @@ func IsSameData(d1, d2 *pb.Data) bool {
 
 // A diff visitor for determining whether two Data instances are different.
 type dataComparator struct {
-	DefaultHttpRestSpecDiffVisitor
+	DefaultHttpRestSpecDiffVisitorImpl
 
 	isDifferent bool
 }
 
-func (v *dataComparator) DefaultEnterDiff(_ http_rest.HttpRestSpecPairVisitorContext, _, _ interface{}) Cont {
+func (v *dataComparator) EnterDiff(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
 	v.isDifferent = true
 	return Abort
 }

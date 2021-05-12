@@ -17,218 +17,270 @@ import (
 // observed at that level of the IR. For example, HTTPAuth nodes with different
 // Types are considered changed, but their parents might not necessarily be
 // considered changed.
+//
+// Go lacks virtual functions, so all functions here take the visitor itself as
+// an argument, and call functions on that instance.
 type HttpRestSpecDiffVisitor interface {
 	http_rest.HttpRestSpecPairVisitor
 
-	EnterAddedOrRemovedHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
-	EnterChangedHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
-	LeaveAddedOrRemovedHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
-	LeaveChangedHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
+	EnterAddedOrRemovedHTTPAuth(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
+	EnterChangedHTTPAuth(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
+	LeaveAddedOrRemovedHTTPAuth(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont
+	LeaveChangedHTTPAuth(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont
 
-	EnterAddedOrRemovedData(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont
-	LeaveAddedOrRemovedData(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont
+	EnterAddedOrRemovedData(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont
+	LeaveAddedOrRemovedData(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont
 
-	EnterAddedOrRemovedList(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List) Cont
-	LeaveAddedOrRemovedList(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont
+	EnterAddedOrRemovedList(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List) Cont
+	LeaveAddedOrRemovedList(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont
 
-	EnterAddedOrRemovedOneOf(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont
-	LeaveAddedOrRemovedOneOf(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont
+	EnterAddedOrRemovedOneOf(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont
+	LeaveAddedOrRemovedOneOf(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont
 
-	EnterAddedOrRemovedOptional(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont
-	LeaveAddedOrRemovedOptional(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont
+	EnterAddedOrRemovedOptional(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont
+	LeaveAddedOrRemovedOptional(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont
 
-	EnterAddedOrRemovedPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont
-	EnterChangedPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont
-	LeaveAddedOrRemovedPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont
-	LeaveChangedPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont
+	EnterAddedOrRemovedPrimitive(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont
+	EnterChangedPrimitive(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont
+	LeaveAddedOrRemovedPrimitive(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont
+	LeaveChangedPrimitive(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont
 
-	EnterAddedOrRemovedStruct(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont
-	LeaveAddedOrRemovedStruct(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont
+	EnterAddedOrRemovedStruct(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont
+	LeaveAddedOrRemovedStruct(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont
+}
+
+// An HttpRestSpecDiffVisitor with convenience functions for entering and
+// leaving nodes with diffs.
+type DefaultHttpRestSpecDiffVisitor interface {
+	HttpRestSpecDiffVisitor
+
+	EnterDiff(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont
+	LeaveDiff(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont
+
+	// Delegates to EnterDiff by default.
+	EnterAddedOrRemovedNode(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont
+
+	// Delegates to EnterDiff by default.
+	EnterChangedNode(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont
+
+	// Delegates to LeaveDiff by default.
+	LeaveAddedOrRemovedNode(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont
+
+	// Delegates to LeaveDiff by default.
+	LeaveChangedNode(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont
 }
 
 // An HttpRestSpecDiffVisitor implementation. This does not traverse into the
 // children of nodes that were added, removed, or changed.
-type DefaultHttpRestSpecDiffVisitor struct {
+type DefaultHttpRestSpecDiffVisitorImpl struct {
 	http_rest.DefaultHttpRestSpecPairVisitor
 }
 
+var _ DefaultHttpRestSpecDiffVisitor = &DefaultHttpRestSpecDiffVisitorImpl{}
+
 // == Default implementations =================================================
 
-func (v *DefaultHttpRestSpecDiffVisitor) DefaultEnterDiff(ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterDiff(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
 	return SkipChildren
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) DefaultLeaveDiff(ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveDiff(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
 	return cont
 }
 
-// Delegates to DefaultEnterDiff.
-func (v *DefaultHttpRestSpecDiffVisitor) DefaultEnterAddedOrRemovedNode(ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
-	return v.DefaultEnterDiff(ctx, left, right)
+// Delegates to EnterDiff.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterAddedOrRemovedNode(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterDiff(self, ctx, left, right)
 }
 
-// Delegates to DefaultEnterDiff.
-func (v *DefaultHttpRestSpecDiffVisitor) DefaultEnterChangedNode(ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
-	return v.DefaultEnterDiff(ctx, left, right)
+// Delegates to EnterDiff.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterChangedNode(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterDiff(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveDiff.
-func (v *DefaultHttpRestSpecDiffVisitor) DefaultLeaveAddedOrRemovedNode(ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
-	return v.DefaultLeaveDiff(ctx, left, right, cont)
+// Delegates to LeaveDiff.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveAddedOrRemovedNode(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveDiff(self, ctx, left, right, cont)
 }
 
-// Delegates to DefaultLeaveDiff.
-func (v *DefaultHttpRestSpecDiffVisitor) DefaultLeaveChangedNode(ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
-	return v.DefaultLeaveDiff(ctx, left, right, cont)
+// Delegates to LeaveDiff.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveChangedNode(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveDiff(self, ctx, left, right, cont)
 }
 
 // == HTTPAuth ================================================================
 
-func (v *DefaultHttpRestSpecDiffVisitor) EnterHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterHTTPAuths(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
+	v := self.(HttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return SkipChildren
 	}
 
 	if left == nil || right == nil {
-		return v.EnterAddedOrRemovedHTTPAuth(ctx, left, right)
+		return v.EnterAddedOrRemovedHTTPAuth(self, ctx, left, right)
 	}
 
 	if left.Type != right.Type {
-		return v.EnterChangedHTTPAuth(ctx, left, right)
+		return v.EnterChangedHTTPAuth(self, ctx, left, right)
 	}
 
 	return Continue
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveHTTPAuths(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
+	v := self.(HttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return cont
 	}
 
 	if left == nil || right == nil {
-		return v.LeaveAddedOrRemovedHTTPAuth(ctx, left, right, cont)
+		return v.LeaveAddedOrRemovedHTTPAuth(self, ctx, left, right, cont)
 	}
 
 	if left.Type != right.Type {
-		return v.LeaveChangedHTTPAuth(ctx, left, right, cont)
+		return v.LeaveChangedHTTPAuth(self, ctx, left, right, cont)
 	}
 
 	return cont
 }
 
-// Delegates to DefaultEnterAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterAddedOrRemovedHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
-	return v.DefaultEnterAddedOrRemovedNode(ctx, left, right)
+// Delegates to EnterAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterAddedOrRemovedHTTPAuth(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultEnterChangedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterChangedHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
-	return v.DefaultEnterChangedNode(ctx, left, right)
+// Delegates to EnterChangedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterChangedHTTPAuth(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterChangedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveAddedOrRemovedHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
-	return v.DefaultLeaveAddedOrRemovedNode(ctx, left, right, cont)
+// Delegates to LeaveAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveAddedOrRemovedHTTPAuth(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
 }
 
-// Delegates to DefaultLeaveChangedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveChangedHTTPAuth(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
-	return v.DefaultLeaveChangedNode(ctx, left, right, cont)
+// Delegates to LeaveChangedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveChangedHTTPAuth(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveChangedNode(self, ctx, left, right, cont)
 }
 
 // == Data ====================================================================
 
-func (v *DefaultHttpRestSpecDiffVisitor) EnterData(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterData(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return SkipChildren
 	}
 
 	if left == nil || right == nil {
-		return v.EnterAddedOrRemovedData(ctx, left, right)
+		return v.EnterAddedOrRemovedData(self, ctx, left, right)
 	}
 
 	return Continue
 }
 
-func (*DefaultHttpRestSpecDiffVisitor) VisitDataChildren(ctx http_rest.HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Data) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) VisitDataChildren(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Data) Cont {
 	// Only visit the value.
 	childCtx := ctx.AppendPaths("Value", "Value")
 	return go_ast_pair.ApplyWithContext(vm, childCtx, left.Value, right.Value)
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveData(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveData(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return cont
 	}
 
 	if left == nil || right == nil {
-		return v.LeaveAddedOrRemovedData(ctx, left, right, cont)
+		return v.LeaveAddedOrRemovedData(self, ctx, left, right, cont)
 	}
 
 	return cont
 }
 
-// Delegates to DefaultEnterAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterAddedOrRemovedData(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont {
-	return v.DefaultEnterAddedOrRemovedNode(ctx, left, right)
+// Delegates to EnterAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterAddedOrRemovedData(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveAddedOrRemovedData(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont {
-	return v.DefaultLeaveAddedOrRemovedNode(ctx, left, right, cont)
+// Delegates to LeaveAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveAddedOrRemovedData(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
 }
 
 // == List ====================================================================
 
-func (v *DefaultHttpRestSpecDiffVisitor) EnterList(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterLists(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return SkipChildren
 	}
 
 	if left == nil || right == nil {
-		return v.EnterAddedOrRemovedList(ctx, left, right)
+		return v.EnterAddedOrRemovedList(self, ctx, left, right)
 	}
 
 	return Continue
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveList(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveLists(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return cont
 	}
 
 	if left == nil || right == nil {
-		return v.LeaveAddedOrRemovedList(ctx, left, right, cont)
+		return v.LeaveAddedOrRemovedList(self, ctx, left, right, cont)
 	}
 
 	return cont
 }
 
-// Delegates to DefaultEnterAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterAddedOrRemovedList(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List) Cont {
-	return v.DefaultEnterAddedOrRemovedNode(ctx, left, right)
+// Delegates to EnterAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterAddedOrRemovedList(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveAddedOrRemovedList(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
-	return v.DefaultLeaveAddedOrRemovedNode(ctx, left, right, cont)
+// Delegates to LeaveAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveAddedOrRemovedList(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
 }
 
 // == OneOf ===================================================================
 
-func (v *DefaultHttpRestSpecDiffVisitor) EnterOneOf(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterOneOfs(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return SkipChildren
 	}
 
 	if left == nil || right == nil {
-		return v.EnterAddedOrRemovedOneOf(ctx, left, right)
+		return v.EnterAddedOrRemovedOneOf(self, ctx, left, right)
 	}
 
 	return Continue
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) VisitOneOfChildren(ctx http_rest.HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) VisitOneOfChildren(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
 	// Override visitor behaviour for OneOf nodes by manually pairing up the
 	// options to see if we can get things to match.
 	childCtx := ctx.AppendPaths("Options", "Options")
@@ -277,77 +329,89 @@ OUTER:
 	return SkipChildren
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveOneOf(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveOneOfs(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return cont
 	}
 
 	if left == nil || right == nil {
-		return v.LeaveAddedOrRemovedOneOf(ctx, left, right, cont)
+		return v.LeaveAddedOrRemovedOneOf(self, ctx, left, right, cont)
 	}
 
 	return cont
 }
 
-// Delegates to DefaultEnterAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterAddedOrRemovedOneOf(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont {
-	return v.DefaultEnterAddedOrRemovedNode(ctx, left, right)
+// Delegates to EnterAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterAddedOrRemovedOneOf(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveAddedOrRemovedOneOf(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
-	return v.DefaultLeaveAddedOrRemovedNode(ctx, left, right, cont)
+// Delegates to LeaveAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveAddedOrRemovedOneOf(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
 }
 
 // == Optional ================================================================
 
-func (v *DefaultHttpRestSpecDiffVisitor) EnterOptional(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterOptionals(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return SkipChildren
 	}
 
 	if left == nil || right == nil {
-		return v.EnterAddedOrRemovedOptional(ctx, left, right)
+		return v.EnterAddedOrRemovedOptional(self, ctx, left, right)
 	}
 
 	return Continue
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveOptional(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveOptionals(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return cont
 	}
 
 	if left == nil || right == nil {
-		return v.LeaveAddedOrRemovedOptional(ctx, left, right, cont)
+		return v.LeaveAddedOrRemovedOptional(self, ctx, left, right, cont)
 	}
 
 	return cont
 }
 
-// Delegates to DefaultEnterAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterAddedOrRemovedOptional(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont {
-	return v.DefaultEnterAddedOrRemovedNode(ctx, left, right)
+// Delegates to EnterAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterAddedOrRemovedOptional(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveAddedOrRemovedOptional(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
-	return v.DefaultLeaveAddedOrRemovedNode(ctx, left, right, cont)
+// Delegates to LeaveAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveAddedOrRemovedOptional(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
 }
 
 // == Primitive ===============================================================
 
-func (v *DefaultHttpRestSpecDiffVisitor) EnterPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterPrimitives(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return SkipChildren
 	}
 
 	if left == nil || right == nil {
-		return v.EnterAddedOrRemovedPrimitive(ctx, left, right)
+		return v.EnterAddedOrRemovedPrimitive(self, ctx, left, right)
 	}
 
 	if primitivesDiffer(left, right) {
-		return v.EnterChangedPrimitive(ctx, left, right)
+		return v.EnterChangedPrimitive(self, ctx, left, right)
 	}
 
 	return SkipChildren
@@ -389,84 +453,98 @@ func formatsOfPrimitive(p *pb.Primitive) []string {
 	return result
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) LeavePrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeavePrimitives(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return cont
 	}
 
 	if left == nil || right == nil {
-		return v.LeaveAddedOrRemovedPrimitive(ctx, left, right, cont)
+		return v.LeaveAddedOrRemovedPrimitive(self, ctx, left, right, cont)
 	}
 
 	if primitivesDiffer(left, right) {
-		return v.LeaveChangedPrimitive(ctx, left, right, cont)
+		return v.LeaveChangedPrimitive(self, ctx, left, right, cont)
 	}
 
 	return cont
 }
 
-// Delegates to DefaultEnterAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterAddedOrRemovedPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont {
-	return v.DefaultEnterAddedOrRemovedNode(ctx, left, right)
+// Delegates to EnterAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterAddedOrRemovedPrimitive(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultEnterChangedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterChangedPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont {
-	return v.DefaultEnterChangedNode(ctx, left, right)
+// Delegates to EnterChangedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterChangedPrimitive(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterChangedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveAddedOrRemovedPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
-	return v.DefaultLeaveAddedOrRemovedNode(ctx, left, right, cont)
+// Delegates to LeaveAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveAddedOrRemovedPrimitive(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
 }
 
-// Delegates to DefaultLeaveChangedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveChangedPrimitive(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
-	return v.DefaultLeaveChangedNode(ctx, left, right, cont)
+// Delegates to LeaveChangedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveChangedPrimitive(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveChangedNode(self, ctx, left, right, cont)
 }
 
 // == Struct ==================================================================
 
-func (v *DefaultHttpRestSpecDiffVisitor) EnterStruct(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterStructs(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return SkipChildren
 	}
 
 	if left == nil || right == nil {
-		return v.EnterAddedOrRemovedStruct(ctx, left, right)
+		return v.EnterAddedOrRemovedStruct(self, ctx, left, right)
 	}
 
 	return Continue
 }
 
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveStruct(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveStructs(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+
 	if left == nil && right == nil {
 		return cont
 	}
 
 	if left == nil || right == nil {
-		return v.LeaveAddedOrRemovedStruct(ctx, left, right, cont)
+		return v.LeaveAddedOrRemovedStruct(self, ctx, left, right, cont)
 	}
 
 	return cont
 }
 
-// Delegates to DefaultEnterAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterAddedOrRemovedStruct(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont {
-	return v.DefaultEnterAddedOrRemovedNode(ctx, left, right)
+// Delegates to EnterAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterAddedOrRemovedStruct(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveAddedOrRemovedNode.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveAddedOrRemovedStruct(ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
-	return v.DefaultLeaveAddedOrRemovedNode(ctx, left, right, cont)
+// Delegates to LeaveAddedOrRemovedNode.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveAddedOrRemovedStruct(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
 }
 
-// Delegates to DefaultEnterDiff.
-func (v *DefaultHttpRestSpecDiffVisitor) EnterDifferentTypes(ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
-	return v.DefaultEnterDiff(ctx, left, right)
+// Delegates to EnterDiff.
+func (*DefaultHttpRestSpecDiffVisitorImpl) EnterDifferentTypes(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.EnterDiff(self, ctx, left, right)
 }
 
-// Delegates to DefaultLeaveDiff.
-func (v *DefaultHttpRestSpecDiffVisitor) LeaveDifferentTypes(ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
-	return v.DefaultLeaveDiff(ctx, left, right, cont)
+// Delegates to LeaveDiff.
+func (*DefaultHttpRestSpecDiffVisitorImpl) LeaveDifferentTypes(self interface{}, ctx http_rest.HttpRestSpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
+	v := self.(DefaultHttpRestSpecDiffVisitor)
+	return v.LeaveDiff(self, ctx, left, right, cont)
 }
