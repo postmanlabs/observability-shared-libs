@@ -4,7 +4,7 @@ import "github.com/akitasoftware/akita-libs/visitors"
 
 // Basically a pair of HttpRestSpecVisitorContexts. See that class for more
 // information.
-type HttpRestSpecPairVisitorContext interface {
+type SpecPairVisitorContext interface {
 	visitors.PairContext
 
 	ExtendLeftContext(leftNode interface{})
@@ -13,7 +13,7 @@ type HttpRestSpecPairVisitorContext interface {
 	GetLeftContext() HttpRestSpecVisitorContext
 	GetRightContext() HttpRestSpecVisitorContext
 
-	AppendRestPaths(string, string) HttpRestSpecPairVisitorContext
+	AppendRestPaths(string, string) SpecPairVisitorContext
 	GetRestPaths() ([]string, []string)
 	GetRestOperations() (string, string)
 	setRestOperations(string, string)
@@ -29,104 +29,104 @@ type HttpRestSpecPairVisitorContext interface {
 	setTopLevelDataIndex(int, int)
 }
 
-type httpRestSpecPairVisitorContext struct {
+type specPairVisitorContext struct {
 	left  *httpRestSpecVisitorContext
 	right *httpRestSpecVisitorContext
 }
 
-func newHttpRestSpecPairVisitorContext() HttpRestSpecPairVisitorContext {
-	return &httpRestSpecPairVisitorContext{
+func newSpecPairVisitorContext() SpecPairVisitorContext {
+	return &specPairVisitorContext{
 		left:  &httpRestSpecVisitorContext{},
 		right: &httpRestSpecVisitorContext{},
 	}
 }
 
-func (c *httpRestSpecPairVisitorContext) ExtendLeftContext(leftNode interface{}) {
+func (c *specPairVisitorContext) ExtendLeftContext(leftNode interface{}) {
 	c.left = extendContext(c.left, leftNode).(*httpRestSpecVisitorContext)
 }
 
-func (c *httpRestSpecPairVisitorContext) ExtendRightContext(rightNode interface{}) {
+func (c *specPairVisitorContext) ExtendRightContext(rightNode interface{}) {
 	c.right = extendContext(c.right, rightNode).(*httpRestSpecVisitorContext)
 }
 
-func (c *httpRestSpecPairVisitorContext) GetLeftContext() HttpRestSpecVisitorContext {
+func (c *specPairVisitorContext) GetLeftContext() HttpRestSpecVisitorContext {
 	return c.left
 }
 
-func (c *httpRestSpecPairVisitorContext) GetRightContext() HttpRestSpecVisitorContext {
+func (c *specPairVisitorContext) GetRightContext() HttpRestSpecVisitorContext {
 	return c.right
 }
 
-func (c *httpRestSpecPairVisitorContext) AppendPaths(left, right string) visitors.PairContext {
+func (c *specPairVisitorContext) AppendPaths(left, right string) visitors.PairContext {
 	rv := *c
 	rv.left = c.left.AppendPath(left).(*httpRestSpecVisitorContext)
 	rv.right = c.right.AppendPath(right).(*httpRestSpecVisitorContext)
 	return &rv
 }
 
-func (c *httpRestSpecPairVisitorContext) GetPaths() ([]string, []string) {
+func (c *specPairVisitorContext) GetPaths() ([]string, []string) {
 	return c.left.GetPath(), c.right.GetPath()
 }
 
-func (c *httpRestSpecPairVisitorContext) AppendRestPaths(left, right string) HttpRestSpecPairVisitorContext {
+func (c *specPairVisitorContext) AppendRestPaths(left, right string) SpecPairVisitorContext {
 	rv := *c
 	rv.left = c.left.AppendRestPath(left).(*httpRestSpecVisitorContext)
 	rv.right = c.right.AppendRestPath(right).(*httpRestSpecVisitorContext)
 	return &rv
 }
 
-func (c *httpRestSpecPairVisitorContext) GetRestPaths() ([]string, []string) {
+func (c *specPairVisitorContext) GetRestPaths() ([]string, []string) {
 	return c.left.GetRestPath(), c.right.GetRestPath()
 }
 
-func (c *httpRestSpecPairVisitorContext) GetRestOperations() (string, string) {
+func (c *specPairVisitorContext) GetRestOperations() (string, string) {
 	return c.left.GetRestOperation(), c.right.GetRestOperation()
 }
 
-func (c *httpRestSpecPairVisitorContext) setRestOperations(left, right string) {
+func (c *specPairVisitorContext) setRestOperations(left, right string) {
 	c.left.setRestOperation(left)
 	c.right.setRestOperation(right)
 }
 
-func (c *httpRestSpecPairVisitorContext) IsArg() (bool, bool) {
+func (c *specPairVisitorContext) IsArg() (bool, bool) {
 	return c.left.IsArg(), c.right.IsArg()
 }
 
-func (c *httpRestSpecPairVisitorContext) IsResponse() (bool, bool) {
+func (c *specPairVisitorContext) IsResponse() (bool, bool) {
 	return c.left.IsResponse(), c.right.IsResponse()
 }
 
-func (c *httpRestSpecPairVisitorContext) GetValueTypes() (HttpValueType, HttpValueType) {
+func (c *specPairVisitorContext) GetValueTypes() (HttpValueType, HttpValueType) {
 	return c.left.GetValueType(), c.right.GetValueType()
 }
 
-func (c *httpRestSpecPairVisitorContext) GetArgPaths() ([]string, []string) {
+func (c *specPairVisitorContext) GetArgPaths() ([]string, []string) {
 	return c.left.GetArgPath(), c.right.GetArgPath()
 }
 
-func (c *httpRestSpecPairVisitorContext) GetResponsePaths() ([]string, []string) {
+func (c *specPairVisitorContext) GetResponsePaths() ([]string, []string) {
 	return c.left.GetResponsePath(), c.right.GetResponsePath()
 }
 
-func (c *httpRestSpecPairVisitorContext) GetEndpointPaths() (string, string) {
+func (c *specPairVisitorContext) GetEndpointPaths() (string, string) {
 	return c.left.GetEndpointPath(), c.right.GetEndpointPath()
 }
 
-func (c *httpRestSpecPairVisitorContext) GetHosts() (string, string) {
+func (c *specPairVisitorContext) GetHosts() (string, string) {
 	return c.left.GetHost(), c.right.GetHost()
 }
 
-func (c *httpRestSpecPairVisitorContext) setIsArg(left, right bool) {
+func (c *specPairVisitorContext) setIsArg(left, right bool) {
 	c.left.setIsArg(left)
 	c.right.setIsArg(right)
 }
 
-func (c *httpRestSpecPairVisitorContext) setValueType(left, right HttpValueType) {
+func (c *specPairVisitorContext) setValueType(left, right HttpValueType) {
 	c.left.setValueType(left)
 	c.right.setValueType(right)
 }
 
-func (c *httpRestSpecPairVisitorContext) setTopLevelDataIndex(left, right int) {
+func (c *specPairVisitorContext) setTopLevelDataIndex(left, right int) {
 	c.left.setTopLevelDataIndex(left)
 	c.right.setTopLevelDataIndex(right)
 }
