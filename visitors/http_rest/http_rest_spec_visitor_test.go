@@ -18,11 +18,13 @@ import (
  * only visits Primitives in the spec and ignores other terms.
  */
 type MyPreorderVisitor struct {
-	DefaultHttpRestSpecVisitor
+	DefaultSpecVisitorImpl
 	actualPaths []string
 }
 
-func (v *MyPreorderVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) Cont {
+var _ DefaultSpecVisitor = (*MyPreorderVisitor)(nil)
+
+func (v *MyPreorderVisitor) EnterPrimitive(self interface{}, c SpecVisitorContext, p *pb.Primitive) Cont {
 	// Prints the path through the REST request/response to this primitive,
 	// including the host/operation/path, response code (if present), parameter
 	// name, etc.
@@ -34,11 +36,11 @@ func (v *MyPreorderVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, p *pb.P
 }
 
 type MyPostorderVisitor struct {
-	DefaultHttpRestSpecVisitor
+	DefaultSpecVisitorImpl
 	actualPaths []string
 }
 
-func (v *MyPostorderVisitor) LeavePrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive, cont Cont) Cont {
+func (v *MyPostorderVisitor) LeavePrimitive(self interface{}, c SpecVisitorContext, p *pb.Primitive, cont Cont) Cont {
 	// Prints the path through the REST request/response to this primitive,
 	// including the host/operation/path, response code (if present), parameter
 	// name, etc.
@@ -97,11 +99,13 @@ func TestPostorderTraversal(t *testing.T) {
 }
 
 type queryOnlyVisitor struct {
-	DefaultHttpRestSpecVisitor
+	DefaultSpecVisitorImpl
 	actualPaths []string
 }
 
-func (v *queryOnlyVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) Cont {
+var _ DefaultSpecVisitor = (*queryOnlyVisitor)(nil)
+
+func (v *queryOnlyVisitor) EnterPrimitive(self interface{}, c SpecVisitorContext, p *pb.Primitive) Cont {
 	if c.IsArg() && c.GetRestPath()[2] == "/api/1/store/" && c.GetValueType() == QUERY {
 		pathWithType := append(c.GetRestPath(), GetPrimitiveType(p).String())
 		v.actualPaths = append(v.actualPaths, strings.Join(pathWithType, "."))
@@ -125,11 +129,13 @@ func TestFilterByValueType(t *testing.T) {
 }
 
 type responsePathVisitor struct {
-	DefaultHttpRestSpecVisitor
+	DefaultSpecVisitorImpl
 	actualPaths []string
 }
 
-func (v *responsePathVisitor) EnterPrimitive(c HttpRestSpecVisitorContext, p *pb.Primitive) Cont {
+var _ DefaultSpecVisitor = (*responsePathVisitor)(nil)
+
+func (v *responsePathVisitor) EnterPrimitive(self interface{}, c SpecVisitorContext, p *pb.Primitive) Cont {
 	// The path is specifically picked to contain response values with nested Data
 	// objects.
 	if c.IsResponse() && c.GetRestPath()[2] == "/api/0/projects/{organization_slug}/{project_slug}/users/" {

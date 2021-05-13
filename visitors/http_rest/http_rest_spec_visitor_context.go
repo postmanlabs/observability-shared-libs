@@ -18,12 +18,12 @@ func (t HttpValueType) String() string {
 	return []string{"Unknown", "Path", "Query", "Header", "Cookie", "Body"}[t]
 }
 
-type HttpRestSpecVisitorContext interface {
+type SpecVisitorContext interface {
 	visitors.Context
 
 	// Used by the visitor infrastructure to construct a REST path by replacing
 	// parts of the AST path with names from DataMeta.
-	AppendRestPath(string) HttpRestSpecVisitorContext
+	AppendRestPath(string) SpecVisitorContext
 
 	// Gets the REST path, which is similar to the AST path but using names
 	// from DataMeta and MethodMeta objects where appropriate, as well as
@@ -99,7 +99,7 @@ func (c *httpRestSpecVisitorContext) GetPath() []string {
 	return c.path
 }
 
-func (c *httpRestSpecVisitorContext) AppendRestPath(s string) HttpRestSpecVisitorContext {
+func (c *httpRestSpecVisitorContext) AppendRestPath(s string) SpecVisitorContext {
 	rv := *c
 	rv.restPath = append(c.GetRestPath(), s)
 	return &rv

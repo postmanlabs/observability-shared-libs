@@ -73,7 +73,7 @@ type DefaultSpecDiffVisitor interface {
 // A SpecDiffVisitor implementation. This does not traverse into the children
 // of nodes that were added, removed, or changed.
 type DefaultSpecDiffVisitorImpl struct {
-	http_rest.DefaultSpecPairVisitor
+	http_rest.DefaultSpecPairVisitorImpl
 }
 
 var _ DefaultSpecDiffVisitor = (*DefaultSpecDiffVisitorImpl)(nil)

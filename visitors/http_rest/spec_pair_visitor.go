@@ -99,6 +99,7 @@ type SpecPairVisitor interface {
 	VisitOneOfChildren(self interface{}, ctxt SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont
 	LeaveOneOfs(self interface{}, ctxt SpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont
 
+	// Visits the children of an unknown node type.
 	DefaultVisitChildren(self interface{}, ctxt SpecPairVisitorContext, vm PairVisitorManager, left, right interface{}) Cont
 
 	// Used when the visitor tries to enter two nodes with different types. This
@@ -109,299 +110,324 @@ type SpecPairVisitor interface {
 	LeaveDifferentTypes(self interface{}, ctxt SpecPairVisitorContext, left, right interface{}, cont Cont) Cont
 }
 
-type DefaultSpecPairVisitor struct{}
+// A SpecPairVisitor with methods for providing default visiting behaviour.
+type DefaultSpecPairVisitor interface {
+	SpecPairVisitor
 
-func (*DefaultSpecPairVisitor) DefaultVisitChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right interface{}) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+	EnterNodes(self interface{}, ctxt SpecPairVisitorContext, left, right interface{}) Cont
+
+	VisitNodeChildren(self interface{}, ctxt SpecPairVisitorContext, vm PairVisitorManager, left, right interface{}) Cont
+
+	LeaveNodes(self interface{}, ctxt SpecPairVisitorContext, left, right interface{}, cont Cont) Cont
+}
+
+type DefaultSpecPairVisitorImpl struct{}
+
+var _ DefaultSpecPairVisitor = (*DefaultSpecPairVisitorImpl)(nil)
+
+func (*DefaultSpecPairVisitorImpl) EnterNodes(self interface{}, ctxt SpecPairVisitorContext, left, right interface{}) Cont {
+	return Continue
+}
+
+func (*DefaultSpecPairVisitorImpl) VisitNodeChildren(self interface{}, ctxt SpecPairVisitorContext, vm PairVisitorManager, left, right interface{}) Cont {
+	return go_ast_pair.DefaultVisitChildren(ctxt, vm, left, right)
+}
+
+func (*DefaultSpecPairVisitorImpl) LeaveNodes(self interface{}, ctxt SpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
+	return cont
+}
+
+func (*DefaultSpecPairVisitorImpl) DefaultVisitChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right interface{}) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
 // == APISpec =================================================================
 
-func (*DefaultSpecPairVisitor) EnterAPISpecs(self interface{}, c SpecPairVisitorContext, left, right *pb.APISpec) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterAPISpecs(self interface{}, c SpecPairVisitorContext, left, right *pb.APISpec) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitAPISpecChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.APISpec) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitAPISpecChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.APISpec) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveAPISpecs(self interface{}, c SpecPairVisitorContext, left, right *pb.APISpec, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveAPISpecs(self interface{}, c SpecPairVisitorContext, left, right *pb.APISpec, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == Method ==================================================================
 
-func (*DefaultSpecPairVisitor) EnterMethods(self interface{}, c SpecPairVisitorContext, left, right *pb.Method) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterMethods(self interface{}, c SpecPairVisitorContext, left, right *pb.Method) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitMethodChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Method) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitMethodChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Method) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveMethods(self interface{}, c SpecPairVisitorContext, left, right *pb.Method, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveMethods(self interface{}, c SpecPairVisitorContext, left, right *pb.Method, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == MethodMeta ==============================================================
 
-func (*DefaultSpecPairVisitor) EnterMethodMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.MethodMeta) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterMethodMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.MethodMeta) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitMethodMetaChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.MethodMeta) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitMethodMetaChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.MethodMeta) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveMethodMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.MethodMeta, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveMethodMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.MethodMeta, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPMethodMeta ==========================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPMethodMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMethodMeta) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPMethodMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMethodMeta) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPMethodMetaChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMethodMeta) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPMethodMetaChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMethodMeta) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPMethodMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMethodMeta, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPMethodMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMethodMeta, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == Data =====================================================================
 
-func (*DefaultSpecPairVisitor) EnterData(self interface{}, c SpecPairVisitorContext, left, right *pb.Data) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterData(self interface{}, c SpecPairVisitorContext, left, right *pb.Data) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitDataChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Data) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitDataChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Data) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveData(self interface{}, c SpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveData(self interface{}, c SpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == DataMeta ================================================================
 
-func (*DefaultSpecPairVisitor) EnterDataMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.DataMeta) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterDataMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.DataMeta) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitDataMetaChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.DataMeta) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitDataMetaChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.DataMeta) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveDataMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.DataMeta, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveDataMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.DataMeta, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPMeta ================================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMeta) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMeta) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPMetaChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMeta) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPMetaChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMeta) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMeta, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPMetas(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMeta, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPPath ================================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPPaths(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPPath) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPPaths(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPPath) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPPathChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPPath) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPPathChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPPath) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPPaths(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPPath, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPPaths(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPPath, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPQuery ===============================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPQueries(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPQuery) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPQueries(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPQuery) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPQueryChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPQuery) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPQueryChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPQuery) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPQueries(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPQuery, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPQueries(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPQuery, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPHeader ==============================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPHeaders(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPHeader) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPHeaders(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPHeader) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPHeaderChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPHeader) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPHeaderChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPHeader) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPHeaders(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPHeader, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPHeaders(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPHeader, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPCookie ==============================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPCookies(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPCookie) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPCookies(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPCookie) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPCookieChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPCookie) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPCookieChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPCookie) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPCookies(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPCookie, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPCookies(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPCookie, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPBody ================================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPBodies(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPBody) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPBodies(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPBody) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPBodyChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPBody) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPBodyChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPBody) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPBodies(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPBody, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPBodies(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPBody, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPEmpty ===============================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPEmpties(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPEmpty) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPEmpties(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPEmpty) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPEmptyChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPEmpty) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPEmptyChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPEmpty) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPEmpties(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPEmpty, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPEmpties(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPEmpty, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPAuth ================================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPAuths(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPAuths(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPAuthChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPAuth) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPAuthChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPAuth) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPAuths(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPAuths(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == HTTPMultipart ===========================================================
 
-func (*DefaultSpecPairVisitor) EnterHTTPMultiparts(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMultipart) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterHTTPMultiparts(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMultipart) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitHTTPMultipartChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMultipart) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitHTTPMultipartChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.HTTPMultipart) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveHTTPMultiparts(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMultipart, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveHTTPMultiparts(self interface{}, c SpecPairVisitorContext, left, right *pb.HTTPMultipart, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == Primitive ===============================================================
 
-func (*DefaultSpecPairVisitor) EnterPrimitives(self interface{}, c SpecPairVisitorContext, left, right *pb.Primitive) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterPrimitives(self interface{}, c SpecPairVisitorContext, left, right *pb.Primitive) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitPrimitiveChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Primitive) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitPrimitiveChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Primitive) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeavePrimitives(self interface{}, c SpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeavePrimitives(self interface{}, c SpecPairVisitorContext, left, right *pb.Primitive, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == Struct ==================================================================
 
-func (*DefaultSpecPairVisitor) EnterStructs(self interface{}, c SpecPairVisitorContext, left, right *pb.Struct) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterStructs(self interface{}, c SpecPairVisitorContext, left, right *pb.Struct) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitStructChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Struct) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitStructChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Struct) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveStructs(self interface{}, c SpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveStructs(self interface{}, c SpecPairVisitorContext, left, right *pb.Struct, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == List ====================================================================
 
-func (*DefaultSpecPairVisitor) EnterLists(self interface{}, c SpecPairVisitorContext, left, right *pb.List) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterLists(self interface{}, c SpecPairVisitorContext, left, right *pb.List) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitListChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.List) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitListChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.List) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveLists(self interface{}, c SpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveLists(self interface{}, c SpecPairVisitorContext, left, right *pb.List, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == Optional ================================================================
 
-func (*DefaultSpecPairVisitor) EnterOptionals(self interface{}, c SpecPairVisitorContext, left, right *pb.Optional) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterOptionals(self interface{}, c SpecPairVisitorContext, left, right *pb.Optional) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitOptionalChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Optional) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitOptionalChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Optional) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveOptionals(self interface{}, c SpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveOptionals(self interface{}, c SpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == OneOf ===================================================================
 
-func (*DefaultSpecPairVisitor) EnterOneOfs(self interface{}, c SpecPairVisitorContext, left, right *pb.OneOf) Cont {
-	return Continue
+func (*DefaultSpecPairVisitorImpl) EnterOneOfs(self interface{}, c SpecPairVisitorContext, left, right *pb.OneOf) Cont {
+	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
-func (*DefaultSpecPairVisitor) VisitOneOfChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
-	return go_ast_pair.DefaultVisitChildren(c, vm, left, right)
+func (*DefaultSpecPairVisitorImpl) VisitOneOfChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
+	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
 }
 
-func (*DefaultSpecPairVisitor) LeaveOneOfs(self interface{}, c SpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
-	return cont
+func (*DefaultSpecPairVisitorImpl) LeaveOneOfs(self interface{}, c SpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
+	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
 // == Different types =========================================================
 
-func (*DefaultSpecPairVisitor) EnterDifferentTypes(self interface{}, c SpecPairVisitorContext, left, right interface{}) Cont {
+func (*DefaultSpecPairVisitorImpl) EnterDifferentTypes(self interface{}, c SpecPairVisitorContext, left, right interface{}) Cont {
 	return SkipChildren
 }
 
-func (*DefaultSpecPairVisitor) LeaveDifferentTypes(self interface{}, c SpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
+func (*DefaultSpecPairVisitorImpl) LeaveDifferentTypes(self interface{}, c SpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
 	return cont
 }
 

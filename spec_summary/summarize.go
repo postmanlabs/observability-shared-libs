@@ -185,7 +185,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 }
 
 type specSummaryVisitor struct {
-	vis.DefaultHttpRestSpecVisitor
+	vis.DefaultSpecVisitorImpl
 
 	// Count occurrences within a single method.
 	methodSummary *Summary
@@ -197,7 +197,9 @@ type specSummaryVisitor struct {
 	filtersToMethods FilterMap
 }
 
-func (v *specSummaryVisitor) LeaveMethod(_ vis.HttpRestSpecVisitorContext, m *pb.Method, cont Cont) Cont {
+var _ vis.DefaultSpecVisitor = (*specSummaryVisitor)(nil)
+
+func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorContext, m *pb.Method, cont Cont) Cont {
 	if meta := spec_util.HTTPMetaFromMethod(m); meta != nil {
 		methodName := strings.ToUpper(meta.GetMethod())
 		v.summary.HTTPMethods[methodName] += 1
@@ -243,7 +245,7 @@ func (v *specSummaryVisitor) LeaveMethod(_ vis.HttpRestSpecVisitorContext, m *pb
 	return cont
 }
 
-func (v *specSummaryVisitor) LeaveData(_ vis.HttpRestSpecVisitorContext, d *pb.Data, cont Cont) Cont {
+func (v *specSummaryVisitor) LeaveData(self interface{}, _ vis.SpecVisitorContext, d *pb.Data, cont Cont) Cont {
 	// Handle auth vs params vs properties.
 	if meta := spec_util.HTTPAuthFromData(d); meta != nil {
 		v.methodSummary.Authentications[meta.Type.String()] += 1
@@ -273,7 +275,7 @@ func (v *specSummaryVisitor) LeaveData(_ vis.HttpRestSpecVisitorContext, d *pb.D
 	return cont
 }
 
-func (v *specSummaryVisitor) LeavePrimitive(_ vis.HttpRestSpecVisitorContext, p *pb.Primitive, cont Cont) Cont {
+func (v *specSummaryVisitor) LeavePrimitive(self interface{}, _ vis.SpecVisitorContext, p *pb.Primitive, cont Cont) Cont {
 	for f := range p.GetFormats() {
 		v.methodSummary.DataFormats[f] += 1
 	}

@@ -10,8 +10,8 @@ type SpecPairVisitorContext interface {
 	ExtendLeftContext(leftNode interface{})
 	ExtendRightContext(rightNode interface{})
 
-	GetLeftContext() HttpRestSpecVisitorContext
-	GetRightContext() HttpRestSpecVisitorContext
+	GetLeftContext() SpecVisitorContext
+	GetRightContext() SpecVisitorContext
 
 	AppendRestPaths(string, string) SpecPairVisitorContext
 	GetRestPaths() ([]string, []string)
@@ -49,11 +49,11 @@ func (c *specPairVisitorContext) ExtendRightContext(rightNode interface{}) {
 	c.right = extendContext(c.right, rightNode).(*httpRestSpecVisitorContext)
 }
 
-func (c *specPairVisitorContext) GetLeftContext() HttpRestSpecVisitorContext {
+func (c *specPairVisitorContext) GetLeftContext() SpecVisitorContext {
 	return c.left
 }
 
-func (c *specPairVisitorContext) GetRightContext() HttpRestSpecVisitorContext {
+func (c *specPairVisitorContext) GetRightContext() SpecVisitorContext {
 	return c.right
 }
 

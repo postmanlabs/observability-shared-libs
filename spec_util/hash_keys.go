@@ -10,11 +10,13 @@ import (
 )
 
 type hashOneOfVisitor struct {
-	http_rest.DefaultHttpRestSpecVisitor
+	http_rest.DefaultSpecVisitorImpl
 	err error
 }
 
-func (vis *hashOneOfVisitor) LeaveData(c http_rest.HttpRestSpecVisitorContext, p *pb.Data, cont Cont) Cont {
+var _ http_rest.DefaultSpecVisitor = (*hashOneOfVisitor)(nil)
+
+func (vis *hashOneOfVisitor) LeaveData(self interface{}, c http_rest.SpecVisitorContext, p *pb.Data, cont Cont) Cont {
 	oneOf := p.GetOneof()
 	if oneOf == nil {
 		return cont
