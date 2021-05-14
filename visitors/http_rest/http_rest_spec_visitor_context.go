@@ -1,6 +1,9 @@
 package http_rest
 
-import "github.com/akitasoftware/akita-libs/visitors"
+import (
+	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/akitasoftware/akita-libs/visitors"
+)
 
 // Describes which part of an HTTP request/response a value belongs to.
 type HttpValueType int
@@ -12,10 +15,11 @@ const (
 	HEADER
 	COOKIE
 	BODY
+	AUTH
 )
 
 func (t HttpValueType) String() string {
-	return []string{"Unknown", "Path", "Query", "Header", "Cookie", "Body"}[t]
+	return []string{"Unknown", "Path", "Query", "Header", "Cookie", "Body", "Auth"}[t]
 }
 
 type SpecVisitorContext interface {
@@ -51,7 +55,13 @@ type SpecVisitorContext interface {
 	// Returns true if the message is a descendent of Method.Responses.
 	IsResponse() bool
 
+	// Returns true if the message is a descendant of (or is itself) a Data
+	// instance representing an optional value.
+	IsOptional() bool
+
 	GetValueType() HttpValueType
+
+	GetHttpAuthType() *pb.HTTPAuth_HTTPAuthType
 
 	// Like GetRestPath, except only including the portion about the argument
 	// value.
@@ -65,12 +75,18 @@ type SpecVisitorContext interface {
 	// "localhost GET /v1/users".
 	GetEndpointPath() string
 
+	// This is nil if the message is not a descendant of Method.Responses.
+	GetResponseCode() *string
+
 	// Returns the host.
 	GetHost() string
 
 	setIsArg(bool)
+	setIsOptional()
 	setValueType(HttpValueType)
+	setHttpAuthType(pb.HTTPAuth_HTTPAuthType)
 	setTopLevelDataIndex(int)
+	setResponseCode(string)
 }
 
 type httpRestSpecVisitorContext struct {
@@ -80,7 +96,12 @@ type httpRestSpecVisitorContext struct {
 	// nil means we're not sure if this is an arg or response value.
 	isArg *bool
 
-	valueType HttpValueType
+	isOptional bool
+
+	valueType    HttpValueType
+	httpAuthType *pb.HTTPAuth_HTTPAuthType
+
+	responseCode *string
 
 	// Index within restPath of the start of the section describing arg or
 	// response.
@@ -88,6 +109,8 @@ type httpRestSpecVisitorContext struct {
 
 	restOperation string
 }
+
+var _ SpecVisitorContext = (*httpRestSpecVisitorContext)(nil)
 
 func (c *httpRestSpecVisitorContext) AppendPath(s string) visitors.Context {
 	rv := *c
@@ -131,8 +154,16 @@ func (c *httpRestSpecVisitorContext) IsResponse() bool {
 	return false
 }
 
+func (c *httpRestSpecVisitorContext) IsOptional() bool {
+	return c.isOptional
+}
+
 func (c *httpRestSpecVisitorContext) GetValueType() HttpValueType {
 	return c.valueType
+}
+
+func (c *httpRestSpecVisitorContext) GetHttpAuthType() *pb.HTTPAuth_HTTPAuthType {
+	return c.httpAuthType
 }
 
 func (c *httpRestSpecVisitorContext) GetArgPath() []string {
@@ -156,6 +187,13 @@ func (c *httpRestSpecVisitorContext) GetEndpointPath() string {
 	return c.restPath[2]
 }
 
+func (c *httpRestSpecVisitorContext) GetResponseCode() *string {
+	if !c.IsResponse() {
+		return nil
+	}
+	return c.responseCode
+}
+
 func (c *httpRestSpecVisitorContext) GetHost() string {
 	if len(c.restPath) < 1 {
 		return ""
@@ -175,8 +213,20 @@ func (c *httpRestSpecVisitorContext) setIsArg(isArg bool) {
 	c.isArg = &isArg
 }
 
+func (c *httpRestSpecVisitorContext) setIsOptional() {
+	c.isOptional = true
+}
+
 func (c *httpRestSpecVisitorContext) setValueType(vt HttpValueType) {
 	c.valueType = vt
+}
+
+func (c *httpRestSpecVisitorContext) setResponseCode(code string) {
+	c.responseCode = &code
+}
+
+func (c *httpRestSpecVisitorContext) setHttpAuthType(at pb.HTTPAuth_HTTPAuthType) {
+	c.httpAuthType = &at
 }
 
 func (c *httpRestSpecVisitorContext) setTopLevelDataIndex(i int) {

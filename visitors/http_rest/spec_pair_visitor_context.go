@@ -12,6 +12,7 @@ type SpecPairVisitorContext interface {
 
 	GetLeftContext() SpecVisitorContext
 	GetRightContext() SpecVisitorContext
+	SplitContext() (SpecVisitorContext, SpecVisitorContext)
 
 	AppendRestPaths(string, string) SpecPairVisitorContext
 	GetRestPaths() ([]string, []string)
@@ -55,6 +56,10 @@ func (c *specPairVisitorContext) GetLeftContext() SpecVisitorContext {
 
 func (c *specPairVisitorContext) GetRightContext() SpecVisitorContext {
 	return c.right
+}
+
+func (c *specPairVisitorContext) SplitContext() (SpecVisitorContext, SpecVisitorContext) {
+	return c.left, c.right
 }
 
 func (c *specPairVisitorContext) AppendPaths(left, right string) visitors.PairContext {

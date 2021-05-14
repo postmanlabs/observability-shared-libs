@@ -27,6 +27,11 @@ type SpecPairVisitor interface {
 	VisitMethodChildren(self interface{}, ctxt SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Method) Cont
 	LeaveMethods(self interface{}, ctxt SpecPairVisitorContext, left, right *pb.Method, cont Cont) Cont
 
+	// A utility function for visiting a set of arguments in a method request or
+	// response. This is needed since the arguments are store in maps whose keys
+	// do not reliably identify the arguments.
+	VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, left, right map[string]*pb.Data) Cont
+
 	EnterMethodMetas(self interface{}, ctxt SpecPairVisitorContext, left, right *pb.MethodMeta) Cont
 	VisitMethodMetaChildren(self interface{}, ctxt SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.MethodMeta) Cont
 	LeaveMethodMetas(self interface{}, ctxt SpecPairVisitorContext, left, right *pb.MethodMeta, cont Cont) Cont
@@ -161,12 +166,87 @@ func (*DefaultSpecPairVisitorImpl) EnterMethods(self interface{}, c SpecPairVisi
 	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)
 }
 
+// Need to do special casing here, since the keys used in the method's Args
+// and Responses do not reliably identify an arg or response.
 func (*DefaultSpecPairVisitorImpl) VisitMethodChildren(self interface{}, c SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Method) Cont {
-	return self.(DefaultSpecPairVisitor).VisitNodeChildren(self, c, vm, left, right)
+	v := self.(DefaultSpecPairVisitor)
+
+	if left == nil || right == nil {
+		return Continue
+	}
+
+	keepGoing := go_ast_pair.ApplyWithContext(vm, c.AppendPaths("Id", "Id"), left.Id, right.Id)
+	if result := handleKeepGoing(keepGoing); result != nil {
+		return *result
+	}
+
+	keepGoing = v.VisitMethodArgs(self, c.AppendPaths("Args", "Args"), vm, left.Args, right.Args)
+	if result := handleKeepGoing(keepGoing); result != nil {
+		return *result
+	}
+
+	keepGoing = v.VisitMethodArgs(self, c.AppendPaths("Responses", "Responses"), vm, left.Responses, right.Responses)
+	if result := handleKeepGoing(keepGoing); result != nil {
+		return *result
+	}
+
+	keepGoing = go_ast_pair.ApplyWithContext(vm, c.AppendPaths("Meta", "Meta"), left.Meta, right.Meta)
+	if result := handleKeepGoing(keepGoing); result != nil {
+		return *result
+	}
+
+	return keepGoing
+}
+
+func handleKeepGoing(keepGoing Cont) *Cont {
+	switch keepGoing {
+	case Abort, Stop:
+		return &keepGoing
+	case Continue:
+		return nil
+	case SkipChildren:
+		panic("Unexpected SkipChildren")
+	default:
+		panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
+	}
 }
 
 func (*DefaultSpecPairVisitorImpl) LeaveMethods(self interface{}, c SpecPairVisitorContext, left, right *pb.Method, cont Cont) Cont {
 	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
+}
+
+func (*DefaultSpecPairVisitorImpl) VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, leftArgs, rightArgs map[string]*pb.Data) Cont {
+	keepGoing := Continue
+
+	// Normalize arguments on both sides.
+	normalizedLeft := getNormalizedArgMap(leftArgs)
+	normalizedRight := getNormalizedArgMap(rightArgs)
+
+	// Line up left arguments with the right and visit in pairs. Remove any
+	// matching arguments on the right.
+	for name, leftArg := range normalizedLeft {
+		if rightArg, ok := normalizedRight[name]; ok {
+			keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt.AppendPaths(name.String(), name.String()), leftArg, rightArg)
+			delete(normalizedRight, name)
+		} else {
+			keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt.AppendPaths(name.String(), name.String()), leftArg, nil)
+		}
+
+		if result := handleKeepGoing(keepGoing); result != nil {
+			return *result
+		}
+	}
+
+	// Any remaining arguments on the right don't have a match on the left.
+	for name, rightArg := range normalizedRight {
+		keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt.AppendPaths(name.String(), name.String()), nil, rightArg)
+
+		if result := handleKeepGoing(keepGoing); result != nil {
+			return *result
+		}
+	}
+
+	return Continue
 }
 
 // == MethodMeta ==============================================================
@@ -197,7 +277,7 @@ func (*DefaultSpecPairVisitorImpl) LeaveHTTPMethodMetas(self interface{}, c Spec
 	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
-// == Data =====================================================================
+// == Data ====================================================================
 
 func (*DefaultSpecPairVisitorImpl) EnterData(self interface{}, c SpecPairVisitorContext, left, right *pb.Data) Cont {
 	return self.(DefaultSpecPairVisitor).EnterNodes(self, c, left, right)

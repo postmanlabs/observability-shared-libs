@@ -23,11 +23,6 @@ import (
 type SpecDiffVisitor interface {
 	http_rest.SpecPairVisitor
 
-	EnterAddedOrRemovedHTTPAuth(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
-	EnterChangedHTTPAuth(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth) Cont
-	LeaveAddedOrRemovedHTTPAuth(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont
-	LeaveChangedHTTPAuth(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont
-
 	EnterAddedOrRemovedData(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.Data) Cont
 	LeaveAddedOrRemovedData(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.Data, cont Cont) Cont
 
@@ -110,68 +105,6 @@ func (*DefaultSpecDiffVisitorImpl) LeaveAddedOrRemovedNode(self interface{}, ctx
 func (*DefaultSpecDiffVisitorImpl) LeaveChangedNode(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
 	v := self.(DefaultSpecDiffVisitor)
 	return v.LeaveDiff(self, ctx, left, right, cont)
-}
-
-// == HTTPAuth ================================================================
-
-func (*DefaultSpecDiffVisitorImpl) EnterHTTPAuths(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
-	v := self.(SpecDiffVisitor)
-
-	if left == nil && right == nil {
-		return SkipChildren
-	}
-
-	if left == nil || right == nil {
-		return v.EnterAddedOrRemovedHTTPAuth(self, ctx, left, right)
-	}
-
-	if left.Type != right.Type {
-		return v.EnterChangedHTTPAuth(self, ctx, left, right)
-	}
-
-	return Continue
-}
-
-func (*DefaultSpecDiffVisitorImpl) LeaveHTTPAuths(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
-	v := self.(SpecDiffVisitor)
-
-	if left == nil && right == nil {
-		return cont
-	}
-
-	if left == nil || right == nil {
-		return v.LeaveAddedOrRemovedHTTPAuth(self, ctx, left, right, cont)
-	}
-
-	if left.Type != right.Type {
-		return v.LeaveChangedHTTPAuth(self, ctx, left, right, cont)
-	}
-
-	return cont
-}
-
-// Delegates to EnterAddedOrRemovedNode.
-func (*DefaultSpecDiffVisitorImpl) EnterAddedOrRemovedHTTPAuth(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
-	v := self.(DefaultSpecDiffVisitor)
-	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
-}
-
-// Delegates to EnterChangedNode.
-func (*DefaultSpecDiffVisitorImpl) EnterChangedHTTPAuth(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth) Cont {
-	v := self.(DefaultSpecDiffVisitor)
-	return v.EnterChangedNode(self, ctx, left, right)
-}
-
-// Delegates to LeaveAddedOrRemovedNode.
-func (*DefaultSpecDiffVisitorImpl) LeaveAddedOrRemovedHTTPAuth(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
-	v := self.(DefaultSpecDiffVisitor)
-	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
-}
-
-// Delegates to LeaveChangedNode.
-func (*DefaultSpecDiffVisitorImpl) LeaveChangedHTTPAuth(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.HTTPAuth, cont Cont) Cont {
-	v := self.(DefaultSpecDiffVisitor)
-	return v.LeaveChangedNode(self, ctx, left, right, cont)
 }
 
 // == Data ====================================================================
