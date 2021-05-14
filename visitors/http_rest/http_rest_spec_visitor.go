@@ -446,11 +446,13 @@ func extendContext(cin Context, node interface{}) Context {
 			default:
 				ctx.setIsArg(false)
 				ctx = ctx.AppendRestPath("Response")
-				if rc == -1 {
-					ctx = ctx.AppendRestPath("default")
-				} else {
-					ctx = ctx.AppendRestPath(strconv.Itoa(int(rc)))
+
+				responseCode := "default"
+				if rc != -1 {
+					responseCode = strconv.Itoa(int(rc))
 				}
+				ctx = ctx.AppendRestPath(responseCode)
+				ctx.setResponseCode(responseCode)
 			}
 
 			var valueKey string
@@ -469,10 +471,18 @@ func extendContext(cin Context, node interface{}) Context {
 			} else if x := meta.GetBody(); x != nil {
 				ctx.setValueType(BODY)
 				valueKey = x.GetContentType().String()
+			} else if x := meta.GetAuth(); x != nil {
+				ctx.setValueType(AUTH)
+				ctx.setHttpAuthType(x.GetType())
+				valueKey = "Authorization"
 			}
 
 			ctx = ctx.AppendRestPath(ctx.GetValueType().String())
 			ctx = ctx.AppendRestPath(valueKey)
+
+			if node.GetOptional() != nil {
+				ctx.setIsOptional()
+			}
 
 			// Do nothing for HTTPEmpty
 		} else {
