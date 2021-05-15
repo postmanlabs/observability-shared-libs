@@ -219,8 +219,8 @@ func (*DefaultSpecPairVisitorImpl) VisitMethodArgs(self interface{}, ctxt PairCo
 	keepGoing := Continue
 
 	// Normalize arguments on both sides.
-	normalizedLeft := getNormalizedArgNames(leftArgs)
-	normalizedRight := getNormalizedArgNames(rightArgs)
+	normalizedLeft := GetNormalizedArgNames(leftArgs)
+	normalizedRight := GetNormalizedArgNames(rightArgs)
 
 	// Line up left arguments with the right and visit in pairs. Remove any
 	// matching arguments on the right.

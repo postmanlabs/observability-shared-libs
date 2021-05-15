@@ -12,7 +12,7 @@ import (
 )
 
 // Represents the "name" of an argument to a method.
-type argName interface {
+type ArgName interface {
 	String() string
 
 	isArgName()
@@ -25,7 +25,7 @@ type argName interface {
 // the arguments' hashes. However, because arguments are not normalized,
 // equivalent arguments can have different hashes, so these indices are not
 // useful for determining whether and how a method has changed.
-func getNormalizedArgNames(args map[string]*pb.Data) map[argName]string {
+func GetNormalizedArgNames(args map[string]*pb.Data) map[ArgName]string {
 	// XXX Ignoring errors from the normalizer regarding non-HTTP metadata.
 	normalizer := newArgNameNormalizer()
 	Apply(normalizer, args)
@@ -42,7 +42,7 @@ type argNameNormalizer struct {
 	nonNormalizedArgName string
 
 	// The output of the normalization.
-	normalizationMap map[argName]string
+	normalizationMap map[ArgName]string
 
 	// Contains any arguments encountered with non-HTTP metadata.
 	nonHTTPArgs []*pb.Data
@@ -54,7 +54,7 @@ var _ DefaultSpecVisitor = (*argNameNormalizer)(nil)
 
 func newArgNameNormalizer() *argNameNormalizer {
 	return &argNameNormalizer{
-		normalizationMap: make(map[argName]string),
+		normalizationMap: make(map[ArgName]string),
 	}
 }
 
@@ -77,7 +77,7 @@ func (*argNameNormalizer) VisitDataChildren(self interface{}, c SpecVisitorConte
 	return go_ast.ApplyWithContext(vm, c.EnterStruct(arg, "Meta"), arg.GetMeta)
 }
 
-func (v *argNameNormalizer) setName(name argName) {
+func (v *argNameNormalizer) setName(name ArgName) {
 	if _, ok := v.normalizationMap[name]; ok {
 		panic(fmt.Sprintf("Unexpected duplicated name for %v", name))
 	}
@@ -95,7 +95,7 @@ type pathName struct {
 	index int
 }
 
-var _ argName = (*pathName)(nil)
+var _ ArgName = (*pathName)(nil)
 
 func (pathName) isArgName() {}
 
@@ -125,7 +125,7 @@ type queryName struct {
 	name string
 }
 
-var _ argName = (*queryName)(nil)
+var _ ArgName = (*queryName)(nil)
 
 func (queryName) isArgName() {}
 
@@ -146,7 +146,7 @@ type headerName struct {
 	name string
 }
 
-var _ argName = (*headerName)(nil)
+var _ ArgName = (*headerName)(nil)
 
 func (headerName) isArgName() {}
 
@@ -167,7 +167,7 @@ type cookieName struct {
 	name string
 }
 
-var _ argName = (*cookieName)(nil)
+var _ ArgName = (*cookieName)(nil)
 
 func (cookieName) isArgName() {}
 
@@ -186,7 +186,7 @@ func (n cookieName) String() string {
 
 type bodyName struct{}
 
-var _ argName = (*bodyName)(nil)
+var _ ArgName = (*bodyName)(nil)
 
 func (bodyName) isArgName() {}
 
@@ -204,7 +204,7 @@ func (n bodyName) String() string {
 
 type emptyName struct{}
 
-var _ argName = (*bodyName)(nil)
+var _ ArgName = (*bodyName)(nil)
 
 func (emptyName) isArgName() {}
 
@@ -222,7 +222,7 @@ func (n emptyName) String() string {
 
 type authName struct{}
 
-var _ argName = (*authName)(nil)
+var _ ArgName = (*authName)(nil)
 
 func (authName) isArgName() {}
 
@@ -240,7 +240,7 @@ func (n authName) String() string {
 
 type multipartName struct{}
 
-var _ argName = (*multipartName)(nil)
+var _ ArgName = (*multipartName)(nil)
 
 func (multipartName) isArgName() {}
 
