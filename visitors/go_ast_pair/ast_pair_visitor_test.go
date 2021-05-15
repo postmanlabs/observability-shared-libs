@@ -33,9 +33,7 @@ func countIntLeave(c PairContext, v interface{}, left, right interface{}, cont C
 	return cont
 }
 
-func extendContext(c PairContext, left, right interface{}) PairContext {
-	return c
-}
+func extendContext(c PairContext, left, right interface{}) {}
 
 func TestApply(t *testing.T) {
 	counter := new(Counter)

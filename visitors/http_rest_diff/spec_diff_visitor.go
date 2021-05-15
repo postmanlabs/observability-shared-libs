@@ -125,7 +125,7 @@ func (*DefaultSpecDiffVisitorImpl) EnterData(self interface{}, ctx http_rest.Spe
 
 func (*DefaultSpecDiffVisitorImpl) VisitDataChildren(self interface{}, ctx http_rest.SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.Data) Cont {
 	// Only visit the value.
-	childCtx := ctx.AppendPaths("Value", "Value")
+	childCtx := ctx.EnterStructs(left, "Value", right, "Value")
 	return go_ast_pair.ApplyWithContext(vm, childCtx, left.Value, right.Value)
 }
 
@@ -216,13 +216,13 @@ func (*DefaultSpecDiffVisitorImpl) EnterOneOfs(self interface{}, ctx http_rest.S
 func (*DefaultSpecDiffVisitorImpl) VisitOneOfChildren(self interface{}, ctx http_rest.SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
 	// Override visitor behaviour for OneOf nodes by manually pairing up the
 	// options to see if we can get things to match.
-	childCtx := ctx.AppendPaths("Options", "Options")
+	childCtx := ctx.EnterStructs(left, "Options", right, "Options")
 	rightOptions := make(map[string]*pb.Data, len(right.Options))
 	for k, v := range right.Options {
 		rightOptions[k] = v
 	}
 OUTER:
-	for _, leftOption := range left.Options {
+	for leftKey, leftOption := range left.Options {
 		for rightKey, rightOption := range rightOptions {
 			if IsSameData(leftOption, rightOption) {
 				// Found a match.
@@ -231,7 +231,8 @@ OUTER:
 			}
 		}
 		// No match found for leftOption.
-		switch keepGoing := go_ast_pair.ApplyWithContext(vm, childCtx.AppendPaths(fmt.Sprint(leftOption), ""), leftOption, nil); keepGoing {
+		childCtx := childCtx.EnterMapValues(left.Options, leftKey, right.Options, nil)
+		switch keepGoing := go_ast_pair.ApplyWithContext(vm, childCtx, leftOption, go_ast_pair.ZeroOf(leftOption)); keepGoing {
 		case Abort:
 			return Abort
 		case Continue:
@@ -245,8 +246,9 @@ OUTER:
 	}
 
 	// Anything remaining in `rightOptions` has no match in `left`.
-	for _, rightOption := range rightOptions {
-		switch keepGoing := go_ast_pair.ApplyWithContext(vm, childCtx.AppendPaths("", fmt.Sprint(rightOption)), nil, rightOption); keepGoing {
+	for rightKey, rightOption := range rightOptions {
+		childCtx := childCtx.EnterMapValues(left.Options, nil, right.Options, rightKey)
+		switch keepGoing := go_ast_pair.ApplyWithContext(vm, childCtx, go_ast_pair.ZeroOf(rightOption), rightOption); keepGoing {
 		case Abort:
 			return Abort
 		case Continue:

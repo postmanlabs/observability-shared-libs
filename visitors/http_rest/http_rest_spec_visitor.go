@@ -410,9 +410,8 @@ func (*DefaultSpecVisitorImpl) LeaveOneOf(self interface{}, c SpecVisitorContext
 }
 
 // extendContext implementation for SpecVisitor.
-func extendContext(cin Context, node interface{}) Context {
+func extendContext(cin Context, node interface{}) {
 	ctx, ok := cin.(SpecVisitorContext)
-	result := cin
 	if !ok {
 		panic(fmt.Sprintf("http_rest.extendContext expected SpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
@@ -423,14 +422,15 @@ func extendContext(cin Context, node interface{}) Context {
 	case pb.APISpec, pb.Method, pb.Data, pb.Primitive, pb.Struct, pb.List, pb.Optional, pb.OneOf:
 		// For simplicity, ensure we're operating on a pointer to any complex
 		// structure.
-		result = extendContext(ctx, &node)
+		extendContext(ctx, &node)
 	case *pb.Method:
 		// Update the RestPath in the context
 		meta := node.GetMeta().GetHttp()
 		if meta != nil {
 			ctx.setRestOperation(meta.GetMethod())
-			ctx = ctx.AppendRestPath(meta.GetHost()).AppendRestPath(meta.GetMethod()).AppendRestPath(meta.GetPathTemplate())
-			result = ctx
+			ctx.appendRestPath(meta.GetHost())
+			ctx.appendRestPath(meta.GetMethod())
+			ctx.appendRestPath(meta.GetPathTemplate())
 		}
 	case *pb.Data:
 		// Update the RestPath in the context
@@ -442,16 +442,16 @@ func extendContext(cin Context, node interface{}) Context {
 			switch rc := meta.GetResponseCode(); rc {
 			case 0: // arg
 				ctx.setIsArg(true)
-				ctx = ctx.AppendRestPath("Arg")
+				ctx.appendRestPath("Arg")
 			default:
 				ctx.setIsArg(false)
-				ctx = ctx.AppendRestPath("Response")
+				ctx.appendRestPath("Response")
 
 				responseCode := "default"
 				if rc != -1 {
 					responseCode = strconv.Itoa(int(rc))
 				}
-				ctx = ctx.AppendRestPath(responseCode)
+				ctx.appendRestPath(responseCode)
 				ctx.setResponseCode(responseCode)
 			}
 
@@ -477,8 +477,8 @@ func extendContext(cin Context, node interface{}) Context {
 				valueKey = "Authorization"
 			}
 
-			ctx = ctx.AppendRestPath(ctx.GetValueType().String())
-			ctx = ctx.AppendRestPath(valueKey)
+			ctx.appendRestPath(ctx.GetValueType().String())
+			ctx.appendRestPath(valueKey)
 
 			if node.GetOptional() != nil {
 				ctx.setIsOptional()
@@ -487,18 +487,15 @@ func extendContext(cin Context, node interface{}) Context {
 			// Do nothing for HTTPEmpty
 		} else {
 			astPath := ctx.GetPath()
-			ctx = ctx.AppendRestPath(astPath[len(astPath)-1])
+			ctx.appendRestPath(astPath.GetLast().OutEdge.String())
 		}
-		result = ctx
 	}
-
-	return result
 }
 
 // enter implementation for SpecVisitor.
 func enter(cin Context, visitor interface{}, node interface{}) Cont {
 	v, _ := visitor.(SpecVisitor)
-	ctx, ok := extendContext(cin, node).(SpecVisitorContext)
+	ctx, ok := cin.(SpecVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.enter expected SpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
@@ -618,7 +615,7 @@ func visitChildren(cin Context, vm VisitorManager, node interface{}) Cont {
 // leave implementation for SpecVisitor.
 func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 	v, _ := visitor.(SpecVisitor)
-	ctx, ok := extendContext(cin, node).(SpecVisitorContext)
+	ctx, ok := cin.(SpecVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.leave expected SpecVisitorContext, got %s",
 			reflect.TypeOf(cin)))
@@ -678,7 +675,7 @@ func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 
 // Visits m with v.
 func Apply(v SpecVisitor, m interface{}) Cont {
-	c := new(httpRestSpecVisitorContext)
+	c := new(specVisitorContext)
 	vis := NewVisitorManager(c, v, enter, visitChildren, leave, extendContext)
 	return go_ast.Apply(vis, m)
 }

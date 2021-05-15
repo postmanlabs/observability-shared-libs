@@ -1,12 +1,21 @@
 package visitors
 
 type PairContext interface {
-	// Returns a new Context after appending to the paths.
-	AppendPaths(left string, right string) PairContext
+	// Returns a new PairContext in which the paths are appended to indicate a
+	// traversal into the given fields of the given structs.
+	EnterStructs(leftStruct interface{}, leftFieldName string, rightStruct interface{}, rightFieldName string) PairContext
+
+	// Returns a new PairContext in which the paths are appended to indicate a
+	// traversal into the given elements of the given arrays.
+	EnterArrays(leftArray interface{}, leftIndex int, rightArray interface{}, rightIndex int) PairContext
+
+	// Returns a new PairContext in which the paths are appended to indicate a
+	// traversal into the values at the given keys of the given maps.
+	EnterMapValues(leftMap, leftKey, rightMap, rightKey interface{}) PairContext
 
 	// Returns the paths through the structures being traversed.
 	// See Context.GetPath().
-	GetPaths() ([]string, []string)
+	GetPaths() (ContextPath, ContextPath)
 }
 
 func NewPairContext() PairContext {
@@ -40,7 +49,7 @@ type PairVisitorManager interface {
 	// returned, the visitor framework will interpret this as Continue.
 	LeaveNodes(c PairContext, visitor interface{}, leftNode, rightNode interface{}, cont Cont) Cont
 
-	ExtendContext(c PairContext, leftNode, rightNode interface{}) PairContext
+	ExtendContext(c PairContext, leftNode, rightNode interface{})
 }
 
 func NewPairVisitorManager(
@@ -49,7 +58,7 @@ func NewPairVisitorManager(
 	enter func(c PairContext, visitor interface{}, left, right interface{}) Cont,
 	visitChildren func(c PairContext, vm PairVisitorManager, left, right interface{}) Cont,
 	leave func(c PairContext, visitor interface{}, left, right interface{}, cont Cont) Cont,
-	extendContext func(c PairContext, left, right interface{}) PairContext,
+	extendContext func(c PairContext, left, right interface{}),
 ) PairVisitorManager {
 	rv := pairVisitor{
 		context:       c,
@@ -67,14 +76,34 @@ type pairContext struct {
 	right Context
 }
 
-func (c *pairContext) AppendPaths(left string, right string) PairContext {
+var _ PairContext = (*pairContext)(nil)
+
+func (c *pairContext) EnterStructs(leftStruct interface{}, leftFieldName string, rightStruct interface{}, rightFieldName string) PairContext {
 	return &pairContext{
-		left:  c.left.AppendPath(left),
-		right: c.right.AppendPath(right),
+		left:  c.left.EnterStruct(leftStruct, leftFieldName),
+		right: c.right.EnterStruct(rightStruct, rightFieldName),
 	}
 }
 
-func (c *pairContext) GetPaths() ([]string, []string) {
+// Returns a new PairContext in which the paths are appended to indicate a
+// traversal into the given elements of the given arrays.
+func (c *pairContext) EnterArrays(leftArray interface{}, leftIndex int, rightArray interface{}, rightIndex int) PairContext {
+	return &pairContext{
+		left:  c.left.EnterArray(leftArray, leftIndex),
+		right: c.right.EnterArray(rightArray, rightIndex),
+	}
+}
+
+// Returns a new PairContext in which the paths are appended to indicate a
+// traversal into the values at the given keys of the given maps.
+func (c *pairContext) EnterMapValues(leftMap, leftKey, rightMap, rightKey interface{}) PairContext {
+	return &pairContext{
+		left:  c.left.EnterMapValue(leftMap, leftKey),
+		right: c.right.EnterMapValue(rightMap, rightKey),
+	}
+}
+
+func (c *pairContext) GetPaths() (ContextPath, ContextPath) {
 	return c.left.GetPath(), c.right.GetPath()
 }
 
@@ -84,7 +113,7 @@ type pairVisitor struct {
 	enter         func(c PairContext, visitor interface{}, left, right interface{}) Cont
 	visitChildren func(c PairContext, vm PairVisitorManager, left, right interface{}) Cont
 	leave         func(c PairContext, visitor interface{}, left, right interface{}, cont Cont) Cont
-	extendContext func(c PairContext, left, right interface{}) PairContext
+	extendContext func(c PairContext, left, right interface{})
 }
 
 func (v *pairVisitor) Context() PairContext {
@@ -107,6 +136,6 @@ func (v *pairVisitor) LeaveNodes(c PairContext, visitor interface{}, left, right
 	return v.leave(c, visitor, left, right, cont)
 }
 
-func (v *pairVisitor) ExtendContext(c PairContext, left, right interface{}) PairContext {
-	return v.extendContext(c, left, right)
+func (v *pairVisitor) ExtendContext(c PairContext, left, right interface{}) {
+	v.extendContext(c, left, right)
 }

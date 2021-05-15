@@ -5,7 +5,6 @@ package go_ast
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -32,6 +31,8 @@ func (t *astVisitor) visit(c Context, m interface{}) Cont {
 		return Continue
 	}
 
+	t.vm.ExtendContext(c, t.vm.Visitor(), m)
+
 	keepGoing := t.vm.EnterNode(c, t.vm.Visitor(), m)
 	switch keepGoing {
 	case Abort:
@@ -45,8 +46,17 @@ func (t *astVisitor) visit(c Context, m interface{}) Cont {
 
 	// Don't visit children if we are stopping or skipping children.
 	if keepGoing == Continue {
-		newContext := t.vm.ExtendContext(c, t.vm.Visitor(), m)
-		keepGoing = t.vm.VisitChildren(newContext, t.vm, m)
+		keepGoing = t.vm.VisitChildren(c, t.vm, m)
+		switch keepGoing {
+		case Abort:
+			return Abort
+		case Continue:
+		case SkipChildren:
+			panic("VisitChildren shouldn't return SkipChildren")
+		case Stop:
+		default:
+			panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
+		}
 	}
 
 	keepGoing = t.vm.LeaveNode(c, t.vm.Visitor(), m, keepGoing)
@@ -110,7 +120,7 @@ func (t *astVisitor) visitStructChildren(ctx Context, mt reflect.Type, mv reflec
 			continue
 		}
 
-		keepGoing = t.visit(ctx.AppendPath(ft.Name), mv.Field(i).Interface())
+		keepGoing = t.visit(ctx.EnterStruct(mv.Interface(), ft.Name), mv.Field(i).Interface())
 
 		switch keepGoing {
 		case Abort, Stop:
@@ -130,7 +140,7 @@ func (t *astVisitor) visitStructChildren(ctx Context, mt reflect.Type, mv reflec
 func (t *astVisitor) visitArrayChildren(ctx Context, mv reflect.Value) Cont {
 	keepGoing := Continue
 	for i := 0; i < mv.Len(); i++ {
-		keepGoing = t.visit(ctx.AppendPath(strconv.Itoa(i)), mv.Index(i).Interface())
+		keepGoing = t.visit(ctx.EnterArray(mv.Interface(), i), mv.Index(i).Interface())
 		switch keepGoing {
 		case Abort:
 			return Abort
@@ -152,7 +162,7 @@ func (t *astVisitor) visitMapChildren(ctx Context, mv reflect.Value) Cont {
 	// TODO(cs): Need to visit (k,v), then k, then v for each k, v.
 	keepGoing := Continue
 	for _, k := range mv.MapKeys() {
-		keepGoing = t.visit(ctx.AppendPath(fmt.Sprint(k.Interface())), mv.MapIndex(k).Interface())
+		keepGoing = t.visit(ctx.EnterMapValue(mv.Interface(), k.Interface()), mv.MapIndex(k).Interface())
 		switch keepGoing {
 		case Abort:
 			return Abort

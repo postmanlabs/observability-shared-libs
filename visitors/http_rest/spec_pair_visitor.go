@@ -175,22 +175,22 @@ func (*DefaultSpecPairVisitorImpl) VisitMethodChildren(self interface{}, c SpecP
 		return Continue
 	}
 
-	keepGoing := go_ast_pair.ApplyWithContext(vm, c.AppendPaths("Id", "Id"), left.Id, right.Id)
+	keepGoing := go_ast_pair.ApplyWithContext(vm, c.EnterStructs(left, "Id", right, "Id"), left.Id, right.Id)
 	if result := handleKeepGoing(keepGoing); result != nil {
 		return *result
 	}
 
-	keepGoing = v.VisitMethodArgs(self, c.AppendPaths("Args", "Args"), vm, left.Args, right.Args)
+	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Args", right, "Args"), vm, left.Args, right.Args)
 	if result := handleKeepGoing(keepGoing); result != nil {
 		return *result
 	}
 
-	keepGoing = v.VisitMethodArgs(self, c.AppendPaths("Responses", "Responses"), vm, left.Responses, right.Responses)
+	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Responses", right, "Responses"), vm, left.Responses, right.Responses)
 	if result := handleKeepGoing(keepGoing); result != nil {
 		return *result
 	}
 
-	keepGoing = go_ast_pair.ApplyWithContext(vm, c.AppendPaths("Meta", "Meta"), left.Meta, right.Meta)
+	keepGoing = go_ast_pair.ApplyWithContext(vm, c.EnterStructs(left, "Meta", right, "Meta"), left.Meta, right.Meta)
 	if result := handleKeepGoing(keepGoing); result != nil {
 		return *result
 	}
@@ -219,17 +219,21 @@ func (*DefaultSpecPairVisitorImpl) VisitMethodArgs(self interface{}, ctxt PairCo
 	keepGoing := Continue
 
 	// Normalize arguments on both sides.
-	normalizedLeft := getNormalizedArgMap(leftArgs)
-	normalizedRight := getNormalizedArgMap(rightArgs)
+	normalizedLeft := getNormalizedArgNames(leftArgs)
+	normalizedRight := getNormalizedArgNames(rightArgs)
 
 	// Line up left arguments with the right and visit in pairs. Remove any
 	// matching arguments on the right.
-	for name, leftArg := range normalizedLeft {
-		if rightArg, ok := normalizedRight[name]; ok {
-			keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt.AppendPaths(name.String(), name.String()), leftArg, rightArg)
+	for name, leftName := range normalizedLeft {
+		leftArg := leftArgs[leftName]
+		if rightName, ok := normalizedRight[name]; ok {
+			rightArg := rightArgs[rightName]
+			ctxt := ctxt.EnterMapValues(leftArgs, leftName, rightArgs, rightName)
+			keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt, leftArg, rightArg)
 			delete(normalizedRight, name)
 		} else {
-			keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt.AppendPaths(name.String(), name.String()), leftArg, nil)
+			ctxt := ctxt.EnterMapValues(leftArgs, leftName, rightArgs, nil)
+			keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt, leftArg, go_ast_pair.ZeroOf(leftArg))
 		}
 
 		if result := handleKeepGoing(keepGoing); result != nil {
@@ -238,8 +242,10 @@ func (*DefaultSpecPairVisitorImpl) VisitMethodArgs(self interface{}, ctxt PairCo
 	}
 
 	// Any remaining arguments on the right don't have a match on the left.
-	for name, rightArg := range normalizedRight {
-		keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt.AppendPaths(name.String(), name.String()), nil, rightArg)
+	for _, rightName := range normalizedRight {
+		rightArg := rightArgs[rightName]
+		ctxt := ctxt.EnterMapValues(leftArgs, nil, rightArgs, rightName)
+		keepGoing = go_ast_pair.ApplyWithContext(vm, ctxt, (go_ast_pair.ZeroOf(rightArg)), rightArg)
 
 		if result := handleKeepGoing(keepGoing); result != nil {
 			return *result
@@ -512,7 +518,7 @@ func (*DefaultSpecPairVisitorImpl) LeaveDifferentTypes(self interface{}, c SpecP
 }
 
 // extendContext implementation for SpecPairVisitor.
-func extendPairContext(cin PairContext, left, right interface{}) PairContext {
+func extendPairContext(cin PairContext, left, right interface{}) {
 	ctx, ok := cin.(SpecPairVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.extendPairContext expected SpecPairVisitorContext, got %s",
@@ -521,13 +527,12 @@ func extendPairContext(cin PairContext, left, right interface{}) PairContext {
 
 	ctx.ExtendLeftContext(left)
 	ctx.ExtendRightContext(right)
-	return ctx
 }
 
 // enter implementation for SpecVisitor.
 func enterPair(cin PairContext, visitor interface{}, left, right interface{}) Cont {
 	v, _ := visitor.(SpecPairVisitor)
-	ctx, ok := extendPairContext(cin, left, right).(SpecPairVisitorContext)
+	ctx, ok := cin.(SpecPairVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.enterPair expected SpecPairVisitorContext, got %s",
 			reflect.TypeOf(cin)))
@@ -730,7 +735,7 @@ func visitPairChildren(cin PairContext, vm PairVisitorManager, left, right inter
 // leave implementation for SpecPairVisitor.
 func leavePair(cin PairContext, visitor interface{}, left, right interface{}, cont Cont) Cont {
 	v, _ := visitor.(SpecPairVisitor)
-	ctx, ok := extendPairContext(cin, left, right).(SpecPairVisitorContext)
+	ctx, ok := cin.(SpecPairVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.leave expected SpecPairVisitorContext, got %s",
 			reflect.TypeOf(cin)))

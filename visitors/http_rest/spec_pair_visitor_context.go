@@ -1,6 +1,9 @@
 package http_rest
 
-import "github.com/akitasoftware/akita-libs/visitors"
+import (
+	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/akitasoftware/akita-libs/visitors"
+)
 
 // Basically a pair of HttpRestSpecVisitorContexts. See that class for more
 // information.
@@ -14,7 +17,6 @@ type SpecPairVisitorContext interface {
 	GetRightContext() SpecVisitorContext
 	SplitContext() (SpecVisitorContext, SpecVisitorContext)
 
-	AppendRestPaths(string, string) SpecPairVisitorContext
 	GetRestPaths() ([]string, []string)
 	GetRestOperations() (string, string)
 	setRestOperations(string, string)
@@ -25,29 +27,37 @@ type SpecPairVisitorContext interface {
 	GetResponsePaths() ([]string, []string)
 	GetEndpointPaths() (string, string)
 	GetHosts() (string, string)
+
+	// Returns, for each side, the innermost Data instance being visited and its
+	// context.
+	GetInnermostData() (*pb.Data, *pb.Data, SpecPairVisitorContext)
+
+	appendRestPaths(string, string)
 	setIsArg(bool, bool)
 	setValueType(HttpValueType, HttpValueType)
 	setTopLevelDataIndex(int, int)
 }
 
 type specPairVisitorContext struct {
-	left  *httpRestSpecVisitorContext
-	right *httpRestSpecVisitorContext
+	left  SpecVisitorContext
+	right SpecVisitorContext
 }
+
+var _ SpecPairVisitorContext = (*specPairVisitorContext)(nil)
 
 func newSpecPairVisitorContext() SpecPairVisitorContext {
 	return &specPairVisitorContext{
-		left:  &httpRestSpecVisitorContext{},
-		right: &httpRestSpecVisitorContext{},
+		left:  &specVisitorContext{},
+		right: &specVisitorContext{},
 	}
 }
 
 func (c *specPairVisitorContext) ExtendLeftContext(leftNode interface{}) {
-	c.left = extendContext(c.left, leftNode).(*httpRestSpecVisitorContext)
+	extendContext(c.left, leftNode)
 }
 
 func (c *specPairVisitorContext) ExtendRightContext(rightNode interface{}) {
-	c.right = extendContext(c.right, rightNode).(*httpRestSpecVisitorContext)
+	extendContext(c.right, rightNode)
 }
 
 func (c *specPairVisitorContext) GetLeftContext() SpecVisitorContext {
@@ -62,22 +72,38 @@ func (c *specPairVisitorContext) SplitContext() (SpecVisitorContext, SpecVisitor
 	return c.left, c.right
 }
 
-func (c *specPairVisitorContext) AppendPaths(left, right string) visitors.PairContext {
-	rv := *c
-	rv.left = c.left.AppendPath(left).(*httpRestSpecVisitorContext)
-	rv.right = c.right.AppendPath(right).(*httpRestSpecVisitorContext)
-	return &rv
+func (c *specPairVisitorContext) EnterStructs(leftStruct interface{}, leftFieldName string, rightStruct interface{}, rightFieldName string) visitors.PairContext {
+	return &specPairVisitorContext{
+		left:  c.left.EnterStruct(leftStruct, leftFieldName).(*specVisitorContext),
+		right: c.right.EnterStruct(rightStruct, rightFieldName).(*specVisitorContext),
+	}
 }
 
-func (c *specPairVisitorContext) GetPaths() ([]string, []string) {
+// Returns a new PairContext in which the paths are appended to indicate a
+// traversal into the given elements of the given arrays.
+func (c *specPairVisitorContext) EnterArrays(leftArray interface{}, leftIndex int, rightArray interface{}, rightIndex int) visitors.PairContext {
+	return &specPairVisitorContext{
+		left:  c.left.EnterArray(leftArray, leftIndex).(*specVisitorContext),
+		right: c.right.EnterArray(rightArray, rightIndex).(*specVisitorContext),
+	}
+}
+
+// Returns a new PairContext in which the paths are appended to indicate a
+// traversal into the values at the given keys of the given maps.
+func (c *specPairVisitorContext) EnterMapValues(leftMap, leftKey, rightMap, rightKey interface{}) visitors.PairContext {
+	return &specPairVisitorContext{
+		left:  c.left.EnterMapValue(leftMap, leftKey).(*specVisitorContext),
+		right: c.right.EnterMapValue(rightMap, rightKey).(*specVisitorContext),
+	}
+}
+
+func (c *specPairVisitorContext) GetPaths() (visitors.ContextPath, visitors.ContextPath) {
 	return c.left.GetPath(), c.right.GetPath()
 }
 
-func (c *specPairVisitorContext) AppendRestPaths(left, right string) SpecPairVisitorContext {
-	rv := *c
-	rv.left = c.left.AppendRestPath(left).(*httpRestSpecVisitorContext)
-	rv.right = c.right.AppendRestPath(right).(*httpRestSpecVisitorContext)
-	return &rv
+func (c *specPairVisitorContext) appendRestPaths(left, right string) {
+	c.left.appendRestPath(left)
+	c.right.appendRestPath(right)
 }
 
 func (c *specPairVisitorContext) GetRestPaths() ([]string, []string) {
@@ -119,6 +145,16 @@ func (c *specPairVisitorContext) GetEndpointPaths() (string, string) {
 
 func (c *specPairVisitorContext) GetHosts() (string, string) {
 	return c.left.GetHost(), c.right.GetHost()
+}
+
+func (c *specPairVisitorContext) GetInnermostData() (*pb.Data, *pb.Data, SpecPairVisitorContext) {
+	leftData, leftCtxt := c.left.GetInnermostData()
+	rightData, rightCtxt := c.right.GetInnermostData()
+	ctxt := &specPairVisitorContext{
+		left:  leftCtxt,
+		right: rightCtxt,
+	}
+	return leftData, rightData, ctxt
 }
 
 func (c *specPairVisitorContext) setIsArg(left, right bool) {

@@ -10,26 +10,103 @@
 // of using a REST spec visitor.
 package visitors
 
-type Context interface {
-	// Returns a new Context with s appended to the path.
-	AppendPath(s string) Context
+import (
+	"fmt"
+	"strconv"
+)
 
-	// Returns the path through the structure being traversed, including
-	// the indexes in lists and the keys in maps being traversed.
-	//
-	// For example, the path when visiting the second input argument to
-	// the first parameter of an APISpec would be:
-	//
-	//   Methods 0 Args arg-headers-0 Value Primitive
-	//   ^       ^ ^    ^             ^     ^
-	//   |       | |    |             |     \-- "primitive" field of Data object value being visited
-	//   |       | |    |             \-- "value" oneof field of the Data object
-	//   |       | |    \-- key of the args map
-	//   |       | \-- "args" field of the Method object
-	//   |       \-- first element of the APISpec.methods list
-	//   \-- "methods" field of APISpec
-	//
-	GetPath() []string
+type Context interface {
+	// Returns a new Context in which the path is appended to indicate a
+	// traversal into the given field of the given struct.
+	EnterStruct(structNode interface{}, fieldName string) Context
+
+	// Returns a new Context in which the path is appended to indicate a
+	// traversal into the given element of the given array.
+	EnterArray(arrayNode interface{}, elementIndex int) Context
+
+	// Returns a new Context in which the path is appended to indicate a
+	// traversal into the value at the given key of the given map.
+	EnterMapValue(mapNode, mapKey interface{}) Context
+
+	// Returns the path through the structure being traversed.
+	GetPath() ContextPath
+
+	// Returns the parent context from which this context was derived. Returns
+	// nil if this is the root context.
+	GetOuter() Context
+}
+
+// Represents a path through a data structure.
+type ContextPath []ContextPathElement
+
+func (c ContextPath) GetLast() ContextPathElement {
+	return c[len(c)-1]
+}
+
+// Represents an ancestor node and an outgoing edge from that node.
+type ContextPathElement struct {
+	AncestorNode interface{}
+	OutEdge      ContextPathEdge
+}
+
+// Represents an edge in the path from the root node to the node being visited.
+type ContextPathEdge interface {
+	isContextPathEdge()
+	String() string
+}
+
+// A context-path edge indicating that a field of a struct is being visited.
+type StructFieldEdge struct {
+	FieldName string
+}
+
+var _ ContextPathEdge = (*StructFieldEdge)(nil)
+
+func NewStructFieldEdge(fieldName string) *StructFieldEdge {
+	return &StructFieldEdge{
+		FieldName: fieldName,
+	}
+}
+
+func (*StructFieldEdge) isContextPathEdge() {}
+func (e *StructFieldEdge) String() string {
+	return e.FieldName
+}
+
+// A context-path edge indicating that an element of an array is being visited.
+type ArrayElementEdge struct {
+	ElementIndex int
+}
+
+var _ ContextPathEdge = (*StructFieldEdge)(nil)
+
+func NewArrayElementEdge(elementIndex int) *ArrayElementEdge {
+	return &ArrayElementEdge{
+		ElementIndex: elementIndex,
+	}
+}
+
+func (*ArrayElementEdge) isContextPathEdge() {}
+func (e *ArrayElementEdge) String() string {
+	return strconv.Itoa(e.ElementIndex)
+}
+
+// A context-path edge indicating that a value of a map is being visited.
+type MapValueEdge struct {
+	MapKey interface{}
+}
+
+var _ ContextPathEdge = (*MapValueEdge)(nil)
+
+func NewMapValueEdge(mapKey interface{}) *MapValueEdge {
+	return &MapValueEdge{
+		MapKey: mapKey,
+	}
+}
+
+func (*MapValueEdge) isContextPathEdge() {}
+func (e *MapValueEdge) String() string {
+	return fmt.Sprint(e.MapKey)
 }
 
 func NewContext() Context {
@@ -95,7 +172,9 @@ type VisitorManager interface {
 	// want to return this value unchanged: for convenience, if SkipChildren is
 	// returned, the visitor framework will interpret this as Continue.
 	LeaveNode(c Context, visitor interface{}, node interface{}, cont Cont) Cont
-	ExtendContext(c Context, visitor interface{}, term interface{}) Context
+
+	// Augments the given context with information from the given node.
+	ExtendContext(c Context, visitor interface{}, term interface{})
 }
 
 func NewVisitorManager(
@@ -104,7 +183,7 @@ func NewVisitorManager(
 	enter func(c Context, visitor interface{}, term interface{}) Cont,
 	visitChildren func(c Context, vm VisitorManager, term interface{}) Cont,
 	leave func(c Context, visitor interface{}, term interface{}, cont Cont) Cont,
-	extendContext func(c Context, term interface{}) Context,
+	extendContext func(c Context, term interface{}),
 ) VisitorManager {
 	rv := visitor{
 		context:       c,
@@ -118,15 +197,46 @@ func NewVisitorManager(
 }
 
 type context struct {
-	path []string
+	path  ContextPath
+	outer Context
 }
 
-func (c *context) AppendPath(s string) Context {
-	return &context{path: append(c.path, s)}
+var _ Context = (*context)(nil)
+
+func (c *context) EnterStruct(structNode interface{}, fieldName string) Context {
+	return c.appendPath(ContextPathElement{
+		AncestorNode: structNode,
+		OutEdge:      &StructFieldEdge{FieldName: fieldName},
+	})
 }
 
-func (c *context) GetPath() []string {
+func (c *context) EnterArray(arrayNode interface{}, elementIndex int) Context {
+	return c.appendPath(ContextPathElement{
+		AncestorNode: arrayNode,
+		OutEdge:      &ArrayElementEdge{ElementIndex: elementIndex},
+	})
+}
+
+func (c *context) EnterMapValue(mapNode, mapKey interface{}) Context {
+	return c.appendPath(ContextPathElement{
+		AncestorNode: mapNode,
+		OutEdge:      &MapValueEdge{MapKey: mapKey},
+	})
+}
+
+func (c *context) appendPath(e ContextPathElement) Context {
+	return &context{
+		path:  append(c.path, e),
+		outer: c,
+	}
+}
+
+func (c *context) GetPath() ContextPath {
 	return c.path
+}
+
+func (c *context) GetOuter() Context {
+	return c.outer
 }
 
 type visitor struct {
@@ -135,8 +245,10 @@ type visitor struct {
 	enter         func(c Context, visitor interface{}, term interface{}) Cont
 	visitChildren func(c Context, vm VisitorManager, term interface{}) Cont
 	leave         func(c Context, visitor interface{}, term interface{}, cont Cont) Cont
-	extendContext func(c Context, term interface{}) Context
+	extendContext func(c Context, term interface{})
 }
+
+var _ VisitorManager = (*visitor)(nil)
 
 func (v *visitor) Context() Context {
 	return v.context
@@ -158,6 +270,6 @@ func (v *visitor) LeaveNode(c Context, visitor interface{}, term interface{}, co
 	return v.leave(c, visitor, term, cont)
 }
 
-func (v *visitor) ExtendContext(c Context, visitor interface{}, term interface{}) Context {
-	return v.extendContext(c, term)
+func (v *visitor) ExtendContext(c Context, visitor interface{}, term interface{}) {
+	v.extendContext(c, term)
 }

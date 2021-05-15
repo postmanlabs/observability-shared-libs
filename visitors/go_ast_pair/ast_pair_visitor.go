@@ -3,7 +3,6 @@ package go_ast_pair
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -35,6 +34,8 @@ func (t *astPairVisitor) visit(c PairContext, left, right interface{}) Cont {
 		return Continue
 	}
 
+	t.vm.ExtendContext(c, left, right)
+
 	keepGoing := t.vm.EnterNodes(c, t.vm.Visitor(), left, right)
 	switch keepGoing {
 	case Abort:
@@ -48,8 +49,17 @@ func (t *astPairVisitor) visit(c PairContext, left, right interface{}) Cont {
 
 	// Don't visit children if we are stopping or skipping children.
 	if keepGoing == Continue {
-		newContext := t.vm.ExtendContext(c, left, right)
-		keepGoing = t.vm.VisitChildren(newContext, t.vm, left, right)
+		keepGoing = t.vm.VisitChildren(c, t.vm, left, right)
+		switch keepGoing {
+		case Abort:
+			return Abort
+		case Continue:
+		case SkipChildren:
+			panic("VisitChildren shouldn't return SkipChildren")
+		case Stop:
+		default:
+			panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
+		}
 	}
 
 	keepGoing = t.vm.LeaveNodes(c, t.vm.Visitor(), left, right, keepGoing)
@@ -125,6 +135,9 @@ func (t *astPairVisitor) visitStructChildren(ctx PairContext, leftT reflect.Type
 	keepGoing := Continue
 	namesVisited := make(map[string]struct{})
 
+	leftI := leftV.Interface()
+	rightI := rightV.Interface()
+
 	// Visit fields on the left.
 	for i := 0; i < leftT.NumField(); i++ {
 		fieldName := leftT.Field(i).Name
@@ -135,19 +148,25 @@ func (t *astPairVisitor) visitStructChildren(ctx PairContext, leftT reflect.Type
 			continue
 		}
 
+		leftFieldI := leftFieldV.Interface()
+
 		// XXX Skip Protobuf-generated fields, identified by names beginning with
 		// "XXX_"
 		if strings.HasPrefix(fieldName, "XXX_") {
 			continue
 		}
 
+		// Augment the context for the field we're about to visit.
+		ctx := ctx.EnterStructs(leftI, fieldName, rightI, fieldName)
+
 		namesVisited[fieldName] = struct{}{}
 
 		rightFieldV := rightV.FieldByName(fieldName)
 		if rightFieldV.IsValid() {
-			keepGoing = t.visit(ctx.AppendPaths(fieldName, fieldName), leftFieldV.Interface(), rightFieldV.Interface())
+			keepGoing = t.visit(ctx, leftFieldI, rightFieldV.Interface())
 		} else {
-			keepGoing = t.visit(ctx.AppendPaths(fieldName, fieldName), leftFieldV.Interface(), nil)
+			// XXX Conflates missing fields with zero-valued fields.
+			keepGoing = t.visit(ctx, leftFieldI, ZeroOf(leftFieldI))
 		}
 
 		switch keepGoing {
@@ -175,13 +194,19 @@ func (t *astPairVisitor) visitStructChildren(ctx PairContext, leftT reflect.Type
 			continue
 		}
 
+		rightFieldI := rightFieldV.Interface()
+
 		// XXX Skip Protobuf-generated fields, identified by names beginning with
 		// "XXX_"
 		if strings.HasPrefix(fieldName, "XXX_") {
 			continue
 		}
 
-		keepGoing = t.visit(ctx.AppendPaths(fieldName, fieldName), nil, rightFieldV.Interface())
+		// Augment the context for the field we're about to visit.
+		ctx := ctx.EnterStructs(leftI, fieldName, rightI, fieldName)
+
+		// XXX Conflates missing fields with zero-valued fields.
+		keepGoing = t.visit(ctx, ZeroOf(rightFieldI), rightFieldI)
 
 		switch keepGoing {
 		case Abort, Stop:
@@ -202,19 +227,25 @@ func (t *astPairVisitor) visitStructChildren(ctx PairContext, leftT reflect.Type
 func (t *astPairVisitor) visitArrayChildren(ctx PairContext, leftV, rightV reflect.Value) Cont {
 	keepGoing := Continue
 	for i := 0; i < leftV.Len() || i < rightV.Len(); i++ {
-		var leftElt interface{} = nil
-		var rightElt interface{} = nil
+		var leftElt interface{}
+		var rightElt interface{}
 
 		if i < leftV.Len() {
 			leftElt = leftV.Index(i).Interface()
+		} else {
+			// XXX Conflates missing elements with zero-valued elements.
+			leftElt = ZeroOf(rightV.Index(i).Interface())
 		}
 
 		if i < rightV.Len() {
 			rightElt = rightV.Index(i).Interface()
+		} else {
+			// XXX Conflates missing elements with zero-valued elements.
+			rightElt = ZeroOf(leftV.Index(i).Interface())
 		}
 
-		idxStr := strconv.Itoa(i)
-		keepGoing = t.visit(ctx.AppendPaths(idxStr, idxStr), leftElt, rightElt)
+		ctx := ctx.EnterArrays(leftV.Interface(), i, rightV.Interface(), i)
+		keepGoing = t.visit(ctx, leftElt, rightElt)
 		switch keepGoing {
 		case Abort:
 			return Abort
@@ -251,13 +282,14 @@ func (t *astPairVisitor) visitMapChildren(ctx PairContext, leftV, rightV reflect
 	for _, k := range leftV.MapKeys() {
 		leftElt := leftV.MapIndex(k).Interface()
 
-		var rightElt interface{} = nil
+		// XXX Conflates missing values with zero-valued values.
+		var rightElt interface{} = ZeroOf(leftElt)
 		if _, ok := rightKeys[k.Interface()]; ok {
 			rightElt = rightV.MapIndex(k).Interface()
 		}
 
-		pathStr := fmt.Sprint(k.Interface())
-		keepGoing = t.visit(ctx.AppendPaths(pathStr, pathStr), leftElt, rightElt)
+		ctx := ctx.EnterMapValues(leftV.Interface(), k.Interface(), rightV.Interface(), k.Interface())
+		keepGoing = t.visit(ctx, leftElt, rightElt)
 		switch keepGoing {
 		case Abort:
 			return Abort
@@ -278,9 +310,10 @@ func (t *astPairVisitor) visitMapChildren(ctx PairContext, leftV, rightV reflect
 			continue
 		}
 
+		ctx := ctx.EnterMapValues(leftV.Interface(), k.Interface(), rightV.Interface(), k.Interface())
 		rightElt := rightV.MapIndex(k).Interface()
-		pathStr := fmt.Sprint(k.Interface())
-		keepGoing = t.visit(ctx.AppendPaths(pathStr, pathStr), nil, rightElt)
+		// XXX Conflates missing values with zero-valued values.
+		keepGoing = t.visit(ctx, ZeroOf(rightElt), rightElt)
 		switch keepGoing {
 		case Abort:
 			return Abort
@@ -295,4 +328,11 @@ func (t *astPairVisitor) visitMapChildren(ctx PairContext, leftV, rightV reflect
 	}
 
 	return keepGoing
+}
+
+// Returns the zero value of v's dynamic type. If v is a pointer type, this
+// returns nil with the same type as v.
+func ZeroOf(v interface{}) interface{} {
+	t := reflect.TypeOf(v)
+	return reflect.Zero(t).Interface()
 }

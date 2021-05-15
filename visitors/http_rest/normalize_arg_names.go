@@ -18,31 +18,31 @@ type argName interface {
 	isArgName()
 }
 
-// Returns a version of the given method-argument map, wherein arguments are
-// indexed by name, rather than by hash.
+// Returns a normalization map for the keys in the given method-argument map.
+// The return value maps normalized keys to keys in the given map.
 //
 // In IR method objects, arguments to requests and responses are indexed by
 // the arguments' hashes. However, because arguments are not normalized,
 // equivalent arguments can have different hashes, so these indices are not
 // useful for determining whether and how a method has changed.
-func getNormalizedArgMap(args map[string]*pb.Data) map[argName]*pb.Data {
+func getNormalizedArgNames(args map[string]*pb.Data) map[argName]string {
 	// XXX Ignoring errors from the normalizer regarding non-HTTP metadata.
-	normalizer := newArgMapNormalizer()
+	normalizer := newArgNameNormalizer()
 	Apply(normalizer, args)
-	return normalizer.normalizedMap
+	return normalizer.normalizationMap
 }
 
-type argMapNormalizer struct {
+type argNameNormalizer struct {
 	DefaultSpecVisitorImpl
 
-	// Metadata for the method whose arg map is being normalized.
+	// Metadata for the method whose argument names are being normalized.
 	methodMeta *pb.HTTPMethodMeta
 
-	// The arg item whose name is being normalized.
-	arg *pb.Data
+	// The arg name being normalized.
+	nonNormalizedArgName string
 
 	// The output of the normalization.
-	normalizedMap map[argName]*pb.Data
+	normalizationMap map[argName]string
 
 	// Contains any arguments encountered with non-HTTP metadata.
 	nonHTTPArgs []*pb.Data
@@ -50,17 +50,17 @@ type argMapNormalizer struct {
 	err error
 }
 
-var _ DefaultSpecVisitor = (*argMapNormalizer)(nil)
+var _ DefaultSpecVisitor = (*argNameNormalizer)(nil)
 
-func newArgMapNormalizer() *argMapNormalizer {
-	return &argMapNormalizer{
-		normalizedMap: make(map[argName]*pb.Data),
+func newArgNameNormalizer() *argNameNormalizer {
+	return &argNameNormalizer{
+		normalizationMap: make(map[argName]string),
 	}
 }
 
-func (v *argMapNormalizer) EnterData(self interface{}, _ SpecVisitorContext, arg *pb.Data) Cont {
+func (v *argNameNormalizer) EnterData(self interface{}, ctx SpecVisitorContext, arg *pb.Data) Cont {
 	// Set our context.
-	v.arg = arg
+	v.nonNormalizedArgName = ctx.GetPath().GetLast().OutEdge.String()
 
 	// Make sure we have HTTP metadata for the current argument.
 	argMeta := arg.GetMeta().GetHttp()
@@ -72,21 +72,20 @@ func (v *argMapNormalizer) EnterData(self interface{}, _ SpecVisitorContext, arg
 	return Continue
 }
 
-func (*argMapNormalizer) VisitDataChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, arg *pb.Data) Cont {
+func (*argNameNormalizer) VisitDataChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, arg *pb.Data) Cont {
 	// Only visit the argument's metadata.
-	ctx := c.AppendPath("Meta")
-	return go_ast.ApplyWithContext(vm, ctx, arg.GetMeta())
+	return go_ast.ApplyWithContext(vm, c.EnterStruct(arg, "Meta"), arg.GetMeta)
 }
 
-func (v *argMapNormalizer) setName(name argName) {
-	if _, ok := v.normalizedMap[name]; ok {
+func (v *argNameNormalizer) setName(name argName) {
+	if _, ok := v.normalizationMap[name]; ok {
 		panic(fmt.Sprintf("Unexpected duplicated name for %v", name))
 	}
-	v.normalizedMap[name] = v.arg
+	v.normalizationMap[name] = v.nonNormalizedArgName
 }
 
-func (v *argMapNormalizer) LeaveData(self interface{}, _ SpecVisitorContext, _ *pb.Data, cont Cont) Cont {
-	v.arg = nil
+func (v *argNameNormalizer) LeaveData(self interface{}, _ SpecVisitorContext, _ *pb.Data, cont Cont) Cont {
+	v.nonNormalizedArgName = ""
 	return cont
 }
 
@@ -100,7 +99,7 @@ var _ argName = (*pathName)(nil)
 
 func (pathName) isArgName() {}
 
-func (v *argMapNormalizer) EnterHTTPPath(self interface{}, _ SpecVisitorContext, path *pb.HTTPPath) Cont {
+func (v *argNameNormalizer) EnterHTTPPath(self interface{}, _ SpecVisitorContext, path *pb.HTTPPath) Cont {
 	template := v.methodMeta.GetPathTemplate()
 	components := strings.Split(template, "/")
 	for idx, component := range components {
@@ -130,7 +129,7 @@ var _ argName = (*queryName)(nil)
 
 func (queryName) isArgName() {}
 
-func (v *argMapNormalizer) EnterHTTPQuery(self interface{}, _ SpecVisitorContext, query *pb.HTTPQuery) Cont {
+func (v *argNameNormalizer) EnterHTTPQuery(self interface{}, _ SpecVisitorContext, query *pb.HTTPQuery) Cont {
 	v.setName(queryName{
 		name: query.GetKey(),
 	})
@@ -151,7 +150,7 @@ var _ argName = (*headerName)(nil)
 
 func (headerName) isArgName() {}
 
-func (v *argMapNormalizer) EnterHTTPHeader(self interface{}, _ SpecVisitorContext, header *pb.HTTPHeader) Cont {
+func (v *argNameNormalizer) EnterHTTPHeader(self interface{}, _ SpecVisitorContext, header *pb.HTTPHeader) Cont {
 	v.setName(headerName{
 		name: header.GetKey(),
 	})
@@ -172,7 +171,7 @@ var _ argName = (*cookieName)(nil)
 
 func (cookieName) isArgName() {}
 
-func (v *argMapNormalizer) EnterHTTPCookie(self interface{}, _ SpecVisitorContext, cookie *pb.HTTPCookie) Cont {
+func (v *argNameNormalizer) EnterHTTPCookie(self interface{}, _ SpecVisitorContext, cookie *pb.HTTPCookie) Cont {
 	v.setName(cookieName{
 		name: cookie.GetKey(),
 	})
@@ -191,7 +190,7 @@ var _ argName = (*bodyName)(nil)
 
 func (bodyName) isArgName() {}
 
-func (v *argMapNormalizer) EnterHTTPBody(self interface{}, _ SpecVisitorContext, body *pb.HTTPBody) Cont {
+func (v *argNameNormalizer) EnterHTTPBody(self interface{}, _ SpecVisitorContext, body *pb.HTTPBody) Cont {
 	// Assumes there is at most one per method.
 	v.setName(bodyName{})
 	return SkipChildren
@@ -209,7 +208,7 @@ var _ argName = (*bodyName)(nil)
 
 func (emptyName) isArgName() {}
 
-func (v *argMapNormalizer) EnterHTTPEmpty(self interface{}, _ SpecVisitorContext, empty *pb.HTTPEmpty) Cont {
+func (v *argNameNormalizer) EnterHTTPEmpty(self interface{}, _ SpecVisitorContext, empty *pb.HTTPEmpty) Cont {
 	// Assumes there is at most one per method.
 	v.setName(emptyName{})
 	return SkipChildren
@@ -227,7 +226,7 @@ var _ argName = (*authName)(nil)
 
 func (authName) isArgName() {}
 
-func (v *argMapNormalizer) EnterAuth(_ SpecVisitorContext, auth *pb.HTTPAuth) Cont {
+func (v *argNameNormalizer) EnterAuth(_ SpecVisitorContext, auth *pb.HTTPAuth) Cont {
 	// Assumes there is at most one per method.
 	v.setName(authName{})
 	return SkipChildren
@@ -245,7 +244,7 @@ var _ argName = (*multipartName)(nil)
 
 func (multipartName) isArgName() {}
 
-func (v *argMapNormalizer) EnterMultipart(_ SpecVisitorContext, multipart *pb.HTTPMultipart) Cont {
+func (v *argNameNormalizer) EnterMultipart(_ SpecVisitorContext, multipart *pb.HTTPMultipart) Cont {
 	// Assumes there is at most one per method.
 	v.setName(multipartName{})
 	return SkipChildren
