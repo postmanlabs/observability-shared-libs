@@ -74,7 +74,7 @@ func (v *argNameNormalizer) EnterData(self interface{}, ctx SpecVisitorContext, 
 
 func (*argNameNormalizer) VisitDataChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, arg *pb.Data) Cont {
 	// Only visit the argument's metadata.
-	return go_ast.ApplyWithContext(vm, c.EnterStruct(arg, "Meta"), arg.GetMeta)
+	return go_ast.ApplyWithContext(vm, c.EnterStruct(arg, "Meta"), arg.GetMeta())
 }
 
 func (v *argNameNormalizer) setName(name ArgName) {
