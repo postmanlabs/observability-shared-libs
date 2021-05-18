@@ -185,7 +185,7 @@ func (*DefaultSpecVisitorImpl) LeaveHTTPMethodMeta(self interface{}, c SpecVisit
 	return self.(DefaultSpecVisitor).LeaveNode(self, c, m, cont)
 }
 
-// == Data =====================================================================
+// == Data ====================================================================
 
 func (*DefaultSpecVisitorImpl) EnterData(self interface{}, c SpecVisitorContext, d *pb.Data) Cont {
 	return self.(DefaultSpecVisitor).EnterNode(self, c, d)
@@ -367,7 +367,7 @@ func (*DefaultSpecVisitorImpl) LeaveStruct(self interface{}, c SpecVisitorContex
 	return self.(DefaultSpecVisitor).LeaveNode(self, c, d, cont)
 }
 
-// == List =====================================================================
+// == List ====================================================================
 
 func (*DefaultSpecVisitorImpl) EnterList(self interface{}, c SpecVisitorContext, d *pb.List) Cont {
 	return self.(DefaultSpecVisitor).EnterNode(self, c, d)
@@ -433,11 +433,13 @@ func extendContext(cin Context, node interface{}) {
 			ctx.appendRestPath(meta.GetPathTemplate())
 		}
 	case *pb.Data:
-		// Update the RestPath in the context
+		// Update the context for the field about to be visited.
 		// HTTPMeta is only valid for the top-level Data object.
 		if node.GetMeta() != nil && node.GetMeta().GetHttp() != nil {
 			ctx.setTopLevelDataIndex(len(ctx.GetRestPath()) - 1)
 
+			// Figure out whether the request or response is being visited, and set
+			// the response code.
 			meta := node.GetMeta().GetHttp()
 			switch rc := meta.GetResponseCode(); rc {
 			case 0: // arg
@@ -455,30 +457,38 @@ func extendContext(cin Context, node interface{}) {
 				ctx.setResponseCode(responseCode)
 			}
 
-			var valueKey string
+			// Figure out the name and kind of parameter being visited.
+			var name string
+			named := true
 			if x := meta.GetPath(); x != nil {
 				ctx.setValueType(PATH)
-				valueKey = x.GetKey()
+				name = x.GetKey()
 			} else if x := meta.GetQuery(); x != nil {
 				ctx.setValueType(QUERY)
-				valueKey = x.GetKey()
+				name = x.GetKey()
 			} else if x := meta.GetHeader(); x != nil {
 				ctx.setValueType(HEADER)
-				valueKey = x.GetKey()
+				name = x.GetKey()
 			} else if x := meta.GetCookie(); x != nil {
 				ctx.setValueType(COOKIE)
-				valueKey = x.GetKey()
+				name = x.GetKey()
 			} else if x := meta.GetBody(); x != nil {
 				ctx.setValueType(BODY)
-				valueKey = x.GetContentType().String()
+				name = x.GetContentType().String()
+				named = false
 			} else if x := meta.GetAuth(); x != nil {
 				ctx.setValueType(AUTH)
 				ctx.setHttpAuthType(x.GetType())
-				valueKey = "Authorization"
+				name = "Authorization"
+				named = false
+			}
+
+			if named {
+				ctx.appendFieldLocation(NewFieldName(name))
 			}
 
 			ctx.appendRestPath(ctx.GetValueType().String())
-			ctx.appendRestPath(valueKey)
+			ctx.appendRestPath(name)
 
 			if node.GetOptional() != nil {
 				ctx.setIsOptional()
@@ -487,7 +497,22 @@ func extendContext(cin Context, node interface{}) {
 			// Do nothing for HTTPEmpty
 		} else {
 			astPath := ctx.GetPath()
-			ctx.appendRestPath(astPath.GetLast().OutEdge.String())
+			astPathEdge := astPath.GetLast().OutEdge
+
+			// Update the field location.
+			switch edge := astPathEdge.(type) {
+			case *StructFieldEdge:
+				ctx.appendFieldLocation(NewFieldName(edge.FieldName))
+			case *ArrayElementEdge:
+				ctx.appendFieldLocation(NewArrayElement(edge.ElementIndex))
+			case *MapValueEdge:
+				ctx.appendFieldLocation(NewFieldName(fmt.Sprint(edge.MapKey)))
+			default:
+				panic(fmt.Sprintf("unknown edge type: %v", edge))
+			}
+
+			// Update the REST path.
+			ctx.appendRestPath(astPathEdge.String())
 		}
 	}
 }
