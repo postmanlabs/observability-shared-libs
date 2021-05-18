@@ -30,7 +30,7 @@ type SpecVisitorContext interface {
 	// authorization headers, the first component of the path is a FieldName
 	// identifying the path argument, query variable, header, or cookie in which
 	// the field is located.
-	GetFieldLocation() []FieldLocationElement
+	GetFieldPath() []FieldPathElement
 
 	// Gets the REST path, which is similar to the AST path but using names
 	// from DataMeta and MethodMeta objects where appropriate, as well as
@@ -89,7 +89,7 @@ type SpecVisitorContext interface {
 
 	// Used by the visitor infrastructure to maintain the location of the field
 	// being visited.
-	appendFieldLocation(FieldLocationElement)
+	appendFieldPath(FieldPathElement)
 
 	// Used by the visitor infrastructure to construct a REST path by replacing
 	// parts of the AST path with names from DataMeta.
@@ -107,8 +107,8 @@ type specVisitorContext struct {
 	path  visitors.ContextPath
 	outer SpecVisitorContext
 
-	fieldLocation []FieldLocationElement
-	restPath      []string
+	fieldPath []FieldPathElement
+	restPath  []string
 
 	// nil means we're not sure if this is an arg or response value.
 	isArg *bool
@@ -165,12 +165,12 @@ func (c *specVisitorContext) GetOuter() visitors.Context {
 	return c.outer
 }
 
-func (c *specVisitorContext) appendFieldLocation(elt FieldLocationElement) {
-	c.fieldLocation = append(c.fieldLocation, elt)
+func (c *specVisitorContext) appendFieldPath(elt FieldPathElement) {
+	c.fieldPath = append(c.fieldPath, elt)
 }
 
-func (c *specVisitorContext) GetFieldLocation() []FieldLocationElement {
-	return c.fieldLocation
+func (c *specVisitorContext) GetFieldPath() []FieldPathElement {
+	return c.fieldPath
 }
 
 func (c *specVisitorContext) appendRestPath(s string) {

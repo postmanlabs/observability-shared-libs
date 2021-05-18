@@ -4,44 +4,44 @@ import "fmt"
 
 // A path element for identifying the location of a field. See
 // SpecVisitorContext.GetFieldLocation.
-type FieldLocationElement interface {
+type FieldPathElement interface {
 	String() string
 
 	IsFieldName() bool
 	IsArrayElement() bool
 }
 
-type fieldLocationElementKind int
+type fieldPathElementKind int
 
 const (
-	fieldNameKind fieldLocationElementKind = iota
+	fieldNameKind fieldPathElementKind = iota
 	arrayElementKind
 )
 
-type abstractFieldLocationElement struct {
-	kind fieldLocationElementKind
+type abstractFieldPathElement struct {
+	kind fieldPathElementKind
 }
 
-func (elt *abstractFieldLocationElement) IsFieldName() bool {
+func (elt *abstractFieldPathElement) IsFieldName() bool {
 	return elt.kind == fieldNameKind
 }
 
-func (elt *abstractFieldLocationElement) IsArrayElement() bool {
+func (elt *abstractFieldPathElement) IsArrayElement() bool {
 	return elt.kind == arrayElementKind
 }
 
 // Identifies a field of an object.
 type FieldName struct {
-	abstractFieldLocationElement
+	abstractFieldPathElement
 
 	Name string
 }
 
-var _ FieldLocationElement = (*FieldName)(nil)
+var _ FieldPathElement = (*FieldName)(nil)
 
 func NewFieldName(name string) *FieldName {
 	return &FieldName{
-		abstractFieldLocationElement: abstractFieldLocationElement{
+		abstractFieldPathElement: abstractFieldPathElement{
 			kind: fieldNameKind,
 		},
 		Name: name,
@@ -54,16 +54,16 @@ func (f *FieldName) String() string {
 
 // Identifies an element of an array.
 type ArrayElement struct {
-	abstractFieldLocationElement
+	abstractFieldPathElement
 
 	Index int
 }
 
-var _ FieldLocationElement = (*ArrayElement)(nil)
+var _ FieldPathElement = (*ArrayElement)(nil)
 
 func NewArrayElement(index int) *ArrayElement {
 	return &ArrayElement{
-		abstractFieldLocationElement: abstractFieldLocationElement{
+		abstractFieldPathElement: abstractFieldPathElement{
 			kind: arrayElementKind,
 		},
 		Index: index,

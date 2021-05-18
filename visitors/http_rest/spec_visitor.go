@@ -484,7 +484,7 @@ func extendContext(cin Context, node interface{}) {
 			}
 
 			if named {
-				ctx.appendFieldLocation(NewFieldName(name))
+				ctx.appendFieldPath(NewFieldName(name))
 			}
 
 			ctx.appendRestPath(ctx.GetValueType().String())
@@ -499,14 +499,14 @@ func extendContext(cin Context, node interface{}) {
 			astPath := ctx.GetPath()
 			astPathEdge := astPath.GetLast().OutEdge
 
-			// Update the field location.
+			// Update the field path.
 			switch edge := astPathEdge.(type) {
 			case *StructFieldEdge:
-				ctx.appendFieldLocation(NewFieldName(edge.FieldName))
+				ctx.appendFieldPath(NewFieldName(edge.FieldName))
 			case *ArrayElementEdge:
-				ctx.appendFieldLocation(NewArrayElement(edge.ElementIndex))
+				ctx.appendFieldPath(NewArrayElement(edge.ElementIndex))
 			case *MapValueEdge:
-				ctx.appendFieldLocation(NewFieldName(fmt.Sprint(edge.MapKey)))
+				ctx.appendFieldPath(NewFieldName(fmt.Sprint(edge.MapKey)))
 			default:
 				panic(fmt.Sprintf("unknown edge type: %v", edge))
 			}
