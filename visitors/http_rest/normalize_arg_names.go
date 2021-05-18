@@ -6,9 +6,10 @@ import (
 	"strings"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/pkg/errors"
+
 	. "github.com/akitasoftware/akita-libs/visitors"
 	"github.com/akitasoftware/akita-libs/visitors/go_ast"
-	"github.com/pkg/errors"
 )
 
 // Represents the "name" of an argument to a method.
@@ -184,15 +185,28 @@ func (n cookieName) String() string {
 
 // == Body parameters =========================================================
 
-type bodyName struct{}
+type bodyName struct{
+	// Request or response
+	isResponse bool
+
+	contentType string
+	responseCode int32
+}
 
 var _ ArgName = (*bodyName)(nil)
 
 func (bodyName) isArgName() {}
 
-func (v *argNameNormalizer) EnterHTTPBody(self interface{}, _ SpecVisitorContext, body *pb.HTTPBody) Cont {
-	// Assumes there is at most one per method.
-	v.setName(bodyName{})
+func (v *argNameNormalizer) EnterHTTPBody(self interface{}, ctx SpecVisitorContext, body *pb.HTTPBody) Cont {
+	// Assumes there is at most one per:
+	// - method request x content type,
+	// - method response x response code x content type.
+	data, _ := ctx.GetInnermostData()
+	v.setName(bodyName{
+		isResponse: ctx.IsResponse(),
+		contentType: body.GetContentType().String(),
+		responseCode: data.GetMeta().GetHttp().ResponseCode,
+	})
 	return SkipChildren
 }
 
