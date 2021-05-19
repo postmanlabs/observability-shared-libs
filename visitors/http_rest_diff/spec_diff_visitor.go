@@ -475,11 +475,11 @@ func (*DefaultSpecDiffVisitorImpl) LeaveAddedOrRemovedStruct(self interface{}, c
 // Delegates to EnterDiff.
 func (*DefaultSpecDiffVisitorImpl) EnterDifferentTypes(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right interface{}) Cont {
 	v := self.(DefaultSpecDiffVisitor)
-	return v.EnterDiff(self, ctx, left, right)
+	return v.EnterChangedNode(self, ctx, left, right)
 }
 
 // Delegates to LeaveDiff.
 func (*DefaultSpecDiffVisitorImpl) LeaveDifferentTypes(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right interface{}, cont Cont) Cont {
 	v := self.(DefaultSpecDiffVisitor)
-	return v.LeaveDiff(self, ctx, left, right, cont)
+	return v.LeaveChangedNode(self, ctx, left, right, cont)
 }
