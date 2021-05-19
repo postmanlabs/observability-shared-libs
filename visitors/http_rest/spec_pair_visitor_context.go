@@ -73,10 +73,42 @@ func (c *specPairVisitorContext) SplitContext() (SpecVisitorContext, SpecVisitor
 	return c.left, c.right
 }
 
+// Returns a new PairContext in which the path on one side is appended to
+// indicate a traversal into the given field of the given struct.
+func (c *specPairVisitorContext) EnterStruct(leftOrRight visitors.LeftOrRight, structNode interface{}, fieldName string) visitors.PairContext {
+	if leftOrRight == visitors.LeftSide {
+		return &specPairVisitorContext{
+			left:  c.left.EnterStruct(structNode, fieldName).(*specVisitorContext),
+			right: c.right,
+		}
+	}
+
+	return &specPairVisitorContext{
+		left:  c.left,
+		right: c.right.EnterStruct(structNode, fieldName).(*specVisitorContext),
+	}
+}
+
 func (c *specPairVisitorContext) EnterStructs(leftStruct interface{}, leftFieldName string, rightStruct interface{}, rightFieldName string) visitors.PairContext {
 	return &specPairVisitorContext{
 		left:  c.left.EnterStruct(leftStruct, leftFieldName).(*specVisitorContext),
 		right: c.right.EnterStruct(rightStruct, rightFieldName).(*specVisitorContext),
+	}
+}
+
+// Returns a new PairContext in which the path on one side is appended to
+// indicate a traversal into the given element of the given array.
+func (c *specPairVisitorContext) EnterArray(leftOrRight visitors.LeftOrRight, arrayNode interface{}, elementIndex int) visitors.PairContext {
+	if leftOrRight == visitors.LeftSide {
+		return &specPairVisitorContext{
+			left:  c.left.EnterArray(arrayNode, elementIndex).(*specVisitorContext),
+			right: c.right,
+		}
+	}
+
+	return &specPairVisitorContext{
+		left:  c.left,
+		right: c.right.EnterArray(arrayNode, elementIndex).(*specVisitorContext),
 	}
 }
 
@@ -86,6 +118,21 @@ func (c *specPairVisitorContext) EnterArrays(leftArray interface{}, leftIndex in
 	return &specPairVisitorContext{
 		left:  c.left.EnterArray(leftArray, leftIndex).(*specVisitorContext),
 		right: c.right.EnterArray(rightArray, rightIndex).(*specVisitorContext),
+	}
+}
+
+// Returns a new PairContext in which the path on one side is appended to
+// indicate a traversal into the value at the given key of the given map.
+func (c *specPairVisitorContext) EnterMapValue(leftOrRight visitors.LeftOrRight, mapNode, mapKey interface{}) visitors.PairContext {
+	if leftOrRight == visitors.LeftSide {
+		return &specPairVisitorContext{
+			left:  c.left.EnterMapValue(mapNode, mapKey).(*specVisitorContext),
+			right: c.right,
+		}
+	}
+	return &specPairVisitorContext{
+		left:  c.left,
+		right: c.right.EnterMapValue(mapNode, mapKey).(*specVisitorContext),
 	}
 }
 

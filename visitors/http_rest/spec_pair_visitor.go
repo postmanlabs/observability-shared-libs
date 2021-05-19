@@ -848,6 +848,11 @@ func leavePair(cin PairContext, visitor interface{}, left, right interface{}, co
 // Visits left and right with v in tandem.
 func ApplyPair(v SpecPairVisitor, left, right interface{}) Cont {
 	c := newSpecPairVisitorContext()
+	return ApplyPairWithContext(v, c, left, right)
+}
+
+// Visits left and right with v in context c, in tandem.
+func ApplyPairWithContext(v SpecPairVisitor, c SpecPairVisitorContext, left, right interface{}) Cont {
 	vis := NewPairVisitorManager(c, v, enterPair, visitPairChildren, leavePair, extendPairContext)
 	return go_ast_pair.Apply(vis, left, right)
 }
