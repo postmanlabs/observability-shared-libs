@@ -2,6 +2,7 @@ package http_rest
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -202,7 +203,8 @@ func (v *argNameNormalizer) EnterHTTPBody(self interface{}, ctx SpecVisitorConte
 	// Assumes there is at most one per:
 	// - method request x content type,
 	// - method response x response code x content type.
-	data, _ := ctx.GetInnermostData()
+	node, _ := ctx.GetInnermostNode(reflect.TypeOf((*pb.Data)(nil)))
+	data := node.(*pb.Data)
 	v.setName(bodyName{
 		isResponse:   ctx.IsResponse(),
 		contentType:  body.GetContentType().String(),

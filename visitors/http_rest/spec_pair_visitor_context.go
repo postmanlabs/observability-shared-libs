@@ -1,7 +1,8 @@
 package http_rest
 
 import (
-	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"reflect"
+
 	"github.com/akitasoftware/akita-libs/visitors"
 )
 
@@ -28,9 +29,9 @@ type SpecPairVisitorContext interface {
 	GetEndpointPaths() (string, string)
 	GetHosts() (string, string)
 
-	// Returns, for each side, the innermost Data instance being visited and its
-	// context.
-	GetInnermostData() (*pb.Data, *pb.Data, SpecPairVisitorContext)
+	// Returns, for each side, the innermost node being visited having the given
+	// type, and the nodes' context.
+	GetInnermostNode(reflect.Type) (left, right interface{}, ctxt SpecPairVisitorContext)
 
 	appendRestPaths(string, string)
 	setIsArg(bool, bool)
@@ -147,14 +148,14 @@ func (c *specPairVisitorContext) GetHosts() (string, string) {
 	return c.left.GetHost(), c.right.GetHost()
 }
 
-func (c *specPairVisitorContext) GetInnermostData() (*pb.Data, *pb.Data, SpecPairVisitorContext) {
-	leftData, leftCtxt := c.left.GetInnermostData()
-	rightData, rightCtxt := c.right.GetInnermostData()
-	ctxt := &specPairVisitorContext{
+func (c *specPairVisitorContext) GetInnermostNode(typ reflect.Type) (left, right interface{}, ctxt SpecPairVisitorContext) {
+	left, leftCtxt := c.left.GetInnermostNode(typ)
+	right, rightCtxt := c.right.GetInnermostNode(typ)
+	ctxt = &specPairVisitorContext{
 		left:  leftCtxt,
 		right: rightCtxt,
 	}
-	return leftData, rightData, ctxt
+	return left, right, ctxt
 }
 
 func (c *specPairVisitorContext) setIsArg(left, right bool) {

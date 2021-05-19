@@ -1,6 +1,8 @@
 package http_rest
 
 import (
+	"reflect"
+
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/visitors"
 )
@@ -84,8 +86,9 @@ type SpecVisitorContext interface {
 	// Returns the host.
 	GetHost() string
 
-	// Returns the innermost Data instance being visited and its context.
-	GetInnermostData() (*pb.Data, SpecVisitorContext)
+	// Returns the innermost node being visited having the given type, and that
+	// node's context.
+	GetInnermostNode(reflect.Type) (interface{}, SpecVisitorContext)
 
 	// Used by the visitor infrastructure to maintain the location of the field
 	// being visited.
@@ -250,10 +253,11 @@ func (c *specVisitorContext) GetHost() string {
 	return c.restPath[0]
 }
 
-func (c *specVisitorContext) GetInnermostData() (*pb.Data, SpecVisitorContext) {
+func (c *specVisitorContext) GetInnermostNode(typ reflect.Type) (interface{}, SpecVisitorContext) {
 	for c != nil {
-		if data, ok := c.path.GetLast().AncestorNode.(*pb.Data); ok {
-			return data, c.outer
+		node := c.path.GetLast().AncestorNode
+		if reflect.TypeOf(node) == typ {
+			return node, c.outer
 		}
 		c = c.outer.(*specVisitorContext)
 	}

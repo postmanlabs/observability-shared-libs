@@ -30,7 +30,7 @@ type SpecPairVisitor interface {
 	// A utility function for visiting a set of arguments in a method request or
 	// response. This is needed since the arguments are store in maps whose keys
 	// do not reliably identify the arguments.
-	VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, left map[string]*pb.Data, leftMethodMeta *pb.HTTPMethodMeta, right map[string]*pb.Data, rightMethodMeta *pb.HTTPMethodMeta) Cont
+	VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, left, right map[string]*pb.Data) Cont
 
 	EnterMethodMetas(self interface{}, ctxt SpecPairVisitorContext, left, right *pb.MethodMeta) Cont
 	VisitMethodMetaChildren(self interface{}, ctxt SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.MethodMeta) Cont
@@ -180,12 +180,12 @@ func (*DefaultSpecPairVisitorImpl) VisitMethodChildren(self interface{}, c SpecP
 		return *result
 	}
 
-	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Args", right, "Args"), vm, left.Args, left.GetMeta().GetHttp(), right.Args, right.GetMeta().GetHttp())
+	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Args", right, "Args"), vm, left.Args, right.Args)
 	if result := handleKeepGoing(keepGoing); result != nil {
 		return *result
 	}
 
-	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Responses", right, "Responses"), vm, left.Responses, left.GetMeta().GetHttp(), right.Responses, right.GetMeta().GetHttp())
+	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Responses", right, "Responses"), vm, left.Responses, right.Responses)
 	if result := handleKeepGoing(keepGoing); result != nil {
 		return *result
 	}
@@ -215,8 +215,18 @@ func (*DefaultSpecPairVisitorImpl) LeaveMethods(self interface{}, c SpecPairVisi
 	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
-func (*DefaultSpecPairVisitorImpl) VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, leftArgs map[string]*pb.Data, leftMethodMeta *pb.HTTPMethodMeta, rightArgs map[string]*pb.Data, rightMethodMeta *pb.HTTPMethodMeta) Cont {
+func (*DefaultSpecPairVisitorImpl) VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, leftArgs, rightArgs map[string]*pb.Data) Cont {
 	keepGoing := Continue
+	specPairContext := ctxt.(SpecPairVisitorContext)
+
+	// Obtain the methods' HTTP metadata from the context.
+	leftMethodMeta := (*pb.HTTPMethodMeta)(nil)
+	rightMethodMeta := (*pb.HTTPMethodMeta)(nil)
+	{
+		leftNode, rightNode, _ := specPairContext.GetInnermostNode(reflect.TypeOf((*pb.Method)(nil)))
+		leftMethodMeta = leftNode.(*pb.Method).GetMeta().GetHttp()
+		rightMethodMeta = rightNode.(*pb.Method).GetMeta().GetHttp()
+	}
 
 	// Normalize arguments on both sides.
 	// XXX Ignoring errors.
