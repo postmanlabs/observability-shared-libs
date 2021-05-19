@@ -496,10 +496,6 @@ func extendContext(cin Context, node interface{}) {
 			ctx.appendRestPath(ctx.GetValueType().String())
 			ctx.appendRestPath(name)
 
-			if node.GetOptional() != nil {
-				ctx.setIsOptional()
-			}
-
 			// Do nothing for HTTPEmpty
 		} else {
 			astPath := ctx.GetPath()
@@ -519,6 +515,10 @@ func extendContext(cin Context, node interface{}) {
 
 			// Update the REST path.
 			ctx.appendRestPath(astPathEdge.String())
+		}
+
+		if node.GetOptional() != nil {
+			ctx.setIsOptional()
 		}
 	}
 }
