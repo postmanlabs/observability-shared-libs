@@ -484,6 +484,9 @@ func extendContext(cin Context, node interface{}) {
 				ctx.setHttpAuthType(x.GetType())
 				name = "Authorization"
 				named = false
+			} else if x := meta.GetMultipart(); x != nil {
+				ctx.setValueType(BODY)
+				named = false
 			}
 
 			if named {
