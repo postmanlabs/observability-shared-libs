@@ -30,7 +30,7 @@ type SpecPairVisitor interface {
 	// A utility function for visiting a set of arguments in a method request or
 	// response. This is needed since the arguments are store in maps whose keys
 	// do not reliably identify the arguments.
-	VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, left, right map[string]*pb.Data) Cont
+	VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, left map[string]*pb.Data, leftMethodMeta *pb.HTTPMethodMeta, right map[string]*pb.Data, rightMethodMeta *pb.HTTPMethodMeta) Cont
 
 	EnterMethodMetas(self interface{}, ctxt SpecPairVisitorContext, left, right *pb.MethodMeta) Cont
 	VisitMethodMetaChildren(self interface{}, ctxt SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.MethodMeta) Cont
@@ -180,12 +180,12 @@ func (*DefaultSpecPairVisitorImpl) VisitMethodChildren(self interface{}, c SpecP
 		return *result
 	}
 
-	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Args", right, "Args"), vm, left.Args, right.Args)
+	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Args", right, "Args"), vm, left.Args, left.GetMeta().GetHttp(), right.Args, right.GetMeta().GetHttp())
 	if result := handleKeepGoing(keepGoing); result != nil {
 		return *result
 	}
 
-	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Responses", right, "Responses"), vm, left.Responses, right.Responses)
+	keepGoing = v.VisitMethodArgs(self, c.EnterStructs(left, "Responses", right, "Responses"), vm, left.Responses, left.GetMeta().GetHttp(), right.Responses, right.GetMeta().GetHttp())
 	if result := handleKeepGoing(keepGoing); result != nil {
 		return *result
 	}
@@ -215,12 +215,13 @@ func (*DefaultSpecPairVisitorImpl) LeaveMethods(self interface{}, c SpecPairVisi
 	return self.(DefaultSpecPairVisitor).LeaveNodes(self, c, left, right, cont)
 }
 
-func (*DefaultSpecPairVisitorImpl) VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, leftArgs, rightArgs map[string]*pb.Data) Cont {
+func (*DefaultSpecPairVisitorImpl) VisitMethodArgs(self interface{}, ctxt PairContext, vm PairVisitorManager, leftArgs map[string]*pb.Data, leftMethodMeta *pb.HTTPMethodMeta, rightArgs map[string]*pb.Data, rightMethodMeta *pb.HTTPMethodMeta) Cont {
 	keepGoing := Continue
 
 	// Normalize arguments on both sides.
-	normalizedLeft := GetNormalizedArgNames(leftArgs)
-	normalizedRight := GetNormalizedArgNames(rightArgs)
+	// XXX Ignoring errors.
+	normalizedLeft, _ := GetNormalizedArgNames(leftArgs, leftMethodMeta)
+	normalizedRight, _ := GetNormalizedArgNames(rightArgs, rightMethodMeta)
 
 	// Line up left arguments with the right and visit in pairs. Remove any
 	// matching arguments on the right.
