@@ -83,6 +83,9 @@ type SpecVisitorContext interface {
 	// This is nil if the message is not a descendant of Method.Responses.
 	GetResponseCode() *string
 
+	// This is nil if the message is not part of a body.
+	GetContentType() *string
+
 	// Returns the host.
 	GetHost() string
 
@@ -104,6 +107,7 @@ type SpecVisitorContext interface {
 	setHttpAuthType(pb.HTTPAuth_HTTPAuthType)
 	setTopLevelDataIndex(int)
 	setResponseCode(string)
+	setContentType(string)
 }
 
 type specVisitorContext struct {
@@ -122,6 +126,7 @@ type specVisitorContext struct {
 	httpAuthType *pb.HTTPAuth_HTTPAuthType
 
 	responseCode *string
+	contentType  *string
 
 	// Index within restPath of the start of the section describing arg or
 	// response.
@@ -246,6 +251,13 @@ func (c *specVisitorContext) GetResponseCode() *string {
 	return c.responseCode
 }
 
+func (c *specVisitorContext) GetContentType() *string {
+	if c.GetValueType() != BODY {
+		return nil
+	}
+	return c.contentType
+}
+
 func (c *specVisitorContext) GetHost() string {
 	if len(c.restPath) < 1 {
 		return ""
@@ -287,6 +299,10 @@ func (c *specVisitorContext) setValueType(vt HttpValueType) {
 
 func (c *specVisitorContext) setResponseCode(code string) {
 	c.responseCode = &code
+}
+
+func (c *specVisitorContext) setContentType(contentType string) {
+	c.contentType = &contentType
 }
 
 func (c *specVisitorContext) setHttpAuthType(at pb.HTTPAuth_HTTPAuthType) {
