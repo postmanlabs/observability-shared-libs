@@ -1,12 +1,12 @@
 package http_rest
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	. "github.com/akitasoftware/akita-libs/visitors"
@@ -81,9 +81,11 @@ func (*argNameNormalizer) VisitDataChildren(self interface{}, c SpecVisitorConte
 }
 
 func (v *argNameNormalizer) setName(name ArgName) {
-	if _, ok := v.normalizationMap[name]; ok {
-		panic(fmt.Sprintf("Unexpected duplicated name for %v", name))
+	if existing, ok := v.normalizationMap[name]; ok {
+		glog.Warning("Non-normalized arg names ", existing, " and ", v.nonNormalizedArgName, " have conflicting normalized name ", name, ". Keeping the former and ignoring the latter.")
+		return
 	}
+
 	v.normalizationMap[name] = v.nonNormalizedArgName
 }
 
