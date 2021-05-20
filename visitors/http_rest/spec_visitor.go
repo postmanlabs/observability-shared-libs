@@ -481,6 +481,8 @@ func extendContext(cin Context, node interface{}) {
 				named = false
 			} else if x := meta.GetEmpty(); x != nil {
 				ctx.setValueType(BODY)
+				unknown := pb.HTTPBody_UNKNOWN.String()
+				contentType = &unknown
 				named = false
 			} else if x := meta.GetAuth(); x != nil {
 				ctx.setValueType(AUTH)
@@ -489,6 +491,8 @@ func extendContext(cin Context, node interface{}) {
 				named = false
 			} else if x := meta.GetMultipart(); x != nil {
 				ctx.setValueType(BODY)
+				unknown := pb.HTTPBody_UNKNOWN.String()
+				contentType = &unknown
 				named = false
 			}
 
