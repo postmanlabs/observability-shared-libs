@@ -258,7 +258,18 @@ func nonUtf8StringWorkaround(str string) PrimitiveValue {
 	return primValueImpl{v: []byte(str)}
 }
 
-func ToPrimitiveValue(v interface{}) (PrimitiveValue, error) {
+type InterpretStrings bool
+
+const (
+	// Indicates that strings should be interpreted as numbers or boolean values
+	// wherever possible.
+	INTERPRET_STRINGS InterpretStrings = true
+
+	// Indicates that strings should remain strings.
+	NO_INTERPRET_STRINGS InterpretStrings = false
+)
+
+func ToPrimitiveValue(v interface{}, interpretStrings InterpretStrings) (PrimitiveValue, error) {
 	switch reflect.ValueOf(v).Kind() {
 	case reflect.Int:
 		v = int64(v.(int))
@@ -269,6 +280,9 @@ func ToPrimitiveValue(v interface{}) (PrimitiveValue, error) {
 	case reflect.Bool:
 		// Do nothing
 	case reflect.String:
+		if interpretStrings {
+			return CategorizeString(v.(string)), nil
+		}
 		return nonUtf8StringWorkaround(v.(string)), nil
 	case reflect.Slice:
 		if bs, ok := v.([]byte); ok {
