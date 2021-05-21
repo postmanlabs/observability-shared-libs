@@ -39,6 +39,10 @@ type Context interface {
 // Represents a path through a data structure.
 type ContextPath []ContextPathElement
 
+func (c ContextPath) IsEmpty() bool {
+	return len(c) == 0
+}
+
 func (c ContextPath) GetLast() ContextPathElement {
 	return c[len(c)-1]
 }

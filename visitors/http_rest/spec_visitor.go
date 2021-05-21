@@ -509,23 +509,27 @@ func extendContext(cin Context, node interface{}) {
 
 			// Do nothing for HTTPEmpty
 		} else {
+			// No path to update if we're at the root of the AST subtree being
+			// visited.
 			astPath := ctx.GetPath()
-			astPathEdge := astPath.GetLast().OutEdge
+			if !astPath.IsEmpty() {
+				astPathEdge := astPath.GetLast().OutEdge
 
-			// Update the field path.
-			switch edge := astPathEdge.(type) {
-			case *StructFieldEdge:
-				ctx.appendFieldPath(NewFieldName(edge.FieldName))
-			case *ArrayElementEdge:
-				ctx.appendFieldPath(NewArrayElement(edge.ElementIndex))
-			case *MapValueEdge:
-				ctx.appendFieldPath(NewFieldName(fmt.Sprint(edge.MapKey)))
-			default:
-				panic(fmt.Sprintf("unknown edge type: %v", edge))
+				// Update the field path.
+				switch edge := astPathEdge.(type) {
+				case *StructFieldEdge:
+					ctx.appendFieldPath(NewFieldName(edge.FieldName))
+				case *ArrayElementEdge:
+					ctx.appendFieldPath(NewArrayElement(edge.ElementIndex))
+				case *MapValueEdge:
+					ctx.appendFieldPath(NewFieldName(fmt.Sprint(edge.MapKey)))
+				default:
+					panic(fmt.Sprintf("unknown edge type: %v", edge))
+				}
+
+				// Update the REST path.
+				ctx.appendRestPath(astPathEdge.String())
 			}
-
-			// Update the REST path.
-			ctx.appendRestPath(astPathEdge.String())
 		}
 
 		if node.GetOptional() != nil {
