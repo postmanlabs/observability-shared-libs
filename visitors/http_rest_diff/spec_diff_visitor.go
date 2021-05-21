@@ -261,7 +261,7 @@ OUTER:
 		}
 	}
 
-	return SkipChildren
+	return Continue
 }
 
 func (*DefaultSpecDiffVisitorImpl) LeaveOneOfs(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
