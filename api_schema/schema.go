@@ -181,3 +181,7 @@ type GetSpecResponse struct {
 
 	Tags map[string]string `json:"tags"`
 }
+
+type SetSpecVersionRequest struct {
+	APISpecID akid.APISpecID `json:"api_spec_id"`
+}
