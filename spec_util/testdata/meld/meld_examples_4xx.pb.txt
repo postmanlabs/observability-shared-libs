@@ -30,7 +30,7 @@ method: {
     }
   }
   responses: {
-    key: "bogus"
+    key: "ui5EpupUcWM="
     value: {
       struct: {
         fields: {
