@@ -14,6 +14,7 @@ type testData struct {
 	name                string
 	witnessFiles        []string
 	expectedWitnessFile string
+	commutative         bool
 }
 
 var tests = []testData{
@@ -24,6 +25,7 @@ var tests = []testData{
 			"testdata/meld/meld_data_formats_1.pb.txt",
 		},
 		"testdata/meld/meld_data_formats_1.pb.txt",
+		true,
 	},
 	{
 		"format, format",
@@ -32,6 +34,7 @@ var tests = []testData{
 			"testdata/meld/meld_data_formats_2.pb.txt",
 		},
 		"testdata/meld/meld_data_formats_3.pb.txt",
+		true,
 	},
 	{
 		"format, format with conflict",
@@ -40,6 +43,7 @@ var tests = []testData{
 			"testdata/meld/meld_conflict_2.pb.txt",
 		},
 		"testdata/meld/meld_conflict_expected.pb.txt",
+		true,
 	},
 	{
 		"duplicate format dropped",
@@ -50,6 +54,7 @@ var tests = []testData{
 			"testdata/meld/meld_data_formats_2.pb.txt",
 		},
 		"testdata/meld/meld_data_formats_3.pb.txt",
+		true,
 	},
 	{
 		"duplicate format kind dropped",
@@ -60,6 +65,7 @@ var tests = []testData{
 			"testdata/meld/meld_data_kind_2.pb.txt",
 		},
 		"testdata/meld/meld_data_kind_expected.pb.txt",
+		true,
 	},
 	{
 		"meld into existing conflict",
@@ -68,6 +74,7 @@ var tests = []testData{
 			"testdata/meld/meld_with_existing_conflict_2.pb.txt",
 		},
 		"testdata/meld/meld_with_existing_conflict_expected.pb.txt",
+		true,
 	},
 	{
 		"turn conflict with none into optional - order 1",
@@ -76,6 +83,7 @@ var tests = []testData{
 			"testdata/meld/meld_suppress_none_conflict_2.pb.txt",
 		},
 		"testdata/meld/meld_suppress_none_conflict_expected.pb.txt",
+		true,
 	},
 	{
 		// Make sure none is suppressed if it's not the first value that we process.
@@ -85,6 +93,7 @@ var tests = []testData{
 			"testdata/meld/meld_suppress_none_conflict_1.pb.txt",
 		},
 		"testdata/meld/meld_suppress_none_conflict_expected.pb.txt",
+		true,
 	},
 	{
 		// Test meld(T, optional<T>) => optional<T>
@@ -94,6 +103,7 @@ var tests = []testData{
 			"testdata/meld/meld_optional_required_2.pb.txt",
 		},
 		"testdata/meld/meld_optional_required_2.pb.txt",
+		true,
 	},
 	{
 		// meld(oneof(T1, T2), oneof(T1, T3)) => oneof(T1, T2, T3)
@@ -103,6 +113,7 @@ var tests = []testData{
 			"testdata/meld/meld_additive_oneof_2.pb.txt",
 		},
 		"testdata/meld/meld_additive_oneof_expected.pb.txt",
+		true,
 	},
 	{
 		// meld(oneof(T1, T2), T3) => oneof(T1, T2, T3)
@@ -112,6 +123,7 @@ var tests = []testData{
 			"testdata/meld/meld_oneof_with_primitive_2.pb.txt",
 		},
 		"testdata/meld/meld_oneof_with_primitive_expected.pb.txt",
+		true,
 	},
 	{
 		"meld struct",
@@ -120,6 +132,7 @@ var tests = []testData{
 			"testdata/meld/meld_struct_2.pb.txt",
 		},
 		"testdata/meld/meld_struct_2.pb.txt",
+		true,
 	},
 	{
 		"meld list",
@@ -128,6 +141,7 @@ var tests = []testData{
 			"testdata/meld/meld_list_2.pb.txt",
 		},
 		"testdata/meld/meld_list_2.pb.txt",
+		true,
 	},
 	{
 		"example, example",
@@ -136,6 +150,7 @@ var tests = []testData{
 			"testdata/meld/meld_examples_2.pb.txt",
 		},
 		"testdata/meld/meld_examples_3.pb.txt",
+		true,
 	},
 	{
 		"3 examples, 3 examples",
@@ -144,6 +159,7 @@ var tests = []testData{
 			"testdata/meld/meld_examples_big_2.pb.txt",
 		},
 		"testdata/meld/meld_examples_big_3.pb.txt",
+		true,
 	},
 	{
 		"1 example, 0 examples",
@@ -152,6 +168,27 @@ var tests = []testData{
 			"testdata/meld/meld_no_examples_2.pb.txt",
 		},
 		"testdata/meld/meld_no_examples_3.pb.txt",
+		true,
+	},
+	// Test melding non-4xx into 4xx.
+	{
+		"4xx example, example",
+		[]string{
+			"testdata/meld/meld_examples_4xx.pb.txt",
+			"testdata/meld/meld_examples_1.pb.txt",
+		},
+		"testdata/meld/meld_into_4xx_expected.pb.txt",
+		false,
+	},
+	// Test melding 4xx into non-4xx.
+	{
+		"example, 4xx example",
+		[]string{
+			"testdata/meld/meld_examples_1.pb.txt",
+			"testdata/meld/meld_examples_4xx.pb.txt",
+		},
+		"testdata/meld/meld_from_4xx_expected.pb.txt",
+		false,
 	},
 }
 
@@ -173,7 +210,7 @@ func TestMeldWithFormats(t *testing.T) {
 		}
 
 		// test left merged to right
-		{
+		if testData.commutative {
 			l := len(testData.witnessFiles)
 			result := test.LoadWitnessFromFileOrDile(testData.witnessFiles[l-1])
 			for i := l - 2; i >= 0; i-- {
