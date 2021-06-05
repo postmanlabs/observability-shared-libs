@@ -24,7 +24,7 @@ method: {
         }
       }
       example_values: {
-        key: "f2"
+        key: "f1"
         value: {}
       }
     }

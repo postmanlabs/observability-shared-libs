@@ -10,42 +10,6 @@ import (
 	"github.com/akitasoftware/akita-libs/pbhash"
 )
 
-// Melds src into dst, resolving conflicts using oneof. Assumes that dst and src
-// are for the same endpoint.
-//
-// If src contains only 4xx response codes, then the requests in src are
-// ignored because they are likely to be bogus, and only responses are melded.
-func MeldMethod(dst, src *pb.Method) error {
-	// Determine whether src has only 4xx response codes.
-	srcHas4xxOnly := false
-	if len(src.Responses) > 0 {
-		srcHas4xxOnly = true
-		for _, response := range src.Responses {
-			responseCode := response.GetMeta().GetHttp().GetResponseCode()
-			if responseCode < 400 || responseCode >= 500 {
-				srcHas4xxOnly = false
-				break
-			}
-		}
-	}
-
-	if !srcHas4xxOnly {
-		if dst.Args == nil {
-			dst.Args = src.Args
-		} else if err := meldTopLevelDataMap(dst.Args, src.Args); err != nil {
-			return errors.Wrap(err, "failed to meld arg map")
-		}
-	}
-
-	if dst.Responses == nil {
-		dst.Responses = src.Responses
-	} else if err := meldTopLevelDataMap(dst.Responses, src.Responses); err != nil {
-		return errors.Wrap(err, "failed to meld response map")
-	}
-
-	return nil
-}
-
 type dataAndHash struct {
 	hash string
 	data *pb.Data

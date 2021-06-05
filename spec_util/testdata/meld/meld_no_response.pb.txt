@@ -1,0 +1,32 @@
+# api_spec.Witness proto
+
+method: {
+  meta: {
+    http: {
+      method: "POST"
+      path_template: "/api/create_file/{arg3}"
+      host: "www.akibox.com"
+    }
+  }
+  args: {
+    key: "QnFfsGuRnss="
+    value: {
+      primitive: {
+        string_value: {
+          value: "f1"
+        }
+      }
+      meta: {
+        http: {
+          path: {
+            key: "arg3"
+          }
+        }
+      }
+      example_values: {
+        key: "f1"
+        value: {}
+      }
+    }
+  }
+}

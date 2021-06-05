@@ -30,35 +30,6 @@ method: {
     }
   }
   responses: {
-    key: "naAThnYPT5A="
-    value: {
-      struct: {
-        fields: {
-          key: "name"
-          value: {
-            primitive: {
-              string_value: {
-                value: "file_1"
-              }
-              formats: {
-                key: "ISOYearMonth"
-                value: true
-              }
-            }
-          }
-        }
-      }
-      meta: {
-        http: {
-          body: {
-            content_type: JSON
-          }
-          response_code: 200
-        }
-      }
-    }
-  }
-  responses: {
     key: "ui5EpupUcWM="
     value: {
       struct: {
@@ -83,6 +54,35 @@ method: {
             content_type: JSON
           }
           response_code: 403
+        }
+      }
+    }
+  }
+  responses: {
+    key: "naAThnYPT5A="
+    value: {
+      struct: {
+        fields: {
+          key: "name"
+          value: {
+            primitive: {
+              string_value: {
+                value: "file_1"
+              }
+              formats: {
+                key: "ISOYearMonth"
+                value: true
+              }
+            }
+          }
+        }
+      }
+      meta: {
+        http: {
+          body: {
+            content_type: JSON
+          }
+          response_code: 200
         }
       }
     }
