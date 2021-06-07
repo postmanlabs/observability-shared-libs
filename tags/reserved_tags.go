@@ -3,10 +3,11 @@ package tags
 import (
 	"strings"
 
+	"github.com/google/martian/v3/tags"
 	"github.com/pkg/errors"
 )
 
-type Key string
+type Key = tags.Key
 
 // Identifies the source of a trace or spec. Valid values:
 //   - user - trace/spec was manually created by a user
@@ -80,14 +81,14 @@ const XAkitaGitLabMRIID Key = "x-akita-gitlab-mr-iid"
 // == Methods =================================================================
 
 // Determines whether a key is reserved for Akita internal use.
-func (k Key) IsReserved() bool {
+func IsReservedKey(k Key) bool {
 	s := strings.ToLower(string(k))
 	return strings.HasPrefix(s, "x-akita-")
 }
 
 // Returns an error if the key is reserved for Akita internal use.
-func (k Key) CheckReserved() error {
-	if !k.IsReserved() {
+func CheckReservedKey(k Key) error {
+	if !IsReservedKey(k) {
 		return nil
 	}
 
@@ -108,7 +109,7 @@ func FromPairs(pairs []string) (map[Key]string, error) {
 			return nil, errors.Errorf("tag with key %s specified more than once", k)
 		}
 
-		if err := k.CheckReserved(); err != nil {
+		if err := CheckReservedKey(k); err != nil {
 			return nil, err
 		}
 
