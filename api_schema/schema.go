@@ -57,7 +57,7 @@ type CreateLearnSessionRequest struct {
 	BaseAPISpecRef *APISpecReference `json:"base_api_spec_ref,omitempty"`
 
 	// Optional key-value pairs to tag this learn session.
-	// We reserve tags with "x-akita" and "akita:" prefix for internal use.
+	// We reserve tags with "x-akita-" prefix for internal use.
 	Tags map[tags.Key]string `json:"tags,omitempty"`
 
 	// Optional name for the learn session.
