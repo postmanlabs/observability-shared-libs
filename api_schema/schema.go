@@ -6,6 +6,7 @@ import (
 
 	"github.com/akitasoftware/akita-libs/akid"
 	"github.com/akitasoftware/akita-libs/spec_summary"
+	"github.com/akitasoftware/akita-libs/tags"
 )
 
 // NetworkDirection is always relative to subject service.
@@ -56,8 +57,8 @@ type CreateLearnSessionRequest struct {
 	BaseAPISpecRef *APISpecReference `json:"base_api_spec_ref,omitempty"`
 
 	// Optional key-value pairs to tag this learn session.
-	// We reserve tags with "x-akita" prefix for internal use.
-	Tags map[string]string `json:"tags,omitempty"`
+	// We reserve tags with "x-akita" and "akita:" prefix for internal use.
+	Tags map[tags.Key]string `json:"tags,omitempty"`
 
 	// Optional name for the learn session.
 	Name string `json:"name"`
