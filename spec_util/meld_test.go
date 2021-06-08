@@ -14,7 +14,6 @@ type testData struct {
 	name                string
 	witnessFiles        []string
 	expectedWitnessFile string
-	commutative         bool
 }
 
 var tests = []testData{
@@ -25,7 +24,6 @@ var tests = []testData{
 			"testdata/meld/meld_data_formats_1.pb.txt",
 		},
 		"testdata/meld/meld_data_formats_1.pb.txt",
-		true,
 	},
 	{
 		"format, format",
@@ -34,7 +32,6 @@ var tests = []testData{
 			"testdata/meld/meld_data_formats_2.pb.txt",
 		},
 		"testdata/meld/meld_data_formats_3.pb.txt",
-		true,
 	},
 	{
 		"format, format with conflict",
@@ -43,7 +40,6 @@ var tests = []testData{
 			"testdata/meld/meld_conflict_2.pb.txt",
 		},
 		"testdata/meld/meld_conflict_expected.pb.txt",
-		true,
 	},
 	{
 		"duplicate format dropped",
@@ -54,7 +50,6 @@ var tests = []testData{
 			"testdata/meld/meld_data_formats_2.pb.txt",
 		},
 		"testdata/meld/meld_data_formats_3.pb.txt",
-		true,
 	},
 	{
 		"duplicate format kind dropped",
@@ -65,7 +60,6 @@ var tests = []testData{
 			"testdata/meld/meld_data_kind_2.pb.txt",
 		},
 		"testdata/meld/meld_data_kind_expected.pb.txt",
-		true,
 	},
 	{
 		"meld into existing conflict",
@@ -74,7 +68,6 @@ var tests = []testData{
 			"testdata/meld/meld_with_existing_conflict_2.pb.txt",
 		},
 		"testdata/meld/meld_with_existing_conflict_expected.pb.txt",
-		true,
 	},
 	{
 		"turn conflict with none into optional - order 1",
@@ -83,7 +76,6 @@ var tests = []testData{
 			"testdata/meld/meld_suppress_none_conflict_2.pb.txt",
 		},
 		"testdata/meld/meld_suppress_none_conflict_expected.pb.txt",
-		true,
 	},
 	{
 		// Make sure none is suppressed if it's not the first value that we process.
@@ -93,7 +85,6 @@ var tests = []testData{
 			"testdata/meld/meld_suppress_none_conflict_1.pb.txt",
 		},
 		"testdata/meld/meld_suppress_none_conflict_expected.pb.txt",
-		true,
 	},
 	{
 		// Test meld(T, optional<T>) => optional<T>
@@ -103,7 +94,6 @@ var tests = []testData{
 			"testdata/meld/meld_optional_required_2.pb.txt",
 		},
 		"testdata/meld/meld_optional_required_2.pb.txt",
-		true,
 	},
 	{
 		// meld(oneof(T1, T2), oneof(T1, T3)) => oneof(T1, T2, T3)
@@ -113,7 +103,6 @@ var tests = []testData{
 			"testdata/meld/meld_additive_oneof_2.pb.txt",
 		},
 		"testdata/meld/meld_additive_oneof_expected.pb.txt",
-		true,
 	},
 	{
 		// meld(oneof(T1, T2), T3) => oneof(T1, T2, T3)
@@ -123,7 +112,6 @@ var tests = []testData{
 			"testdata/meld/meld_oneof_with_primitive_2.pb.txt",
 		},
 		"testdata/meld/meld_oneof_with_primitive_expected.pb.txt",
-		true,
 	},
 	{
 		"meld struct",
@@ -132,7 +120,6 @@ var tests = []testData{
 			"testdata/meld/meld_struct_2.pb.txt",
 		},
 		"testdata/meld/meld_struct_2.pb.txt",
-		true,
 	},
 	{
 		"meld list",
@@ -141,7 +128,6 @@ var tests = []testData{
 			"testdata/meld/meld_list_2.pb.txt",
 		},
 		"testdata/meld/meld_list_2.pb.txt",
-		true,
 	},
 	{
 		"example, example",
@@ -150,7 +136,6 @@ var tests = []testData{
 			"testdata/meld/meld_examples_2.pb.txt",
 		},
 		"testdata/meld/meld_examples_3.pb.txt",
-		true,
 	},
 	{
 		"3 examples, 3 examples",
@@ -159,7 +144,6 @@ var tests = []testData{
 			"testdata/meld/meld_examples_big_2.pb.txt",
 		},
 		"testdata/meld/meld_examples_big_3.pb.txt",
-		true,
 	},
 	{
 		"1 example, 0 examples",
@@ -168,56 +152,72 @@ var tests = []testData{
 			"testdata/meld/meld_no_examples_2.pb.txt",
 		},
 		"testdata/meld/meld_no_examples_3.pb.txt",
-		true,
 	},
-	// Test melding non-4xx into 4xx.
+	// Test melding non-4xx with 4xx.
 	{
 		"4xx example, example",
 		[]string{
-			"testdata/meld/meld_examples_4xx.pb.txt",
 			"testdata/meld/meld_examples_1.pb.txt",
+			"testdata/meld/meld_examples_4xx_2.pb.txt",
 		},
-		"testdata/meld/meld_into_4xx_expected.pb.txt",
-		false,
+		"testdata/meld/meld_non_4xx_with_4xx_expected.pb.txt",
 	},
-	// Test melding 4xx into non-4xx.
+	// Test melding 4xx with 4xx.
 	{
-		"example, 4xx example",
+		"4xx example, 4xx example",
 		[]string{
-			"testdata/meld/meld_examples_1.pb.txt",
-			"testdata/meld/meld_examples_4xx.pb.txt",
+			"testdata/meld/meld_examples_4xx_1.pb.txt",
+			"testdata/meld/meld_examples_4xx_2.pb.txt",
 		},
-		"testdata/meld/meld_from_4xx_expected.pb.txt",
-		false,
+		"testdata/meld/meld_4xx_expected.pb.txt",
+	},
+	// Test melding request-only with 4xx. We should get the request from the first, paired with the response from the second.
+	{
+		"no response, 4xx example",
+		[]string{
+			"testdata/meld/meld_no_response.pb.txt",
+			"testdata/meld/meld_examples_4xx_2.pb.txt",
+		},
+		"testdata/meld/meld_no_response_4xx_expected.pb.txt",
+	},
+	// Test melding request-only with 4xx with 4xx and non-4xx. We should get the requests from the first and third, paired with both responses.
+	{
+		"no response, 4xx example, full non-4xx",
+		[]string{
+			"testdata/meld/meld_no_response.pb.txt",
+			"testdata/meld/meld_examples_4xx_2.pb.txt",
+			"testdata/meld/meld_examples_2.pb.txt",
+		},
+		"testdata/meld/meld_no_response_4xx_non_4xx_expected.pb.txt",
 	},
 }
 
 func TestMeldWithFormats(t *testing.T) {
 	for _, testData := range tests {
-		expected := test.LoadWitnessFromFileOrDile(testData.expectedWitnessFile)
+		expected := test.LoadWitnessFromFileOrDile(testData.expectedWitnessFile).Method
 
 		// test right merged to left
 		{
-			result := test.LoadWitnessFromFileOrDile(testData.witnessFiles[0])
+			result := NewMeldedMethod(test.LoadWitnessFromFileOrDile(testData.witnessFiles[0]).Method)
 			for i := 1; i < len(testData.witnessFiles); i++ {
 				newWitness := test.LoadWitnessFromFileOrDile(testData.witnessFiles[i])
-				assert.NoError(t, MeldMethod(result.Method, newWitness.Method))
+				assert.NoError(t, result.Meld(NewMeldedMethod(newWitness.Method)))
 			}
-			if diff := cmp.Diff(expected, result, cmp.Comparer(proto.Equal)); diff != "" {
+			if diff := cmp.Diff(expected, result.GetMethod(), cmp.Comparer(proto.Equal)); diff != "" {
 				t.Errorf("[%s] right merged to left\n%v", testData.name, diff)
 				continue
 			}
 		}
 
 		// test left merged to right
-		if testData.commutative {
+		{
 			l := len(testData.witnessFiles)
-			result := test.LoadWitnessFromFileOrDile(testData.witnessFiles[l-1])
+			result := NewMeldedMethod(test.LoadWitnessFromFileOrDile(testData.witnessFiles[l-1]).Method)
 			for i := l - 2; i >= 0; i-- {
 				newWitness := test.LoadWitnessFromFileOrDile(testData.witnessFiles[i])
-				assert.NoError(t, MeldMethod(result.Method, newWitness.Method))
+				assert.NoError(t, result.Meld(NewMeldedMethod(newWitness.Method)))
 			}
-			if diff := cmp.Diff(expected, result, cmp.Comparer(proto.Equal)); diff != "" {
+			if diff := cmp.Diff(expected, result.GetMethod(), cmp.Comparer(proto.Equal)); diff != "" {
 				t.Errorf("[%s] left merged to right\n%v", testData.name, diff)
 				continue
 			}
