@@ -98,12 +98,12 @@ type CreateSpecRequest struct {
 	Name string `json:"name"`
 
 	// Optional: user-specified tags.
-	Tags map[string]string `json:"tags"`
+	Tags map[tags.Key]string `json:"tags"`
 }
 
 type UploadSpecRequest struct {
-	Name string            `json:"name"`
-	Tags map[string]string `json:"tags,omitempty"`
+	Name string              `json:"name"`
+	Tags map[tags.Key]string `json:"tags,omitempty"`
 
 	// TODO(kku): use multipart/form-data upload once we can support it.
 	Content string `json:"content"`
@@ -134,8 +134,8 @@ type WitnessReport struct {
 	// A serialized Witness protobuf in base64 URL encoded format.
 	WitnessProto string `json:"witness_proto"`
 
-	ID   akid.WitnessID    `json:"id"`
-	Tags map[string]string `json:"tags"`
+	ID   akid.WitnessID      `json:"id"`
+	Tags map[tags.Key]string `json:"tags"`
 
 	// Hash of the witness proto. Only used internally in the client.
 	Hash string `json:"-"`
@@ -159,7 +159,7 @@ type GetSpecMetadataResponse struct {
 
 	State APISpecState `json:"state"`
 
-	Tags map[string]string `json:"tags"`
+	Tags map[tags.Key]string `json:"tags"`
 }
 
 type GetSpecResponse struct {
@@ -180,7 +180,7 @@ type GetSpecResponse struct {
 
 	Summary *spec_summary.Summary `json:"summary,omitempty"`
 
-	Tags map[string]string `json:"tags"`
+	Tags map[tags.Key]string `json:"tags"`
 }
 
 type SetSpecVersionRequest struct {

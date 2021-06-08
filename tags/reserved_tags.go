@@ -10,11 +10,7 @@ import (
 type Key = tags.Key
 
 const (
-	// Identifies the source of a trace or spec. Valid values:
-	//   - user - trace/spec was manually created by a user
-	//   - uploaded - trace/spec was manually uploaded by a user
-	//   - deployment - trace/spec from a staging or production deployment
-	//   - ci - trace/spec from a CI pipeline
+	// Identifies the source of a trace or spec. See `Source` for values.
 	XAkitaSource Key = "x-akita-source"
 
 	// The original filesystem path of an uploaded trace.
@@ -63,10 +59,6 @@ const (
 
 // GitHub tags
 const (
-	// Identifies the GitHub organization in which the pull request was made.
-	// Attached to traces or specs obtained from a GitHub pull request.
-	AkitaGitHubOrganizationID Key = "x-akita-github-organization-id"
-
 	// Identifies the GitHub PR number associated with the pull request. Attached
 	// to traces or specs obtained from a GitHub pull request.
 	XAkitaGitHubPR Key = "x-akita-github-pr"
