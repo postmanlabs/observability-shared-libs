@@ -19,6 +19,16 @@ const (
 	// Identifies the CI framework from which a trace or spec was obtained (e.g.,
 	// CircleCI, Travis).
 	XAkitaCI Key = "x-akita-ci"
+
+	// Each model derived from a PR (or MR) is automatically diffed against a
+	// baseline spec. This tag identifies the AKID for that baseline spec.
+	// Attached to specs.
+	XAkitaComparedWith Key = "x-akita-compared-with"
+
+	// Each model derived from a PR (or MR) is automatically diffed against a
+	// baseline spec. This tag identifies the number of differences that were
+	// found in this diff.
+	XAkitaNumDifferences Key = "x-akita-num-differences"
 )
 
 // CircleCI tags
