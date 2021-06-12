@@ -64,22 +64,97 @@ type CreateLearnSessionRequest struct {
 	Name string `json:"name"`
 }
 
-// Also used as a model in specs_db.
 type LearnSession struct {
-	tableName struct{} `pg:"learn_sessions"`
-
-	ID           akid.LearnSessionID `pg:"id,pk" json:"id"`
-	Name         string              `pg:"name" json:"name"`
-	IdentityID   akid.IdentityID     `pg:"identity_id" json:"identity_id"`
-	ServiceID    akid.ServiceID      `pg:"service_id" json:"service_id"`
-	CreationTime time.Time           `pg:"creation_time" json:"creation_time"`
+	ID           akid.LearnSessionID `json:"id"`
+	Name         string              `json:"name"`
+	IdentityID   akid.IdentityID     `json:"identity_id"`
+	ServiceID    akid.ServiceID      `json:"service_id"`
+	CreationTime time.Time           `json:"creation_time"`
 
 	// Optional field whose presence indicates that the learn session is an
 	// extension to an existing API spec.
-	BaseAPISpecID *akid.APISpecID `pg:"base_api_spec_id" json:"base_api_spec_id,omitempty"`
+	BaseAPISpecID *akid.APISpecID `json:"base_api_spec_id,omitempty"`
 
 	// HasMany relationship.
 	Tags []LearnSessionTag `json:"tags"`
+}
+
+func NewLearnSession(
+	ID akid.LearnSessionID,
+	Name string,
+	IdentityID akid.IdentityID,
+	ServiceID akid.ServiceID,
+	CreationTime time.Time,
+
+	BaseAPISpecID *akid.APISpecID,
+
+	Tags []LearnSessionTag,
+) *LearnSession {
+	return &LearnSession{
+		ID:           ID,
+		Name:         Name,
+		IdentityID:   IdentityID,
+		ServiceID:    ServiceID,
+		CreationTime: CreationTime,
+
+		BaseAPISpecID: BaseAPISpecID,
+
+		Tags: Tags,
+	}
+}
+
+// An extended version of LearnSession that includes extra information for
+// presentation in the web console when listing learn sessions.
+// XXX Should inherit from LearnSession, but Go. :(
+type ListedLearnSession struct {
+	tableName struct{} `pg:"learn_sessions"`
+
+	ID           akid.LearnSessionID `json:"id"`
+	Name         string              `json:"name"`
+	IdentityID   akid.IdentityID     `json:"identity_id"`
+	ServiceID    akid.ServiceID      `json:"service_id"`
+	CreationTime time.Time           `json:"creation_time"`
+
+	// Optional field whose presence indicates that the learn session is an
+	// extension to an existing API spec.
+	BaseAPISpecID *akid.APISpecID `json:"base_api_spec_id,omitempty"`
+
+	// HasMany relationship.
+	Tags []LearnSessionTag `json:"tags"`
+
+	// Identifies the set of API specs that are derived from this learn session.
+	APISpecs []akid.APISpecID `json:api_spec_ids`
+
+	// The number of witnesses in this learn session.
+	NumWitnesses int `json:num_witnesses`
+}
+
+func NewListedLearnSession(
+	ID akid.LearnSessionID,
+	Name string,
+	IdentityID akid.IdentityID,
+	ServiceID akid.ServiceID,
+	CreationTime time.Time,
+
+	BaseAPISpecID *akid.APISpecID,
+
+	Tags []LearnSessionTag,
+	APISpecs []akid.APISpecID,
+	NumWitnesses int,
+) *ListedLearnSession {
+	return &ListedLearnSession{
+		ID:           ID,
+		Name:         Name,
+		IdentityID:   IdentityID,
+		ServiceID:    ServiceID,
+		CreationTime: CreationTime,
+
+		BaseAPISpecID: BaseAPISpecID,
+
+		Tags:         Tags,
+		APISpecs:     APISpecs,
+		NumWitnesses: NumWitnesses,
+	}
 }
 
 type LearnSessionTag struct {
@@ -114,7 +189,7 @@ type UploadSpecResponse struct {
 }
 
 type ListSessionsResponse struct {
-	Sessions []*LearnSession `json:"sessions"`
+	Sessions []*ListedLearnSession `json:"sessions"`
 }
 
 type UploadWitnessesRequest struct {
