@@ -123,10 +123,10 @@ type ListedLearnSession struct {
 	Tags []LearnSessionTag `json:"tags"`
 
 	// Identifies the set of API specs that are derived from this learn session.
-	APISpecs []akid.APISpecID `json:api_spec_ids`
+	APISpecs []akid.APISpecID `json:"api_spec_ids"`
 
 	// The number of witnesses in this learn session.
-	NumWitnesses int `json:num_witnesses`
+	NumWitnesses int `json:"num_witnesses"`
 }
 
 func NewListedLearnSession(
