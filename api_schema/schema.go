@@ -107,8 +107,6 @@ func NewLearnSession(
 // presentation in the web console when listing learn sessions.
 // XXX Should inherit from LearnSession, but Go. :(
 type ListedLearnSession struct {
-	tableName struct{} `pg:"learn_sessions"`
-
 	ID           akid.LearnSessionID `json:"id"`
 	Name         string              `json:"name"`
 	IdentityID   akid.IdentityID     `json:"identity_id"`
@@ -125,8 +123,7 @@ type ListedLearnSession struct {
 	// Identifies the set of API specs that are derived from this learn session.
 	APISpecs []akid.APISpecID `json:"api_spec_ids"`
 
-	// The number of witnesses in this learn session.
-	NumWitnesses int `json:"num_witnesses"`
+	Stats *LearnSessionStats `json:"stats"`
 }
 
 func NewListedLearnSession(
@@ -140,7 +137,7 @@ func NewListedLearnSession(
 
 	Tags []LearnSessionTag,
 	APISpecs []akid.APISpecID,
-	NumWitnesses int,
+	Stats *LearnSessionStats,
 ) *ListedLearnSession {
 	return &ListedLearnSession{
 		ID:           ID,
@@ -151,8 +148,20 @@ func NewListedLearnSession(
 
 		BaseAPISpecID: BaseAPISpecID,
 
-		Tags:         Tags,
-		APISpecs:     APISpecs,
+		Tags:     Tags,
+		APISpecs: APISpecs,
+		Stats:    Stats,
+	}
+}
+
+// Statistics about a single learn session.
+type LearnSessionStats struct {
+	// The number of witnesses in this learn session.
+	NumWitnesses int `json:"num_witnesses"`
+}
+
+func NewLearnSessionStats(NumWitnesses int) *LearnSessionStats {
+	return &LearnSessionStats{
 		NumWitnesses: NumWitnesses,
 	}
 }
