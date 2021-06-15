@@ -123,7 +123,7 @@ type ListedLearnSession struct {
 	// Identifies the set of API specs that are derived from this learn session.
 	APISpecs []akid.APISpecID `json:"api_spec_ids"`
 
-	Stats *LearnSessionStats `json:"stats"`
+	Stats *LearnSessionStats `json:"stats,omitempty"`
 }
 
 func NewListedLearnSession(
