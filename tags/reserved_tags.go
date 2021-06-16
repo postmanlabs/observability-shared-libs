@@ -57,6 +57,8 @@ const (
 
 	// Identifies the git commit hash from which the trace or spec was derived.
 	// Attached to traces or specs obtained from CI.
+	// May also be attached to deployment traces if the git commit is known
+	// and applicable.
 	XAkitaGitCommit Key = "x-akita-git-commit"
 
 	// A link to the git repository. Attached to traces or specs obtained from a
@@ -83,6 +85,49 @@ const (
 const (
 	XAkitaGitLabProject Key = "x-akita-gitlab-project"
 	XAkitaGitLabMRIID   Key = "x-akita-gitlab-mr-iid"
+)
+
+// Deployment tags
+const (
+	// The name of the deployment environment, suggested values "production"
+	// or "staging" but may be a user-defined value
+	XAkitaDeployment Key = "x-akita-deployment"
+)
+
+// AWS deployment tags
+const (
+	XAkitaAWSRegion Key = "x-akita-aws-region"
+)
+
+// Kubernetes deployment tags
+const (
+	// Kubernetes namespace
+	// = metadata.namespace in the Downward API
+	XAkitaKubernetesNamespace Key = "x-akita-k8s-namespace"
+
+	// Node (host) on which the collection agent is running
+	// = spec.nodeName in the Downward API (v1.4.0+)
+	XAkitaKubernetesNode Key = "x-akita-k8s-node"
+
+	// IP address of the Kubernetes node
+	// = status.hostIP in the Downward API
+	XAkitaKubernetesHostIP Key = "x-akita-k8s-host-ip"
+
+	// Pod in which the collection agent is running; may be
+	// a dedicated pod using host networking, or an application
+	// pod when running as a sidecar.
+	// = metadata.name in the Downward API
+	XAkitaKubernetesPod Key = "x-akita-k8s-pod"
+
+	// Pod IP address
+	// = status.podIP in the Downward API (v1.7.0+)
+	XAkitaKubernetesPodIP Key = "x-akita-k8s-pod-ip"
+
+	// Daemonset used to create the collection agent, if any
+	XAkitaKubernetesDaemonset Key = "x-akita-k8s-daemonset"
+
+	// Not included: metadata.uid, metadata.labels, metadata.annotations,
+	// resources limits and requests, spec.serviceAccountName
 )
 
 // Packet-capture tags
