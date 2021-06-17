@@ -526,8 +526,8 @@ func extendContext(cin Context, node interface{}) {
 					name := fmt.Sprint(edge.MapKey)
 
 					var astGrandparent interface{} = nil
-					if len(astPath) >= 2 {
-						astGrandparent = astPath.GetNthLast(2).AncestorNode
+					if secondLastElt := astPath.GetNthLast(2); secondLastElt != nil {
+						astGrandparent = secondLastElt.AncestorNode
 					}
 
 					switch astGrandparent := astGrandparent.(type) {
