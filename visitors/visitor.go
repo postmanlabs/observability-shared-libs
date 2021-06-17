@@ -47,6 +47,11 @@ func (c ContextPath) GetLast() ContextPathElement {
 	return c[len(c)-1]
 }
 
+// Returns the `n`-th last element in the path.
+func (c ContextPath) GetNthLast(n int) ContextPathElement {
+	return c[len(c)-n]
+}
+
 // Represents an ancestor node and an outgoing edge from that node.
 type ContextPathElement struct {
 	AncestorNode interface{}

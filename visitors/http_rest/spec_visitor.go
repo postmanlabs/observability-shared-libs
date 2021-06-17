@@ -515,7 +515,6 @@ func extendContext(cin Context, node interface{}) {
 			astPath := ctx.GetPath()
 			if !astPath.IsEmpty() {
 				astPathEdge := astPath.GetLast().OutEdge
-				astParent := astPath.GetLast().AncestorNode
 
 				// Update the field path.
 				switch edge := astPathEdge.(type) {
@@ -526,21 +525,26 @@ func extendContext(cin Context, node interface{}) {
 				case *MapValueEdge:
 					name := fmt.Sprint(edge.MapKey)
 
-					switch astParent := astParent.(type) {
-					case *pb.OneOf:
+					var astGrandparent interface{} = nil
+					if len(astPath) >= 2 {
+						astGrandparent = astPath.GetNthLast(2).AncestorNode
+					}
+
+					switch astGrandparent := astGrandparent.(type) {
+					case pb.OneOf:
 						// Visiting a child of a OneOf. The name will be a meaningless hash
 						// of the Data being visited. Instead, use a OneOfVariant to
 						// represent the field path. To find the index of the OneOfVariant,
 						// sort the variants by their hash and take the 1-based index in
 						// the resulting array.
-						oneOf := astParent
+						oneOf := astGrandparent
 						numOptions := len(oneOf.Options)
 						variantHashes := []string{}
 						for hash := range oneOf.Options {
 							variantHashes = append(variantHashes, hash)
 						}
 						sort.Strings(variantHashes)
-						index := sort.SearchStrings(variantHashes, name)
+						index := sort.SearchStrings(variantHashes, name) + 1
 
 						ctx.appendFieldPath(NewOneOfVariant(index, numOptions))
 
