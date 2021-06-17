@@ -3,6 +3,7 @@ package http_rest
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -514,6 +515,7 @@ func extendContext(cin Context, node interface{}) {
 			astPath := ctx.GetPath()
 			if !astPath.IsEmpty() {
 				astPathEdge := astPath.GetLast().OutEdge
+				astParent := astPath.GetLast().AncestorNode
 
 				// Update the field path.
 				switch edge := astPathEdge.(type) {
@@ -522,7 +524,29 @@ func extendContext(cin Context, node interface{}) {
 				case *ArrayElementEdge:
 					ctx.appendFieldPath(NewArrayElement(edge.ElementIndex))
 				case *MapValueEdge:
-					ctx.appendFieldPath(NewFieldName(fmt.Sprint(edge.MapKey)))
+					name := fmt.Sprint(edge.MapKey)
+
+					switch astParent := astParent.(type) {
+					case *pb.OneOf:
+						// Visiting a child of a OneOf. The name will be a meaningless hash
+						// of the Data being visited. Instead, use a OneOfVariant to
+						// represent the field path. To find the index of the OneOfVariant,
+						// sort the variants by their hash and take the 1-based index in
+						// the resulting array.
+						oneOf := astParent
+						numOptions := len(oneOf.Options)
+						variantHashes := []string{}
+						for hash := range oneOf.Options {
+							variantHashes = append(variantHashes, hash)
+						}
+						sort.Strings(variantHashes)
+						index := sort.SearchStrings(variantHashes, name)
+
+						ctx.appendFieldPath(NewOneOfVariant(index, numOptions))
+
+					default:
+						ctx.appendFieldPath(NewFieldName(name))
+					}
 				default:
 					panic(fmt.Sprintf("unknown edge type: %v", edge))
 				}
