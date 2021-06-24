@@ -10,6 +10,10 @@ const (
 	// Identifies the source of a trace or spec. See `Source` for values.
 	XAkitaSource Key = "x-akita-source"
 
+	// Identifies the process by which a trace or spec was created. See
+	// `CreatedBy` for values.
+	XAkitaCreatedBy Key = "x-akita-created-by"
+
 	// The original filesystem path of an uploaded trace.
 	XAkitaTraceLocalPath Key = "x-akita-trace-local-path"
 )
@@ -27,7 +31,8 @@ const (
 
 	// Each model derived from a PR (or MR) is automatically diffed against a
 	// baseline spec. This tag identifies the number of differences that were
-	// found in this diff.
+	// found in this diff. Attached to specs for which this automatic diffing is
+	// done.
 	XAkitaNumDifferences Key = "x-akita-num-differences"
 )
 
