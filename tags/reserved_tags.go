@@ -97,6 +97,9 @@ const (
 	// The name of the deployment environment, suggested values "production"
 	// or "staging" but may be a user-defined value
 	XAkitaDeployment Key = "x-akita-deployment"
+
+	// Used for specifications where the number of witnesses is too large.
+	XAkitaTruncatedSpec Key = "x-akita-truncated-spec"
 )
 
 // AWS deployment tags
