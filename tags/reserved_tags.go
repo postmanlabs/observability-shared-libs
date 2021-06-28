@@ -99,7 +99,7 @@ const (
 	XAkitaDeployment Key = "x-akita-deployment"
 
 	// Used for specifications where the number of witnesses is too large.
-	XAkitaTruncatedSpec Key = "x-akita-truncated-spec"
+	XAkitaTruncated Key = "x-akita-truncated"
 )
 
 // AWS deployment tags
