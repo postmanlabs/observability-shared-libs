@@ -39,8 +39,22 @@ type Context interface {
 // Represents a path through a data structure.
 type ContextPath []ContextPathElement
 
+func (c ContextPath) IsEmpty() bool {
+	return len(c) == 0
+}
+
 func (c ContextPath) GetLast() ContextPathElement {
 	return c[len(c)-1]
+}
+
+// Returns the `n`-th last element in the path, or nil if there is no such
+// element.
+func (c ContextPath) GetNthLast(n int) *ContextPathElement {
+	numElts := len(c)
+	if 1 <= n && n <= numElts {
+		return &c[numElts-n]
+	}
+	return nil
 }
 
 // Represents an ancestor node and an outgoing edge from that node.

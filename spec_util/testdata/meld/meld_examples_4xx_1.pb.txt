@@ -30,7 +30,7 @@ method: {
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "ugh"
     value: {
       struct: {
         fields: {
@@ -53,7 +53,7 @@ method: {
           body: {
             content_type: JSON
           }
-          response_code: 200
+          response_code: 403
         }
       }
     }

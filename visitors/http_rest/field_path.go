@@ -16,6 +16,7 @@ type fieldPathElementKind int
 const (
 	fieldNameKind fieldPathElementKind = iota
 	arrayElementKind
+	oneOfVariantKind
 )
 
 type abstractFieldPathElement struct {
@@ -28,6 +29,10 @@ func (elt *abstractFieldPathElement) IsFieldName() bool {
 
 func (elt *abstractFieldPathElement) IsArrayElement() bool {
 	return elt.kind == arrayElementKind
+}
+
+func (elt *abstractFieldPathElement) IsOneOfVariant() bool {
+	return elt.kind == oneOfVariantKind
 }
 
 // Identifies a field of an object.
@@ -72,4 +77,31 @@ func NewArrayElement(index int) *ArrayElement {
 
 func (ae *ArrayElement) String() string {
 	return fmt.Sprintf("[%d]", ae.Index)
+}
+
+// Identifies a branch of a variant ("one of").
+type OneOfVariant struct {
+	abstractFieldPathElement
+
+	// Identifies the variant being represented.
+	Index int
+
+	// The number of possible variants.
+	NumVariants int
+}
+
+var _ FieldPathElement = (*OneOfVariant)(nil)
+
+func NewOneOfVariant(index int, numVariants int) *OneOfVariant {
+	return &OneOfVariant{
+		abstractFieldPathElement: abstractFieldPathElement{
+			kind: oneOfVariantKind,
+		},
+		Index:       index,
+		NumVariants: numVariants,
+	}
+}
+
+func (oov *OneOfVariant) String() string {
+	return fmt.Sprintf("(format %d of %d)", oov.Index, oov.NumVariants)
 }

@@ -244,16 +244,32 @@ func CategorizeString(str string) PrimitiveValue {
 		return primValueImpl{v: v}
 	} else if v, err := strconv.ParseBool(str); err == nil {
 		return primValueImpl{v: v}
-	} else if !utf8.ValidString(str) {
-		// Protobuf string can only represent UTF-8 values, so we treat strings
-		// containing invalid UTF-8 runes as bytes.
-		// https://app.clubhouse.io/akita-software/story/1427
-		return primValueImpl{v: []byte(str)}
 	}
-	return primValueImpl{v: str}
+	return nonUtf8StringWorkaround(str)
 }
 
-func ToPrimitiveValue(v interface{}) (PrimitiveValue, error) {
+// A workaround to handle non-UTF-8 strings. Protobuf string can only represent
+// UTF-8 values, so we treat strings containing invalid UTF-8 runes as bytes.
+// https://app.clubhouse.io/akita-software/story/1427
+func nonUtf8StringWorkaround(str string) PrimitiveValue {
+	if utf8.ValidString(str) {
+		return primValueImpl{v: str}
+	}
+	return primValueImpl{v: []byte(str)}
+}
+
+type InterpretStrings bool
+
+const (
+	// Indicates that strings should be interpreted as numbers or boolean values
+	// wherever possible.
+	INTERPRET_STRINGS InterpretStrings = true
+
+	// Indicates that strings should remain strings.
+	NO_INTERPRET_STRINGS InterpretStrings = false
+)
+
+func ToPrimitiveValue(v interface{}, interpretStrings InterpretStrings) (PrimitiveValue, error) {
 	switch reflect.ValueOf(v).Kind() {
 	case reflect.Int:
 		v = int64(v.(int))
@@ -264,7 +280,10 @@ func ToPrimitiveValue(v interface{}) (PrimitiveValue, error) {
 	case reflect.Bool:
 		// Do nothing
 	case reflect.String:
-		return CategorizeString(v.(string)), nil
+		if interpretStrings {
+			return CategorizeString(v.(string)), nil
+		}
+		return nonUtf8StringWorkaround(v.(string)), nil
 	case reflect.Slice:
 		if bs, ok := v.([]byte); ok {
 			v = bs

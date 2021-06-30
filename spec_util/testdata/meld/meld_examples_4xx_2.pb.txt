@@ -9,7 +9,7 @@ method: {
     }
   }
   args: {
-    key: "QnFfsGuRnss="
+    key: ""
     value: {
       primitive: {
         string_value: {
@@ -24,13 +24,13 @@ method: {
         }
       }
       example_values: {
-        key: "f1"
+        key: "f2"
         value: {}
       }
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "ui5EpupUcWM="
     value: {
       struct: {
         fields: {
@@ -41,7 +41,7 @@ method: {
                 value: "file_1"
               }
               formats: {
-                key: "ISOYearMonth"
+                key: "ISOYearMonthDay"
                 value: true
               }
             }
@@ -53,7 +53,7 @@ method: {
           body: {
             content_type: JSON
           }
-          response_code: 200
+          response_code: 403
         }
       }
     }

@@ -8,6 +8,12 @@ github.com/akitasoftware/martian/v3 v3.0.1-0.20210108221002-22c39e10ccd2 h1:sBPB
 github.com/akitasoftware/martian/v3 v3.0.1-0.20210108221002-22c39e10ccd2/go.mod h1:qDTWoRR9LvzAsPM1JYaThR7tyE63cEy3XPkox/4pP1A=
 github.com/akitasoftware/martian/v3 v3.0.1-0.20210408175823-8159a63604a0 h1:I6dMrqlMXbXKpCQUCXKif6eT2FbG9GiXtGTUgBAJHlQ=
 github.com/akitasoftware/martian/v3 v3.0.1-0.20210408175823-8159a63604a0/go.mod h1:qDTWoRR9LvzAsPM1JYaThR7tyE63cEy3XPkox/4pP1A=
+github.com/akitasoftware/martian/v3 v3.0.1-0.20210607215513-d8717bec3637 h1:RsGofPPzDUAg+iYDd+N8l+YFhWSihp6ca0rW8bP7MPw=
+github.com/akitasoftware/martian/v3 v3.0.1-0.20210607215513-d8717bec3637/go.mod h1:qDTWoRR9LvzAsPM1JYaThR7tyE63cEy3XPkox/4pP1A=
+github.com/akitasoftware/martian/v3 v3.0.1-0.20210607230525-1acfb608de0d h1:G4DBVe2XdmNQWgzWI2M5pycWVJE9nRrGJz9/csxai34=
+github.com/akitasoftware/martian/v3 v3.0.1-0.20210607230525-1acfb608de0d/go.mod h1:qDTWoRR9LvzAsPM1JYaThR7tyE63cEy3XPkox/4pP1A=
+github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de h1:rWkji88f/EWUY+qGc6pEyhpjgFbpsXwrnlTDTu5mLjY=
+github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de/go.mod h1:qDTWoRR9LvzAsPM1JYaThR7tyE63cEy3XPkox/4pP1A=
 github.com/akitasoftware/objecthash-proto v0.0.0-20200508002052-e5b6b45fd2ba h1:sAv1pLJk8VU9q8CddBocaftsZnb2ppbBEQSN6H5O3kg=
 github.com/akitasoftware/objecthash-proto v0.0.0-20200508002052-e5b6b45fd2ba/go.mod h1:otNn0Cq1YGR1daOez6qwaCaF9tzRk1YkIsxF+6faKNE=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=

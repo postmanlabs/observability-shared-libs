@@ -30,7 +30,7 @@ method: {
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "ui5EpupUcWM="
     value: {
       struct: {
         fields: {
@@ -41,7 +41,7 @@ method: {
                 value: "file_1"
               }
               formats: {
-                key: "ISOYearMonth"
+                key: "ISOYearMonthDay"
                 value: true
               }
             }
@@ -53,7 +53,7 @@ method: {
           body: {
             content_type: JSON
           }
-          response_code: 200
+          response_code: 403
         }
       }
     }

@@ -24,13 +24,17 @@ method: {
         }
       }
       example_values: {
+        key: "f2"
+        value: {}
+      }
+      example_values: {
         key: "f1"
         value: {}
       }
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "UkEwED5h2s0="
     value: {
       struct: {
         fields: {
@@ -44,6 +48,10 @@ method: {
                 key: "ISOYearMonth"
                 value: true
               }
+              formats: {
+                key: "ISOYearMonthDay"
+                value: true
+              }
             }
           }
         }
@@ -53,7 +61,7 @@ method: {
           body: {
             content_type: JSON
           }
-          response_code: 200
+          response_code: 403
         }
       }
     }

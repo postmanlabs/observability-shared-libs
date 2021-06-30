@@ -161,20 +161,57 @@ var tests = []testData{
 		},
 		"testdata/meld/meld_optional_expected.pb.txt",
 	},
+	// Test melding non-4xx with 4xx.
+	{
+		"4xx example, example",
+		[]string{
+			"testdata/meld/meld_examples_1.pb.txt",
+			"testdata/meld/meld_examples_4xx_2.pb.txt",
+		},
+		"testdata/meld/meld_non_4xx_with_4xx_expected.pb.txt",
+	},
+	// Test melding 4xx with 4xx.
+	{
+		"4xx example, 4xx example",
+		[]string{
+			"testdata/meld/meld_examples_4xx_1.pb.txt",
+			"testdata/meld/meld_examples_4xx_2.pb.txt",
+		},
+		"testdata/meld/meld_4xx_expected.pb.txt",
+	},
+	// Test melding request-only with 4xx. We should get the request from the first, paired with the response from the second.
+	{
+		"no response, 4xx example",
+		[]string{
+			"testdata/meld/meld_no_response.pb.txt",
+			"testdata/meld/meld_examples_4xx_2.pb.txt",
+		},
+		"testdata/meld/meld_no_response_4xx_expected.pb.txt",
+	},
+	// Test melding request-only with 4xx with 4xx and non-4xx. We should get the requests from the first and third, paired with both responses.
+	{
+		"no response, 4xx example, full non-4xx",
+		[]string{
+			"testdata/meld/meld_no_response.pb.txt",
+			"testdata/meld/meld_examples_4xx_2.pb.txt",
+			"testdata/meld/meld_examples_2.pb.txt",
+		},
+		"testdata/meld/meld_no_response_4xx_non_4xx_expected.pb.txt",
+	},
 }
 
 func TestMeldWithFormats(t *testing.T) {
 	for _, testData := range tests {
-		expected := test.LoadWitnessFromFileOrDile(testData.expectedWitnessFile)
+		expected := test.LoadWitnessFromFileOrDile(testData.expectedWitnessFile).Method
 
 		// test right merged to left
 		{
-			result := test.LoadWitnessFromFileOrDile(testData.witnessFiles[0])
+			result := NewMeldedMethod(test.LoadWitnessFromFileOrDile(testData.witnessFiles[0]).Method)
 			for i := 1; i < len(testData.witnessFiles); i++ {
 				newWitness := test.LoadWitnessFromFileOrDile(testData.witnessFiles[i])
-				assert.NoError(t, MeldMethod(result.Method, newWitness.Method))
+				assert.NoError(t, result.Meld(NewMeldedMethod(newWitness.Method)))
 			}
-			if diff := cmp.Diff(expected, result, cmp.Comparer(proto.Equal)); diff != "" {
+			if diff := cmp.Diff(expected, result.GetMethod(), cmp.Comparer(proto.Equal)); diff != "" {
 				t.Errorf("[%s] right merged to left\n%v", testData.name, diff)
 				continue
 			}
@@ -183,12 +220,12 @@ func TestMeldWithFormats(t *testing.T) {
 		// test left merged to right
 		{
 			l := len(testData.witnessFiles)
-			result := test.LoadWitnessFromFileOrDile(testData.witnessFiles[l-1])
+			result := NewMeldedMethod(test.LoadWitnessFromFileOrDile(testData.witnessFiles[l-1]).Method)
 			for i := l - 2; i >= 0; i-- {
 				newWitness := test.LoadWitnessFromFileOrDile(testData.witnessFiles[i])
-				assert.NoError(t, MeldMethod(result.Method, newWitness.Method))
+				assert.NoError(t, result.Meld(NewMeldedMethod(newWitness.Method)))
 			}
-			if diff := cmp.Diff(expected, result, cmp.Comparer(proto.Equal)); diff != "" {
+			if diff := cmp.Diff(expected, result.GetMethod(), cmp.Comparer(proto.Equal)); diff != "" {
 				t.Errorf("[%s] left merged to right\n%v", testData.name, diff)
 				continue
 			}

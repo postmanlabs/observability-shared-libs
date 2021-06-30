@@ -1,11 +1,12 @@
 package http_rest
 
 import (
-	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	. "github.com/akitasoftware/akita-libs/visitors"
@@ -26,11 +27,11 @@ type ArgName interface {
 // the arguments' hashes. However, because arguments are not normalized,
 // equivalent arguments can have different hashes, so these indices are not
 // useful for determining whether and how a method has changed.
-func GetNormalizedArgNames(args map[string]*pb.Data) map[ArgName]string {
+func GetNormalizedArgNames(args map[string]*pb.Data, methodMeta *pb.HTTPMethodMeta) (map[ArgName]string, error) {
 	// XXX Ignoring errors from the normalizer regarding non-HTTP metadata.
-	normalizer := newArgNameNormalizer()
+	normalizer := newArgNameNormalizer(methodMeta)
 	Apply(normalizer, args)
-	return normalizer.normalizationMap
+	return normalizer.normalizationMap, normalizer.err
 }
 
 type argNameNormalizer struct {
@@ -53,8 +54,9 @@ type argNameNormalizer struct {
 
 var _ DefaultSpecVisitor = (*argNameNormalizer)(nil)
 
-func newArgNameNormalizer() *argNameNormalizer {
+func newArgNameNormalizer(methodMeta *pb.HTTPMethodMeta) *argNameNormalizer {
 	return &argNameNormalizer{
+		methodMeta:       methodMeta,
 		normalizationMap: make(map[ArgName]string),
 	}
 }
@@ -79,9 +81,11 @@ func (*argNameNormalizer) VisitDataChildren(self interface{}, c SpecVisitorConte
 }
 
 func (v *argNameNormalizer) setName(name ArgName) {
-	if _, ok := v.normalizationMap[name]; ok {
-		panic(fmt.Sprintf("Unexpected duplicated name for %v", name))
+	if existing, ok := v.normalizationMap[name]; ok {
+		glog.Warning("Non-normalized arg names ", existing, " and ", v.nonNormalizedArgName, " have conflicting normalized name ", name, ". Keeping the former and ignoring the latter.")
+		return
 	}
+
 	v.normalizationMap[name] = v.nonNormalizedArgName
 }
 
@@ -104,7 +108,7 @@ func (v *argNameNormalizer) EnterHTTPPath(self interface{}, _ SpecVisitorContext
 	template := v.methodMeta.GetPathTemplate()
 	components := strings.Split(template, "/")
 	for idx, component := range components {
-		if component == path.GetKey() {
+		if component == "{"+path.GetKey()+"}" {
 			v.setName(pathName{
 				index: idx,
 			})
@@ -185,11 +189,11 @@ func (n cookieName) String() string {
 
 // == Body parameters =========================================================
 
-type bodyName struct{
+type bodyName struct {
 	// Request or response
 	isResponse bool
 
-	contentType string
+	contentType  string
 	responseCode int32
 }
 
@@ -201,10 +205,11 @@ func (v *argNameNormalizer) EnterHTTPBody(self interface{}, ctx SpecVisitorConte
 	// Assumes there is at most one per:
 	// - method request x content type,
 	// - method response x response code x content type.
-	data, _ := ctx.GetInnermostData()
+	node, _ := ctx.GetInnermostNode(reflect.TypeOf((*pb.Data)(nil)))
+	data := node.(*pb.Data)
 	v.setName(bodyName{
-		isResponse: ctx.IsResponse(),
-		contentType: body.GetContentType().String(),
+		isResponse:   ctx.IsResponse(),
+		contentType:  body.GetContentType().String(),
 		responseCode: data.GetMeta().GetHttp().ResponseCode,
 	})
 	return SkipChildren

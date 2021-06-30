@@ -78,8 +78,10 @@ func LoadMethodsFromFileOrDie(path string) []*pb.Method {
 	return spec.Methods
 }
 
-func LoadWitnessFromFileOrDile(path string) *pb.Witness {
+func LoadWitnessFromFileOrDie(path string) *pb.Witness {
 	w := &pb.Witness{}
 	loadProtoFromFileOrDie(path, w)
 	return w
 }
+
+var LoadWitnessFromFileOrDile = LoadWitnessFromFileOrDie

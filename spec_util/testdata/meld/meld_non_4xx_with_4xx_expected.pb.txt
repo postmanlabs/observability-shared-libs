@@ -30,6 +30,35 @@ method: {
     }
   }
   responses: {
+    key: "ui5EpupUcWM="
+    value: {
+      struct: {
+        fields: {
+          key: "name"
+          value: {
+            primitive: {
+              string_value: {
+                value: "file_1"
+              }
+              formats: {
+                key: "ISOYearMonthDay"
+                value: true
+              }
+            }
+          }
+        }
+      }
+      meta: {
+        http: {
+          body: {
+            content_type: JSON
+          }
+          response_code: 403
+        }
+      }
+    }
+  }
+  responses: {
     key: "naAThnYPT5A="
     value: {
       struct: {

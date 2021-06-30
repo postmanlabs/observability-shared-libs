@@ -3,6 +3,7 @@ package http_rest
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -457,9 +458,11 @@ func extendContext(cin Context, node interface{}) {
 				ctx.setResponseCode(responseCode)
 			}
 
-			// Figure out the name and kind of parameter being visited.
+			// Figure out the name and kind of parameter being visited. If visiting a
+			// body, also figure out its content type.
 			var name string
 			named := true
+			var contentType *string = nil
 			if x := meta.GetPath(); x != nil {
 				ctx.setValueType(PATH)
 				name = x.GetKey()
@@ -475,11 +478,22 @@ func extendContext(cin Context, node interface{}) {
 			} else if x := meta.GetBody(); x != nil {
 				ctx.setValueType(BODY)
 				name = x.GetContentType().String()
+				contentType = &name
+				named = false
+			} else if x := meta.GetEmpty(); x != nil {
+				ctx.setValueType(BODY)
+				unknown := pb.HTTPBody_UNKNOWN.String()
+				contentType = &unknown
 				named = false
 			} else if x := meta.GetAuth(); x != nil {
 				ctx.setValueType(AUTH)
 				ctx.setHttpAuthType(x.GetType())
 				name = "Authorization"
+				named = false
+			} else if x := meta.GetMultipart(); x != nil {
+				ctx.setValueType(BODY)
+				unknown := pb.HTTPBody_UNKNOWN.String()
+				contentType = &unknown
 				named = false
 			}
 
@@ -487,32 +501,67 @@ func extendContext(cin Context, node interface{}) {
 				ctx.appendFieldPath(NewFieldName(name))
 			}
 
+			if contentType != nil {
+				ctx.setContentType(*contentType)
+			}
+
 			ctx.appendRestPath(ctx.GetValueType().String())
 			ctx.appendRestPath(name)
 
-			if node.GetOptional() != nil {
-				ctx.setIsOptional()
-			}
-
 			// Do nothing for HTTPEmpty
 		} else {
+			// No path to update if we're at the root of the AST subtree being
+			// visited.
 			astPath := ctx.GetPath()
-			astPathEdge := astPath.GetLast().OutEdge
+			if !astPath.IsEmpty() {
+				astPathEdge := astPath.GetLast().OutEdge
 
-			// Update the field path.
-			switch edge := astPathEdge.(type) {
-			case *StructFieldEdge:
-				ctx.appendFieldPath(NewFieldName(edge.FieldName))
-			case *ArrayElementEdge:
-				ctx.appendFieldPath(NewArrayElement(edge.ElementIndex))
-			case *MapValueEdge:
-				ctx.appendFieldPath(NewFieldName(fmt.Sprint(edge.MapKey)))
-			default:
-				panic(fmt.Sprintf("unknown edge type: %v", edge))
+				// Update the field path.
+				switch edge := astPathEdge.(type) {
+				case *StructFieldEdge:
+					ctx.appendFieldPath(NewFieldName(edge.FieldName))
+				case *ArrayElementEdge:
+					ctx.appendFieldPath(NewArrayElement(edge.ElementIndex))
+				case *MapValueEdge:
+					name := fmt.Sprint(edge.MapKey)
+
+					var astGrandparent interface{} = nil
+					if secondLastElt := astPath.GetNthLast(2); secondLastElt != nil {
+						astGrandparent = secondLastElt.AncestorNode
+					}
+
+					switch astGrandparent := astGrandparent.(type) {
+					case pb.OneOf:
+						// Visiting a child of a OneOf. The name will be a meaningless hash
+						// of the Data being visited. Instead, use a OneOfVariant to
+						// represent the field path. To find the index of the OneOfVariant,
+						// sort the variants by their hash and take the 1-based index in
+						// the resulting array.
+						oneOf := astGrandparent
+						numOptions := len(oneOf.Options)
+						variantHashes := []string{}
+						for hash := range oneOf.Options {
+							variantHashes = append(variantHashes, hash)
+						}
+						sort.Strings(variantHashes)
+						index := sort.SearchStrings(variantHashes, name) + 1
+
+						ctx.appendFieldPath(NewOneOfVariant(index, numOptions))
+
+					default:
+						ctx.appendFieldPath(NewFieldName(name))
+					}
+				default:
+					panic(fmt.Sprintf("unknown edge type: %v", edge))
+				}
+
+				// Update the REST path.
+				ctx.appendRestPath(astPathEdge.String())
 			}
+		}
 
-			// Update the REST path.
-			ctx.appendRestPath(astPathEdge.String())
+		if node.GetOptional() != nil {
+			ctx.setIsOptional()
 		}
 	}
 }

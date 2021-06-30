@@ -5,18 +5,37 @@ type PairContext interface {
 	// traversal into the given fields of the given structs.
 	EnterStructs(leftStruct interface{}, leftFieldName string, rightStruct interface{}, rightFieldName string) PairContext
 
+	// Returns a new PairContext in which the path on one side is appended to
+	// indicate a traversal into the given field of the given struct.
+	EnterStruct(leftOrRight LeftOrRight, structNode interface{}, fieldName string) PairContext
+
 	// Returns a new PairContext in which the paths are appended to indicate a
 	// traversal into the given elements of the given arrays.
 	EnterArrays(leftArray interface{}, leftIndex int, rightArray interface{}, rightIndex int) PairContext
+
+	// Returns a new PairContext in which the path on one side is appended to
+	// indicate a traversal into the given element of the given array.
+	EnterArray(leftOrRight LeftOrRight, arrayNode interface{}, elementIndex int) PairContext
 
 	// Returns a new PairContext in which the paths are appended to indicate a
 	// traversal into the values at the given keys of the given maps.
 	EnterMapValues(leftMap, leftKey, rightMap, rightKey interface{}) PairContext
 
+	// Returns a new PairContext in which the path on one side is appended to
+	// indicate a traversal into the value at the given key of the given map.
+	EnterMapValue(leftOrRight LeftOrRight, mapNode, mapKey interface{}) PairContext
+
 	// Returns the paths through the structures being traversed.
 	// See Context.GetPath().
 	GetPaths() (ContextPath, ContextPath)
 }
+
+type LeftOrRight bool
+
+const (
+	LeftSide  LeftOrRight = true
+	RightSide LeftOrRight = false
+)
 
 func NewPairContext() PairContext {
 	return &pairContext{
@@ -85,6 +104,20 @@ func (c *pairContext) EnterStructs(leftStruct interface{}, leftFieldName string,
 	}
 }
 
+func (c *pairContext) EnterStruct(leftOrRight LeftOrRight, structNode interface{}, fieldName string) PairContext {
+	if leftOrRight == LeftSide {
+		return &pairContext{
+			left:  c.left.EnterStruct(structNode, fieldName),
+			right: c.right,
+		}
+	}
+
+	return &pairContext{
+		left:  c.left,
+		right: c.right.EnterStruct(structNode, fieldName),
+	}
+}
+
 // Returns a new PairContext in which the paths are appended to indicate a
 // traversal into the given elements of the given arrays.
 func (c *pairContext) EnterArrays(leftArray interface{}, leftIndex int, rightArray interface{}, rightIndex int) PairContext {
@@ -94,12 +127,43 @@ func (c *pairContext) EnterArrays(leftArray interface{}, leftIndex int, rightArr
 	}
 }
 
+// Returns a new PairContext in which the path on one side is appended to
+// indicate a traversal into the given element of the given array.
+func (c *pairContext) EnterArray(leftOrRight LeftOrRight, arrayNode interface{}, elementIndex int) PairContext {
+	if leftOrRight == LeftSide {
+		return &pairContext{
+			left:  c.left.EnterArray(arrayNode, elementIndex),
+			right: c.right,
+		}
+	}
+
+	return &pairContext{
+		left:  c.left,
+		right: c.right.EnterArray(arrayNode, elementIndex),
+	}
+}
+
 // Returns a new PairContext in which the paths are appended to indicate a
 // traversal into the values at the given keys of the given maps.
 func (c *pairContext) EnterMapValues(leftMap, leftKey, rightMap, rightKey interface{}) PairContext {
 	return &pairContext{
 		left:  c.left.EnterMapValue(leftMap, leftKey),
 		right: c.right.EnterMapValue(rightMap, rightKey),
+	}
+}
+
+// Returns a new PairContext in which the path on one side is appended to
+// indicate a traversal into the value at the given key of the given map.
+func (c *pairContext) EnterMapValue(leftOrRight LeftOrRight, mapNode, mapKey interface{}) PairContext {
+	if leftOrRight == LeftSide {
+		return &pairContext{
+			left:  c.left.EnterMapValue(mapNode, mapKey),
+			right: c.right,
+		}
+	}
+	return &pairContext{
+		left:  c.left,
+		right: c.right.EnterMapValue(mapNode, mapKey),
 	}
 }
 

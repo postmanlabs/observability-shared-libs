@@ -55,7 +55,7 @@ func (t *astPairVisitor) visit(c PairContext, left, right interface{}) Cont {
 			return Abort
 		case Continue:
 		case SkipChildren:
-			panic("VisitChildren shouldn't return SkipChildren")
+			panic(fmt.Sprintf("VisitChildren shouldn't return SkipChildren. Visitor %v, nodes (%v, %v)", reflect.TypeOf(t.vm.Visitor()), reflect.TypeOf(left), reflect.TypeOf(right)))
 		case Stop:
 		default:
 			panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))

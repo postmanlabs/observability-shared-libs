@@ -1,6 +1,8 @@
 package http_rest
 
 import (
+	"reflect"
+
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/visitors"
 )
@@ -81,11 +83,15 @@ type SpecVisitorContext interface {
 	// This is nil if the message is not a descendant of Method.Responses.
 	GetResponseCode() *string
 
+	// This is nil if the message is not part of a body.
+	GetContentType() *string
+
 	// Returns the host.
 	GetHost() string
 
-	// Returns the innermost Data instance being visited and its context.
-	GetInnermostData() (*pb.Data, SpecVisitorContext)
+	// Returns the innermost node being visited having the given type, and that
+	// node's context.
+	GetInnermostNode(reflect.Type) (interface{}, SpecVisitorContext)
 
 	// Used by the visitor infrastructure to maintain the location of the field
 	// being visited.
@@ -101,6 +107,7 @@ type SpecVisitorContext interface {
 	setHttpAuthType(pb.HTTPAuth_HTTPAuthType)
 	setTopLevelDataIndex(int)
 	setResponseCode(string)
+	setContentType(string)
 }
 
 type specVisitorContext struct {
@@ -119,6 +126,7 @@ type specVisitorContext struct {
 	httpAuthType *pb.HTTPAuth_HTTPAuthType
 
 	responseCode *string
+	contentType  *string
 
 	// Index within restPath of the start of the section describing arg or
 	// response.
@@ -243,6 +251,13 @@ func (c *specVisitorContext) GetResponseCode() *string {
 	return c.responseCode
 }
 
+func (c *specVisitorContext) GetContentType() *string {
+	if c.GetValueType() != BODY {
+		return nil
+	}
+	return c.contentType
+}
+
 func (c *specVisitorContext) GetHost() string {
 	if len(c.restPath) < 1 {
 		return ""
@@ -250,10 +265,11 @@ func (c *specVisitorContext) GetHost() string {
 	return c.restPath[0]
 }
 
-func (c *specVisitorContext) GetInnermostData() (*pb.Data, SpecVisitorContext) {
+func (c *specVisitorContext) GetInnermostNode(typ reflect.Type) (interface{}, SpecVisitorContext) {
 	for c != nil {
-		if data, ok := c.path.GetLast().AncestorNode.(*pb.Data); ok {
-			return data, c.outer
+		node := c.path.GetLast().AncestorNode
+		if reflect.TypeOf(node) == typ {
+			return node, c.outer
 		}
 		c = c.outer.(*specVisitorContext)
 	}
@@ -283,6 +299,10 @@ func (c *specVisitorContext) setValueType(vt HttpValueType) {
 
 func (c *specVisitorContext) setResponseCode(code string) {
 	c.responseCode = &code
+}
+
+func (c *specVisitorContext) setContentType(contentType string) {
+	c.contentType = &contentType
 }
 
 func (c *specVisitorContext) setHttpAuthType(at pb.HTTPAuth_HTTPAuthType) {

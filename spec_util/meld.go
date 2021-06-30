@@ -10,24 +10,6 @@ import (
 	"github.com/akitasoftware/akita-libs/pbhash"
 )
 
-// Melds src into dst, resolving conflicts using oneof. Assumes that dst and src
-// are for the same endpoint.
-func MeldMethod(dst, src *pb.Method) error {
-	if dst.Args == nil {
-		dst.Args = src.Args
-	} else if err := meldTopLevelDataMap(dst.Args, src.Args); err != nil {
-		return errors.Wrap(err, "failed to meld arg map")
-	}
-
-	if dst.Responses == nil {
-		dst.Responses = src.Responses
-	} else if err := meldTopLevelDataMap(dst.Responses, src.Responses); err != nil {
-		return errors.Wrap(err, "failed to meld response map")
-	}
-
-	return nil
-}
-
 type dataAndHash struct {
 	hash string
 	data *pb.Data

@@ -95,7 +95,10 @@ func encodeUUID(u uuid.UUID) string {
 		n = n.Div(n, baseBigInt)
 		destBs = append([]byte{alphabet[r.Int64()]}, destBs...)
 	}
-	return string(destBs)
+
+	// Always return a 22-character encoding, which is the maximum length
+	// of an encoded UUID.  Pad the front with 0s if necessary.
+	return fmt.Sprintf("%022s", string(destBs))
 }
 
 func decodeUUID(s string) (uuid.UUID, error) {

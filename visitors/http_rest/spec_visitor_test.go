@@ -167,3 +167,27 @@ func TestGetDataPath(t *testing.T) {
 	sort.Strings(visitor.actualPaths)
 	assert.Equal(t, expectedPaths, visitor.actualPaths)
 }
+
+type primitiveCounter struct {
+	DefaultSpecVisitorImpl
+	numPrimitives int
+}
+
+var _ DefaultSpecVisitor = (*primitiveCounter)(nil)
+
+func (v *primitiveCounter) EnterPrimitive(self interface{}, c SpecVisitorContext, p *pb.Primitive) Cont {
+	v.numPrimitives++
+	return Continue
+}
+
+// Test for when the visitor starts at a Data node that is not a top-level
+// method argument.
+func TestVisitDataOnly(t *testing.T) {
+	spec := test.LoadAPISpecFromFileOrDie("../testdata/sentry_ir_spec.pb.txt")
+
+	var visitor primitiveCounter
+	response := spec.Methods[0].Responses["200-body-0"]
+	data := response.GetList().GetElems()[0]
+	Apply(&visitor, data)
+	assert.Equal(t, visitor.numPrimitives, 17)
+}
