@@ -7,6 +7,7 @@ const (
 	// Designates a spec that was automatically created by a schedule.
 	CreatedBySchedule CreatedBy = "schedule"
 
-	// Designates a spec that was automatically created as a "big model".
-	CreatedByBigModel CreatedBy = "big model"
+	// Designates a spec that was automatically created as an aggregate ("big")
+	// model.
+	CreatedByBigModel CreatedBy = "aggregator"
 )
