@@ -9,12 +9,12 @@ method: {
     }
   }
   responses: {
-    key: "Xc9aQTKyoNQ="
+    key: "IIl0Y4dF2q0="
     value: {
       oneof: {
         potential_conflict: true
         options: {
-          key: "ZnMYW-0YN9c="
+          key: "B_7tzSCpb5I="
           value: {
             struct: {
               fields: {
@@ -44,9 +44,13 @@ method: {
               fields: {
                 key: "age"
                 value: {
-                  primitive: {
-                    int64_value: {}
-                  }
+		  optional: {
+		    data: {
+                      primitive: {
+                        int64_value: {}
+	              }
+                    }
+		  }
                 }
               }
             }

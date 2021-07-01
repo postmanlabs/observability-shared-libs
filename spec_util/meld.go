@@ -224,17 +224,18 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 
 		// See if we can meld the src into one of the options. For example,
 		// melding struct into struct or list into list.
+		// When we do this, we need to change the hash
 		_, srcIsStruct := srcNoMeta.Value.(*pb.Data_Struct)
 		_, srcIsList := srcNoMeta.Value.(*pb.Data_List)
-		for _, option := range v.Oneof.Options {
+		for oldHash, option := range v.Oneof.Options {
 			switch option.Value.(type) {
 			case *pb.Data_Struct:
 				if srcIsStruct {
-					return MeldData(option, srcNoMeta)
+					return meldAndRehashOption(v.Oneof, oldHash, option, srcNoMeta)
 				}
 			case *pb.Data_List:
 				if srcIsList {
-					return MeldData(option, srcNoMeta)
+					return meldAndRehashOption(v.Oneof, oldHash, option, srcNoMeta)
 				}
 			}
 		}
@@ -258,6 +259,25 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		hasConflict = true
 		return recordConflict(dst, src)
 	}
+}
+
+// Meld a component of a OneOf that has been identified
+// as a type-match (struct with struct or list with list.)
+// This requires re-inserting it because the hash has been changed
+func meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
+	err := MeldData(option, srcNoMeta)
+	if err != nil {
+		return err
+	}
+	newHash, err := pbhash.HashProto(option)
+	if err != nil {
+		return err
+	}
+	if newHash != oldHash {
+		delete(oneof.Options, oldHash)
+		oneof.Options[newHash] = option
+	}
+	return nil
 }
 
 func dataEqual(dst, src *pb.Data) bool {
@@ -398,20 +418,44 @@ func assignDataFormats(d *pb.Data, formats map[string]bool) {
 }
 
 func meldStruct(dst, src *pb.Struct) error {
+	// If a field appears in both structs, it is assumed to be required.
+	// If it appears in one, but not the other, then it should become
+	// optional (if not optional already.)
+
 	if dst.Fields == nil {
 		dst.Fields = src.Fields
 		return nil
 	}
+	for k, dstData := range dst.Fields {
+		if _, ok := src.Fields[k]; !ok {
+			// Fields in dst but not in src.
+			makeOptional(dstData)
+		}
+	}
 	for k, srcData := range src.Fields {
 		if dstData, ok := dst.Fields[k]; ok {
+			// Found in both, MeldData handles if either is already
+			// optional.
 			if err := MeldData(dstData, srcData); err != nil {
 				return errors.Wrapf(err, "failed to meld struct key %s", k)
 			}
 		} else {
-			// The meld is additive - any new field is included.
+			// Fields found in src but not in dst.
+			makeOptional(srcData)
 			dst.Fields[k] = srcData
 		}
 	}
+
+	// ... but what if we end up with hundreds of keys?
+	// Probably that means the key is part of the data. Let's use an arbitrary
+	// threshold, and if we cross it, merge all the keys.
+	// TODO: convert to a new Map type instead of a Struct? Very disruptive, have to fix all the visitors etc.
+	// or TODO: use a special key "*" (matching pq syntax?), but somebody could actually use that in practice
+	// or TODO: use a special key that is less likely to be used, but remap it when displaying it or showing
+	// it as an OpenAPI spec.
+	// or TODO: add another field to Struct specifying that this has occurred.
+	// (and if we can infer a data format on the keys, it could live at that level too.)
+
 	return nil
 }
 
