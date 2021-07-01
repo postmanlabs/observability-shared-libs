@@ -449,11 +449,7 @@ func meldStruct(dst, src *pb.Struct) error {
 	// ... but what if we end up with hundreds of keys?
 	// Probably that means the key is part of the data. Let's use an arbitrary
 	// threshold, and if we cross it, merge all the keys.
-	// TODO: convert to a new Map type instead of a Struct? Very disruptive, have to fix all the visitors etc.
-	// or TODO: use a special key "*" (matching pq syntax?), but somebody could actually use that in practice
-	// or TODO: use a special key that is less likely to be used, but remap it when displaying it or showing
-	// it as an OpenAPI spec.
-	// or TODO: add another field to Struct specifying that this has occurred.
+	// TODO: add another field to Struct in in the IR specifying that this has occurred.
 	// (and if we can infer a data format on the keys, it could live at that level too.)
 
 	return nil
