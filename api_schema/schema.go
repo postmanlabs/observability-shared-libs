@@ -270,3 +270,47 @@ type GetSpecResponse struct {
 type SetSpecVersionRequest struct {
 	APISpecID akid.APISpecID `json:"api_spec_id"`
 }
+
+// Types used in spec list
+type SpecInfo struct {
+	ID akid.APISpecID `json:"id"`
+
+	Name string `json:"name,omitempty"`
+
+	// Whether the spec was LEARNED or LEARNED_WITH_EDITS.
+	CreationMode string `json:"creation_mode"`
+
+	// If the spec was created from a learn session, the session's ID is included.
+	// Deprecated: use learn_session_ids instead.
+	LearnSessionID *akid.LearnSessionID `json:"learn_session_id,omitempty"`
+
+	LearnSessionIDs []akid.LearnSessionID `json:"learn_session_ids,omitempty"`
+
+	// Deprecated: for old specs, tags are inherited from learn sessions.
+	// Use Tags field instead.
+	LearnSessionTags []LearnSessionTag `json:"learn_session_tags,omitempty"`
+
+	Tags        map[tags.Key]string `json:"tags,omitempty"`
+	VersionTags []string            `json:"version_tags,omitempty"`
+
+	CreationTime time.Time    `json:"creation_time"`
+	EditTime     time.Time    `json:"edit_time"`
+	State        APISpecState `json:"state"`
+
+	PRStatus string `json:"pr_status,omitempty"`
+
+	// Model and trace statistics
+	// Number of endpoints, number of witnesses incorporated into model, and
+	// raw number of witnesses used as input.
+	NumEndpoints    int `json:"num_endpoints,omitempty"`
+	NumEvents       int `json:"num_events,omitempty"`
+	NumStoredEvents int `json:"num_stored_events,omitempty"`
+
+	// Deployment times
+	TraceStartTime *time.Time `json:"trace_start_time,omitempty"`
+	TraceEndTime   *time.Time `json:"trace_end_time,omitempty"`
+}
+
+type ListSpecsResponse struct {
+	Specs []SpecInfo `json:"specs"`
+}
