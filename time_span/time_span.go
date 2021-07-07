@@ -4,8 +4,8 @@ import "time"
 
 // A closed interval of time.
 type TimeSpan struct {
-	start time.Time `json:"start"`
-	end   time.Time `json:"end"`
+	Start time.Time `json:"start"`
+	End   time.Time `json:"end"`
 }
 
 func NewTimeSpan(start time.Time, end time.Time) *TimeSpan {
@@ -14,24 +14,16 @@ func NewTimeSpan(start time.Time, end time.Time) *TimeSpan {
 	}
 
 	return &TimeSpan{
-		start: start,
-		end:   end,
+		Start: start,
+		End:   end,
 	}
 }
 
-func (span TimeSpan) Start() time.Time {
-	return span.start
-}
-
-func (span TimeSpan) End() time.Time {
-	return span.end
-}
-
 func (span TimeSpan) Duration() time.Duration {
-	return span.end.Sub(span.start)
+	return span.End.Sub(span.Start)
 }
 
 // Determines whether the span includes the given query.
 func (span TimeSpan) Includes(query time.Time) bool {
-	return span.start.Before(query) && query.Before(span.end) || span.start.Equal(query) || span.end.Equal(query)
+	return span.Start.Before(query) && query.Before(span.End) || span.Start.Equal(query) || span.End.Equal(query)
 }
