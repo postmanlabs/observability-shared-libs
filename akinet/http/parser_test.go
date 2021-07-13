@@ -261,6 +261,7 @@ func TestHTTPRequestParser(t *testing.T) {
 	}
 
 	for _, c := range testCases {
+		t.Logf(c.name)
 		if err := runParseTestCase(true, c); err != nil {
 			t.Error(err)
 		}
@@ -450,5 +451,52 @@ func TestHTTPResponseParser(t *testing.T) {
 		if err := runParseTestCase(false, c); err != nil {
 			t.Error(err)
 		}
+	}
+}
+
+func TestOversizedResponse(t *testing.T) {
+	packets := []string{
+		"HTTP/1.1 200 OK\r\nHost: example.com\r\n",
+		"Content-Length: 2000000\r\n\r\n",
+	}
+	bigPayload := make([]byte, 2000000)
+
+	inputs := []memview.MemView{
+		memview.New([]byte(packets[0])),
+		memview.New([]byte(packets[1])),
+		memview.New(bigPayload[:500000]),
+		memview.New(bigPayload[500000:1000000]),
+		memview.New(bigPayload[1000000:1200000]),
+		memview.New(bigPayload[1200000:1400000]),
+		memview.New(bigPayload[1400000:1600000]),
+		memview.New(bigPayload[1600000:1800000]),
+		memview.New(bigPayload[1800000:2000000]),
+	}
+
+	p := newHTTPParser(false, testBidiID, 522, 1203)
+	var pnc akinet.ParsedNetworkContent
+	var unused memview.MemView
+	var err error
+
+	for _, i := range inputs {
+		pnc, unused, err = p.Parse(i, false)
+		if err != nil {
+			t.Fatalf("Got error: %v", err)
+		}
+		if pnc != nil {
+			break
+		}
+	}
+	if pnc == nil {
+		t.Fatalf("didn't parse a packet")
+	}
+	if unused.Len() != 0 {
+		t.Errorf("unused length is %v", unused.Len())
+	}
+
+	response := pnc.(akinet.HTTPResponse)
+	// First payload larger than http limit
+	if len(response.Body) > 1200000 || len(response.Body) < 1000000 {
+		t.Errorf("got packet with body length %v", len(response.Body))
 	}
 }

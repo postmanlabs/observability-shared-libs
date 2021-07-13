@@ -14,6 +14,11 @@ import (
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
+const (
+	// Terminate parsing on any request or response larger than 1MB.
+	maxHttpLength = 1024 * 1024
+)
+
 // Implements TCPParser
 type httpParser struct {
 	w *io.PipeWriter
@@ -80,6 +85,15 @@ func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.Par
 		p.w.Close()
 		err = <-p.readClosed
 	}
+
+	// If the HTTP request or response is longer than our maximum length, close the pipe
+	// anyway. This will leave the input stream in a state where it probably can't find
+	// the next header until the accumulated data in the reassembly buffer is all skipped.
+	if p.allInput.Len() > maxHttpLength {
+		p.w.Close()
+		err = <-p.readClosed
+	}
+
 	return
 }
 
@@ -180,6 +194,12 @@ func readSingleHTTPResponse(r *bufio.Reader) (*http.Response, []byte, error) {
 	var body bytes.Buffer
 	_, bodyErr := io.Copy(&body, resp.Body)
 	resp.Body.Close()
+
+	if errors.Is(bodyErr, io.ErrUnexpectedEOF) {
+		// Let the next level try to handle a body that was truncated.
+		bodyErr = nil
+	}
+
 	return resp, body.Bytes(), bodyErr
 }
 
