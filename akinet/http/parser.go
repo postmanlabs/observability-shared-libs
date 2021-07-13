@@ -14,9 +14,11 @@ import (
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
-const (
-	// Terminate parsing on any request or response larger than 1MB.
-	maxHttpLength = 1024 * 1024
+var (
+	// Default maximum HTTP length supported.
+	// Can be altered by the CLI as a configuration setting, but doing so after parsing
+	// has started will be a race condition.
+	MaximumHTTPLength int64 = 1024 * 1024
 )
 
 // Implements TCPParser
@@ -30,6 +32,10 @@ type httpParser struct {
 
 	resultChan chan akinet.ParsedNetworkContent
 	isRequest  bool
+
+	// Maximum length of HTTP protocol unit supported; larger requests
+	// or responses may be truncated.
+	maxHttpLength int64
 }
 
 func (p *httpParser) Name() string {
@@ -89,7 +95,7 @@ func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.Par
 	// If the HTTP request or response is longer than our maximum length, close the pipe
 	// anyway. This will leave the input stream in a state where it probably can't find
 	// the next header until the accumulated data in the reassembly buffer is all skipped.
-	if p.allInput.Len() > maxHttpLength {
+	if p.allInput.Len() > p.maxHttpLength {
 		p.w.Close()
 		err = <-p.readClosed
 	}
@@ -150,10 +156,11 @@ func newHTTPParser(isRequest bool, bidiID akinet.TCPBidiID, seq, ack reassembly.
 	}()
 
 	return &httpParser{
-		w:          w,
-		resultChan: resultChan,
-		readClosed: readClosed,
-		isRequest:  isRequest,
+		w:             w,
+		resultChan:    resultChan,
+		readClosed:    readClosed,
+		isRequest:     isRequest,
+		maxHttpLength: MaximumHTTPLength,
 	}
 }
 
