@@ -10,15 +10,21 @@ import (
 type VersionName = string
 
 const (
-	XAkitaLatestVersionName         VersionName = "latest"
+	// Unreserved names.  Users are also allowed to use these version names.
 	XAkitaStableVersionName         VersionName = "stable"
+
+	// Reserved names.  Users are not allowed to use these version names.
+	XAkitaLatestVersionName         VersionName = "latest"
+
+	// Reserved prefixes.  Users are not allowed to use version names that
+	// start with these.
 	XAkitaReservedVersionNamePrefix string      = "x-akita"
 )
 
 // Determines whether a version is reserved for Akita internal use.
 func IsReservedVersionName(k VersionName) bool {
 	s := strings.ToLower(k)
-	isReservedConstant := strings.EqualFold(s, XAkitaLatestVersionName) || strings.EqualFold(s, XAkitaStableVersionName)
+	isReservedConstant := strings.EqualFold(s, XAkitaLatestVersionName)
 	hasReservedPrefix := strings.HasPrefix(k, XAkitaReservedVersionNamePrefix)
 	return isReservedConstant || hasReservedPrefix
 }
