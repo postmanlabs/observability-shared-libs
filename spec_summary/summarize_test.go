@@ -10,38 +10,77 @@ import (
 )
 
 func TestSummarize(t *testing.T) {
-	expected := &Summary{
-		Authentications: map[string]int{
-			"BASIC": 1,
+	testCases := []struct {
+		File     string
+		Expected *Summary
+	}{
+		{
+			"testdata/method1.pb.txt",
+			&Summary{
+				Authentications: map[string]int{
+					"BASIC": 1,
+				},
+				HTTPMethods: map[string]int{
+					"POST": 1,
+				},
+				Paths: map[string]int{
+					"/v1/projects/{arg3}": 1,
+				},
+				Params: map[string]int{
+					"X-My-Header": 1,
+				},
+				Properties: map[string]int{
+					"top-level-prop":       1,
+					"my-special-prop":      1,
+					"other-top-level-prop": 1,
+				},
+				ResponseCodes: map[string]int{
+					"200": 1,
+				},
+				DataFormats: map[string]int{
+					"rfc3339": 1,
+				},
+				DataKinds: map[string]int{},
+				DataTypes: map[string]int{
+					"string": 1,
+				},
+			},
 		},
-		HTTPMethods: map[string]int{
-			"POST": 1,
-		},
-		Paths: map[string]int{
-			"/v1/projects/{arg3}": 1,
-		},
-		Params: map[string]int{
-			"X-My-Header": 1,
-		},
-		Properties: map[string]int{
-			"top-level-prop":       1,
-			"my-special-prop":      1,
-			"other-top-level-prop": 1,
-		},
-		ResponseCodes: map[string]int{
-			"200": 1,
-		},
-		DataFormats: map[string]int{
-			"rfc3339": 1,
-		},
-		DataKinds: map[string]int{},
-		DataTypes: map[string]int{
-			"string": 1,
+		{
+			"testdata/method2.pb.txt",
+			&Summary{
+				Authentications: map[string]int{
+					"NTLM":                1,
+					"X-Hub-Signature-256": 1,
+				},
+				HTTPMethods: map[string]int{
+					"GET": 1,
+				},
+				Paths: map[string]int{
+					"/v1/projects/{arg3}": 1,
+				},
+				ResponseCodes: map[string]int{
+					"404": 1,
+				},
+				Properties: map[string]int{
+					"message": 1,
+				},
+				DataTypes: map[string]int{
+					"string": 1,
+				},
+				// Expected to be empty but not nil
+				Params:      map[string]int{},
+				DataFormats: map[string]int{},
+				DataKinds:   map[string]int{},
+			},
 		},
 	}
 
-	m1 := test.LoadMethodFromFileOrDie("testdata/method1.pb.txt")
-	assert.Equal(t, expected, Summarize(&pb.APISpec{Methods: []*pb.Method{m1}}))
+	for _, tc := range testCases {
+		t.Logf("Test case: %q", tc.File)
+		m1 := test.LoadMethodFromFileOrDie(tc.File)
+		assert.Equal(t, tc.Expected, Summarize(&pb.APISpec{Methods: []*pb.Method{m1}}))
+	}
 }
 
 func TestIntersect(t *testing.T) {

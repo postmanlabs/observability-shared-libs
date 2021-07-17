@@ -248,7 +248,14 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 func (v *specSummaryVisitor) LeaveData(self interface{}, _ vis.SpecVisitorContext, d *pb.Data, cont Cont) Cont {
 	// Handle auth vs params vs properties.
 	if meta := spec_util.HTTPAuthFromData(d); meta != nil {
-		v.methodSummary.Authentications[meta.Type.String()] += 1
+		// For proprietary headers, use the header value, otherwise
+		// use the type.
+		switch meta.Type {
+		case pb.HTTPAuth_PROPRIETARY_HEADER:
+			v.methodSummary.Authentications[meta.ProprietaryHeader] += 1
+		default:
+			v.methodSummary.Authentications[meta.Type.String()] += 1
+		}
 	} else if meta := spec_util.HTTPPathFromData(d); meta != nil {
 		v.methodSummary.Params[meta.Key] += 1
 	} else if meta := spec_util.HTTPQueryFromData(d); meta != nil {

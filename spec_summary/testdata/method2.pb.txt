@@ -1,0 +1,63 @@
+# pb.Method proto
+
+args: {
+  key: "auth-arg"
+  value: {
+    meta: {
+      http: {
+        auth: {
+          type: NTLM
+        }
+      }
+    }
+  }
+}
+
+args: {
+  key: "auth-arg-2"
+  value: {
+    meta: {
+      http: {
+        auth: {
+          type: PROPRIETARY_HEADER
+	  proprietary_header: "X-Hub-Signature-256"
+        }
+      }
+    }
+  }
+}
+
+responses: {
+  key: "body-resp"
+  value: {
+    struct: {
+      fields: {
+        key: "message"
+        value: {
+          primitive: {
+            string_value: {
+              type: {}
+            }
+          }
+        }
+      }
+    }
+
+    meta: {
+      http: {
+        body: {
+          content_type: JSON
+        }
+        response_code: 404
+      }
+    }
+  }
+}
+
+meta: {
+  http: {
+    method: "GET"  
+    path_template: "/v1/projects/{arg3}"
+    host: "example.com"
+  }
+}
