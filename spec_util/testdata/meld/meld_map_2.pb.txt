@@ -1,0 +1,101 @@
+# api_spec.Witness proto
+
+method {
+  id {
+    api_type: HTTP_REST
+  }
+  responses {
+    key: "xwqc_a6WGWE="
+    value {
+      struct {
+        fields {
+          key: "addr9@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr10@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr11@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr12@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr13@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr14@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr15@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr16@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+      }
+      meta {
+        http {
+          body {
+            content_type: JSON
+          }
+          response_code: 200
+        }
+      }
+    }
+  }
+  meta {
+    http {
+      method: "GET"
+      path_template: "/t1"
+      host: "kafka"
+    }
+  }
+}

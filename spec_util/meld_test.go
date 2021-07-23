@@ -198,6 +198,15 @@ var tests = []testData{
 		},
 		"testdata/meld/meld_no_response_4xx_non_4xx_expected.pb.txt",
 	},
+	// Test conversion of structs into maps.
+	{
+		"map_1, map_2",
+		[]string{
+			"testdata/meld/meld_map_1.pb.txt",
+			"testdata/meld/meld_map_2.pb.txt",
+		},
+		"testdata/meld/meld_map_1_map_2_expected.pb.txt",
+	},
 }
 
 func TestMeldWithFormats(t *testing.T) {

@@ -418,6 +418,22 @@ func assignDataFormats(d *pb.Data, formats map[string]bool) {
 }
 
 func meldStruct(dst, src *pb.Struct) error {
+	if isMap(dst) {
+		if isMap(src) {
+			return meldMap(dst, src)
+		}
+
+		// dst is a map, but src is not. Swap the two to reuse the logic for
+		// melding a map into a struct.
+		src.Fields, src.MapType, dst.Fields, dst.MapType = dst.Fields, dst.MapType, src.Fields, src.MapType
+	}
+	if isMap(src) {
+		// Melding a map into a struct. Convert dst into a map and meld the two
+		// maps.
+		structToMap(dst)
+		return meldMap(dst, src)
+	}
+
 	// If a field appears in both structs, it is assumed to be required.
 	// If it appears in one, but not the other, then it should become
 	// optional (if not optional already.)
@@ -446,13 +462,111 @@ func meldStruct(dst, src *pb.Struct) error {
 		}
 	}
 
-	// ... but what if we end up with hundreds of keys?
-	// Probably that means the key is part of the data. Let's use an arbitrary
-	// threshold, and if we cross it, merge all the keys.
-	// TODO: add another field to Struct in in the IR specifying that this has occurred.
-	// (and if we can infer a data format on the keys, it could live at that level too.)
+	// Apply a heuristic for deciding when to convert structs to maps.
+	if structShouldBeMap(dst) {
+		structToMap(dst)
+	}
 
 	return nil
+}
+
+// Determines whether the given pb.Struct represents a map.
+func isMap(struc *pb.Struct) bool {
+	return struc.MapType != nil
+}
+
+// Tuning parameter for deciding when a struct should be turned into a map.
+const maxOptionalFieldsPerStruct = 15
+
+// Heuristically determines whether the given pb.Struct (assumed to not
+// represent a map) should be a map.
+func structShouldBeMap(struc *pb.Struct) bool {
+	// A struct should be a map if its number of optional fields exceeds
+	// maxOptionalFieldsPerStruct.
+	numOptionalFields := 0
+	for _, field := range struc.Fields {
+		if field.GetOptional() != nil {
+			numOptionalFields++
+			if numOptionalFields >= maxOptionalFieldsPerStruct {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Melds two maps together. The given pb.Structs are assumed to represent maps.
+func meldMap(dst, src *pb.Struct) error {
+	// Try to make the key and value in dst non-nil.
+	if dst.MapType.Key == nil {
+		src.MapType.Key, dst.MapType.Key = dst.MapType.Key, src.MapType.Key
+	}
+	if dst.MapType.Value == nil {
+		src.MapType.Value, dst.MapType.Value = dst.MapType.Value, src.MapType.Value
+	}
+
+	// Meld keys.
+	if src.MapType.Key != nil {
+		if err := MeldData(dst.MapType.Key, src.MapType.Key); err != nil {
+			return err
+		}
+	}
+
+	// Meld values.
+	if src.MapType.Value != nil {
+		if err := MeldData(dst.MapType.Value, src.MapType.Value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Converts in place a pb.Struct (assumed to represent a struct) into a map.
+func structToMap(struc *pb.Struct) {
+	// The map's value Data is obtained by melding all field types together into
+	// a single Data, while stripping away any optionality.
+	var mapKey *pb.Data
+	var mapValue *pb.Data
+	for fieldName, curValue := range struc.Fields {
+		// Infer a primitive Data from the field's name and meld into the map's
+		// key.
+		curKey := &pb.Data{
+			Value: &pb.Data_Primitive{
+				Primitive: CategorizeString(fieldName).ToProto(),
+			},
+		}
+		if mapKey == nil {
+			mapKey = curKey
+		} else {
+			MeldData(mapKey, curKey)
+		}
+
+		// Strip any optionality from the current field's value and meld into the
+		// map's value.
+		curValue = stripOptional(curValue)
+		if mapValue == nil {
+			mapValue = curValue
+		} else {
+			MeldData(mapValue, curValue)
+		}
+	}
+
+	struc.Fields = nil
+	struc.MapType = &pb.MapData{
+		Key:   mapKey,
+		Value: mapValue,
+	}
+}
+
+// Strips away one layer of optionality from the given Data. If the given Data
+// is non-optional, it is returned.
+func stripOptional(data *pb.Data) *pb.Data {
+	optional := data.GetOptional()
+	if optional == nil {
+		return data
+	}
+	return optional.GetData()
 }
 
 func meldList(dst, src *pb.List) error {
