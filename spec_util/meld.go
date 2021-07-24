@@ -475,23 +475,31 @@ func isMap(struc *pb.Struct) bool {
 	return struc.MapType != nil
 }
 
-// Tuning parameter for deciding when a struct should be turned into a map.
+// Tuning parameters for deciding when a struct should be turned into a map.
 const maxOptionalFieldsPerStruct = 15
+const maxFieldsPerStruct = 100
 
 // Heuristically determines whether the given pb.Struct (assumed to not
 // represent a map) should be a map.
 func structShouldBeMap(struc *pb.Struct) bool {
+	// A struct should be a map if its total number of fields exceeds
+	// maxFieldsPerStruct.
+	if len(struc.Fields) > maxFieldsPerStruct {
+		return true
+	}
+
 	// A struct should be a map if its number of optional fields exceeds
 	// maxOptionalFieldsPerStruct.
 	numOptionalFields := 0
 	for _, field := range struc.Fields {
 		if field.GetOptional() != nil {
 			numOptionalFields++
-			if numOptionalFields >= maxOptionalFieldsPerStruct {
+			if numOptionalFields > maxOptionalFieldsPerStruct {
 				return true
 			}
 		}
 	}
+
 	return false
 }
 
@@ -529,17 +537,21 @@ func structToMap(struc *pb.Struct) {
 	var mapKey *pb.Data
 	var mapValue *pb.Data
 	for fieldName, curValue := range struc.Fields {
-		// Infer a primitive Data from the field's name and meld into the map's
-		// key.
-		curKey := &pb.Data{
-			Value: &pb.Data_Primitive{
-				Primitive: CategorizeString(fieldName).ToProto(),
-			},
-		}
 		if mapKey == nil {
-			mapKey = curKey
-		} else {
-			MeldData(mapKey, curKey)
+			// TODO: Infer a data format from the field's name and meld map keys.
+			// For now, just hard-code map keys as unformatted strings.
+			_ = fieldName
+
+			// ugh
+			mapKey = &pb.Data{
+				Value: &pb.Data_Primitive{
+					Primitive: &pb.Primitive{
+						Value: &pb.Primitive_StringValue{
+							StringValue: &pb.String{},
+						},
+					},
+				},
+			}
 		}
 
 		// Strip any optionality from the current field's value and meld into the
