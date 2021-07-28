@@ -147,6 +147,19 @@ const (
 	XAkitaDumpFilterFlag Key = "x-akita-dump-filter-flag"
 )
 
+// Tags applied to a copy of the spec
+const (
+	XAkitaOriginalOrganization = "x-akita-original-organization"
+
+	XAkitaOriginalService = "x-akita-original-service"
+
+	XAkitaOriginalServiceID = "x-akita-original-service-id"
+
+	XAkitaOriginalName = "x-akita-original-name"
+
+	XAkitaOriginalSpecID = "x-akita-original-spec-id"
+)
+
 // Determines whether a key is reserved for Akita internal use.
 func IsReservedKey(k Key) bool {
 	s := strings.ToLower(string(k))
