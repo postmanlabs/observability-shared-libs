@@ -16,8 +16,11 @@ github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de h1:rWkj
 github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de/go.mod h1:qDTWoRR9LvzAsPM1JYaThR7tyE63cEy3XPkox/4pP1A=
 github.com/akitasoftware/objecthash-proto v0.0.0-20200508002052-e5b6b45fd2ba h1:sAv1pLJk8VU9q8CddBocaftsZnb2ppbBEQSN6H5O3kg=
 github.com/akitasoftware/objecthash-proto v0.0.0-20200508002052-e5b6b45fd2ba/go.mod h1:otNn0Cq1YGR1daOez6qwaCaF9tzRk1YkIsxF+6faKNE=
+github.com/akitasoftware/objecthash-proto v0.0.0-20210728012103-5dba715f04e7 h1:kipCYMDo+dYkUgA5gx8a1XEO70/McEuZtPBSUPugHVE=
+github.com/akitasoftware/objecthash-proto v0.0.0-20210728012103-5dba715f04e7/go.mod h1:5/6U7s9Kj5GXRZBiQejikd06mPYYWC+C1RoO8ehvifs=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
+github.com/benlaurie/objecthash v0.0.0-20180202135721-d1e3d6079fc1/go.mod h1:jvdWlw8vowVGnZqSDC7yhPd7AifQeQbRDkZcQXV2nRg=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
