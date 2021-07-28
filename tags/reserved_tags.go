@@ -149,13 +149,13 @@ const (
 
 // Tags applied to a copy of the spec
 const (
-	XAkitaOriginalOrganization = "x-akita-original-organization"
+	XAkitaOriginalOrganizationID = "x-akita-original-organization-id"
 
 	XAkitaOriginalService = "x-akita-original-service"
 
 	XAkitaOriginalServiceID = "x-akita-original-service-id"
 
-	XAkitaOriginalName = "x-akita-original-name"
+	XAkitaOriginalSpec = "x-akita-original-spec"
 
 	XAkitaOriginalSpecID = "x-akita-original-spec-id"
 )
