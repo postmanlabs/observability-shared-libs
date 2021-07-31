@@ -151,50 +151,26 @@ func (mv MemView) Index(start int64, sep []byte) int64 {
 	// Iteratively search for the target, keeping in mind that the target may be
 	// spread over multiple slices in mv.buf.
 	needle := sep
-	var foundIndex int64
-	for b := startBuf; b < len(mv.buf) && len(needle) > 0; b++ {
-		haystack := mv.buf[b][startOffset:]
-
-		searchLen := len(needle)
-		if len(haystack) < searchLen {
-			searchLen = len(haystack)
-		}
-
-		match := true
-		for i := 0; i < searchLen; i++ {
-			if haystack[i] != needle[i] {
-				// Reset the search.
-				match = false
-				needle = sep
-				if i < len(haystack)-1 {
-					// We have more hay in the current hay stack to check.
-					b--
-					startOffset += i + 1
-					currIndex += int64(i + 1)
-				} else {
-					// Move on to the next buf in mv.buf.
-					currIndex += int64(len(haystack))
-					startOffset = 0
+	needleIndex := 0
+	for b := startBuf; b < len(mv.buf); b++ {
+		haystack := mv.buf[b]
+		for i := startOffset; i < len(haystack); i++ {
+			if haystack[i] == needle[needleIndex] {
+				needleIndex += 1
+				if needleIndex == len(needle) {
+					// Found, figure out start index.
+					// At the start of the 'i' loop, it points to currentIndex, so we
+					// need to add i and subtract startOffset.  Then move back to the
+					// first character in the needle
+					return currIndex + int64(i-startOffset) - int64(len(needle)-1)
 				}
-				break
+			} else {
+				needleIndex = 0
 			}
 		}
-
-		if match {
-			if len(needle) == len(sep) {
-				// This is the initial find.
-				foundIndex = currIndex
-			}
-			needle = needle[searchLen:]
-
-			// Move on to the next buf in mv.buf.
-			currIndex += int64(len(haystack))
-			startOffset = 0
-		}
-	}
-
-	if len(needle) == 0 {
-		return foundIndex
+		// Searched all of buffer
+		currIndex += int64(len(haystack) - startOffset)
+		startOffset = 0
 	}
 
 	return -1
