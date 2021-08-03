@@ -111,7 +111,9 @@ type SpecVisitorContext interface {
 }
 
 type specVisitorContext struct {
-	path  visitors.ContextPath
+	path            visitors.ContextPath
+	lastPathElement visitors.ContextPathElement
+
 	outer SpecVisitorContext
 
 	fieldPath []FieldPathElement
@@ -159,6 +161,7 @@ func (c *specVisitorContext) EnterMapValue(mapNode, mapKey interface{}) visitors
 }
 
 func (c *specVisitorContext) appendPath(e visitors.ContextPathElement) *specVisitorContext {
+	// TODO: can we also lazily create the path here?
 	result := *c
 	result.path = append(result.path, e)
 	result.outer = c
@@ -313,7 +316,12 @@ func (c *specVisitorContext) setTopLevelDataIndex(i int) {
 	c.topDataIndex = i
 }
 
-// Preallocate a stack of specVisitorContexts
+// Preallocate a stack of specVisitorContexts and re-use them
+// for a single visit.
+//
+// This optimization + lazily constructing the ContextPath takes
+// appendPath from >25% of memory allocations to <5%.  Though
+// both do still show up high in the profile.
 type contextStack struct {
 	Stack  []specVisitorContext
 	Latest int
@@ -335,7 +343,6 @@ func NewPreallocatedVisitorContext() SpecVisitorContext {
 type stackVisitorContext struct {
 	Preallocated *contextStack
 	Position     int
-	Path         visitors.ContextPathElement
 }
 
 // Allocate a new context from ths stack.
@@ -388,27 +395,25 @@ func (c stackVisitorContext) appendPath(e visitors.ContextPathElement) stackVisi
 	newContext := stackVisitorContext{
 		Preallocated: c.Preallocated,
 		Position:     newPosition,
-		Path:         e,
 	}
 
-	// Copy ourselves
+	// Copy the current values.
 	// TODO: can we do this lazily as well? for example, keep two pointers, one for the
 	// values modified below, and another for the mutable values?
 	d := newContext.Delegate()
 	*d = *(c.Delegate())
 
-	// Extend the path lazily, temporarily everything will be just
-	// one element.
-	d.path = []visitors.ContextPathElement{e}
-	d.outer = d
+	// Construct the whole path lazily, just store the last element.
+	d.lastPathElement = e
+	d.outer = c
 	return newContext
 }
 
 func (c stackVisitorContext) GetPath() visitors.ContextPath {
-	// Element 0 has no path element; every other context does.
+	// Element 0 has no path element; every other context in the stack does.
 	result := make([]visitors.ContextPathElement, c.Position)
 	for i := 1; i <= c.Position; i++ {
-		result[i-1] = c.Preallocated.Stack[i].path[0]
+		result[i-1] = c.Preallocated.Stack[i].lastPathElement
 	}
 	return result
 }
