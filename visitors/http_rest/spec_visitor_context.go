@@ -110,6 +110,8 @@ type SpecVisitorContext interface {
 	setContentType(string)
 }
 
+// The original specVisitorContext is still in use by specPairVisitorContext so it can't
+// yet be altered or removed.
 type specVisitorContext struct {
 	path            visitors.ContextPath
 	lastPathElement visitors.ContextPathElement
@@ -491,7 +493,16 @@ func (c stackVisitorContext) GetHost() string {
 }
 
 func (c stackVisitorContext) GetInnermostNode(typ reflect.Type) (interface{}, SpecVisitorContext) {
-	return c.Delegate().GetInnermostNode(typ)
+	// Bottom of stack has no AncestorNode
+	for i := c.Position; i >= 1; i-- {
+		context := c.Preallocated.Stack[i]
+		node := context.lastPathElement.AncestorNode
+		if reflect.TypeOf(node) == typ {
+			// NB that context.outer should be another stackVisitorContext
+			return node, context.outer
+		}
+	}
+	return nil, nil
 }
 
 func (c stackVisitorContext) getTopLevelDataPath() []string {
