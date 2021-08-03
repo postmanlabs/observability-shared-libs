@@ -335,6 +335,7 @@ func NewPreallocatedVisitorContext() SpecVisitorContext {
 type stackVisitorContext struct {
 	Preallocated *contextStack
 	Position     int
+	Path         visitors.ContextPathElement
 }
 
 // Allocate a new context from ths stack.
@@ -387,6 +388,7 @@ func (c stackVisitorContext) appendPath(e visitors.ContextPathElement) stackVisi
 	newContext := stackVisitorContext{
 		Preallocated: c.Preallocated,
 		Position:     newPosition,
+		Path:         e,
 	}
 
 	// Copy ourselves
@@ -395,14 +397,20 @@ func (c stackVisitorContext) appendPath(e visitors.ContextPathElement) stackVisi
 	d := newContext.Delegate()
 	*d = *(c.Delegate())
 
-	// Extend the path
-	d.path = append(d.path, e)
+	// Extend the path lazily, temporarily everything will be just
+	// one element.
+	d.path = []visitors.ContextPathElement{e}
 	d.outer = d
 	return newContext
 }
 
 func (c stackVisitorContext) GetPath() visitors.ContextPath {
-	return c.Delegate().GetPath()
+	// Element 0 has no path element; every other context does.
+	result := make([]visitors.ContextPathElement, c.Position)
+	for i := 1; i <= c.Position; i++ {
+		result[i-1] = c.Preallocated.Stack[i].path[0]
+	}
+	return result
 }
 
 func (c stackVisitorContext) GetOuter() visitors.Context {
