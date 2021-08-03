@@ -320,8 +320,10 @@ type contextStack struct {
 }
 
 func NewPreallocatedVisitorContext() SpecVisitorContext {
+	// TODO: can we make this self-tuning? Remember the 90th percentile depth
+	// and preallocate that?
 	cs := &contextStack{
-		Stack:  make([]specVisitorContext, 10),
+		Stack:  make([]specVisitorContext, 10, 50),
 		Latest: 0,
 	}
 	return stackVisitorContext{
@@ -388,6 +390,8 @@ func (c stackVisitorContext) appendPath(e visitors.ContextPathElement) stackVisi
 	}
 
 	// Copy ourselves
+	// TODO: can we do this lazily as well? for example, keep two pointers, one for the
+	// values modified below, and another for the mutable values?
 	d := newContext.Delegate()
 	*d = *(c.Delegate())
 
