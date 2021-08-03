@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"strconv"
 	"testing"
 
@@ -262,6 +263,15 @@ func TestIndex(t *testing.T) {
 			start:    int64(len("<pattern> abc <pattern>") + 100),
 			expected: -1,
 		},
+		/*
+			{
+				name:     "partial match",
+				input:    "xxxxxyy",
+				pattern:  "xxxyy",
+				start:    0,
+				expected: 2,
+			},
+		*/
 	}
 
 	for _, c := range testCases {
@@ -292,5 +302,48 @@ func TestIndex(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func BenchmarkIndexSmall(b *testing.B) {
+	letterBytes := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+	bytes1 := make([]byte, 1400)
+	bytes2 := make([]byte, 1400)
+	for i := range bytes1 {
+		bytes1[i] = letterBytes[rand.Intn(len(letterBytes))]
+		bytes2[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+
+	view := New(bytes1)
+	view.Append(New(bytes2))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		view.Index(0, []byte("POST"))
+		view.Index(0, []byte("GET"))
+		view.Index(0, []byte("DELETE"))
+		view.Index(0, []byte("PUT"))
+		view.Index(0, []byte("OPTION"))
+	}
+}
+
+func BenchmarkIndexLarge(b *testing.B) {
+	letterBytes := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+	view := New([]byte("xxxxxx"))
+	for i := 0; i < 1000; i++ {
+		bytes1 := make([]byte, 1400)
+		for j := range bytes1 {
+			bytes1[j] = letterBytes[rand.Intn(len(letterBytes))]
+		}
+		view.Append(New(bytes1))
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		view.Index(0, []byte("POST"))
+		view.Index(0, []byte("GET"))
+		view.Index(0, []byte("DELETE"))
+		view.Index(0, []byte("PUT"))
+		view.Index(0, []byte("OPTION"))
 	}
 }
