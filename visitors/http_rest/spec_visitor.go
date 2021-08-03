@@ -749,7 +749,7 @@ func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 
 // Visits m with v.
 func Apply(v SpecVisitor, m interface{}) Cont {
-	c := new(specVisitorContext)
+	c := NewPreallocatedVisitorContext()
 	vis := NewVisitorManager(c, v, enter, visitChildren, leave, extendContext)
 	return go_ast.Apply(vis, m)
 }

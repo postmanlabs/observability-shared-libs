@@ -312,3 +312,199 @@ func (c *specVisitorContext) setHttpAuthType(at pb.HTTPAuth_HTTPAuthType) {
 func (c *specVisitorContext) setTopLevelDataIndex(i int) {
 	c.topDataIndex = i
 }
+
+// Preallocate a stack of specVisitorContexts
+type contextStack struct {
+	Stack  []specVisitorContext
+	Latest int
+}
+
+func NewPreallocatedVisitorContext() SpecVisitorContext {
+	cs := &contextStack{
+		Stack:  make([]specVisitorContext, 10),
+		Latest: 0,
+	}
+	return stackVisitorContext{
+		Preallocated: cs,
+		Position:     0,
+	}
+}
+
+type stackVisitorContext struct {
+	Preallocated *contextStack
+	Position     int
+}
+
+// Allocate a new context from ths stack.
+// No explicit Pop(), but we can track whether an old context
+// is re-used erroneously.
+func (s *contextStack) Push(parent int) int {
+	if parent > s.Latest {
+		panic("push context from too deep in stack")
+	}
+	next := parent + 1
+	if next == len(s.Stack) {
+		s.Stack = append(s.Stack, specVisitorContext{})
+	} else if next > len(s.Stack) {
+		panic("push increases size by more than 1")
+	}
+	s.Latest = next
+	return next
+}
+
+// This pointer is only valid until the slice is resized, so it should be used
+// and then immediately discarded.
+func (c stackVisitorContext) Delegate() *specVisitorContext {
+	return &c.Preallocated.Stack[c.Position]
+}
+
+func (c stackVisitorContext) EnterStruct(structNode interface{}, fieldName string) visitors.Context {
+	return c.appendPath(visitors.ContextPathElement{
+		AncestorNode: structNode,
+		OutEdge:      visitors.NewStructFieldEdge(fieldName),
+	})
+}
+
+func (c stackVisitorContext) EnterArray(arrayNode interface{}, elementIndex int) visitors.Context {
+	return c.appendPath(visitors.ContextPathElement{
+		AncestorNode: arrayNode,
+		OutEdge:      visitors.NewArrayElementEdge(elementIndex),
+	})
+}
+
+func (c stackVisitorContext) EnterMapValue(mapNode, mapKey interface{}) visitors.Context {
+	return c.appendPath(visitors.ContextPathElement{
+		AncestorNode: mapNode,
+		OutEdge:      visitors.NewMapValueEdge(mapKey),
+	})
+}
+
+func (c stackVisitorContext) appendPath(e visitors.ContextPathElement) stackVisitorContext {
+	// Allocate the next-deepest element on the stack
+	newPosition := c.Preallocated.Push(c.Position)
+	newContext := stackVisitorContext{
+		Preallocated: c.Preallocated,
+		Position:     newPosition,
+	}
+
+	// Copy ourselves
+	d := newContext.Delegate()
+	*d = *(c.Delegate())
+
+	// Extend the path
+	d.path = append(d.path, e)
+	d.outer = d
+	return newContext
+}
+
+func (c stackVisitorContext) GetPath() visitors.ContextPath {
+	return c.Delegate().GetPath()
+}
+
+func (c stackVisitorContext) GetOuter() visitors.Context {
+	return c.Delegate().GetOuter()
+}
+
+func (c stackVisitorContext) appendFieldPath(elt FieldPathElement) {
+	c.Delegate().appendFieldPath(elt)
+}
+
+func (c stackVisitorContext) GetFieldPath() []FieldPathElement {
+	return c.Delegate().GetFieldPath()
+}
+
+func (c stackVisitorContext) appendRestPath(s string) {
+	c.Delegate().appendRestPath(s)
+}
+
+func (c stackVisitorContext) GetRestPath() []string {
+	return c.Delegate().GetRestPath()
+}
+
+func (c stackVisitorContext) GetRestOperation() string {
+	return c.Delegate().GetRestOperation()
+}
+
+func (c stackVisitorContext) setRestOperation(op string) {
+	c.Delegate().setRestOperation(op)
+}
+
+func (c stackVisitorContext) IsArg() bool {
+	return c.Delegate().IsArg()
+}
+
+func (c stackVisitorContext) IsResponse() bool {
+	return c.Delegate().IsResponse()
+}
+
+func (c stackVisitorContext) IsOptional() bool {
+	return c.Delegate().IsOptional()
+}
+
+func (c stackVisitorContext) GetValueType() HttpValueType {
+	return c.Delegate().GetValueType()
+}
+
+func (c stackVisitorContext) GetHttpAuthType() *pb.HTTPAuth_HTTPAuthType {
+	return c.Delegate().GetHttpAuthType()
+}
+
+func (c stackVisitorContext) GetArgPath() []string {
+	return c.Delegate().GetArgPath()
+}
+
+func (c stackVisitorContext) GetResponsePath() []string {
+	return c.Delegate().GetResponsePath()
+}
+
+func (c stackVisitorContext) GetEndpointPath() string {
+	return c.Delegate().GetEndpointPath()
+}
+
+func (c stackVisitorContext) GetResponseCode() *string {
+	return c.Delegate().GetResponseCode()
+}
+
+func (c stackVisitorContext) GetContentType() *string {
+	return c.Delegate().GetContentType()
+}
+
+func (c stackVisitorContext) GetHost() string {
+	return c.Delegate().GetHost()
+}
+
+func (c stackVisitorContext) GetInnermostNode(typ reflect.Type) (interface{}, SpecVisitorContext) {
+	return c.Delegate().GetInnermostNode(typ)
+}
+
+func (c stackVisitorContext) getTopLevelDataPath() []string {
+	return c.Delegate().getTopLevelDataPath()
+}
+
+func (c stackVisitorContext) setIsArg(isArg bool) {
+	c.Delegate().setIsArg(isArg)
+}
+
+func (c stackVisitorContext) setIsOptional() {
+	c.Delegate().setIsOptional()
+}
+
+func (c stackVisitorContext) setValueType(vt HttpValueType) {
+	c.Delegate().setValueType(vt)
+}
+
+func (c stackVisitorContext) setResponseCode(code string) {
+	c.Delegate().setResponseCode(code)
+}
+
+func (c stackVisitorContext) setContentType(contentType string) {
+	c.Delegate().setContentType(contentType)
+}
+
+func (c stackVisitorContext) setHttpAuthType(at pb.HTTPAuth_HTTPAuthType) {
+	c.Delegate().setHttpAuthType(at)
+}
+
+func (c stackVisitorContext) setTopLevelDataIndex(i int) {
+	c.Delegate().setTopLevelDataIndex(i)
+}
