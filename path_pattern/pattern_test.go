@@ -39,6 +39,15 @@ func TestParseAndString(t *testing.T) {
 				Val("foobar"),
 			},
 		},
+		{
+			input: "/v1/*/foobar",
+			expected: Pattern{
+				Val(""),
+				Val("v1"),
+				Wildcard{},
+				Val("foobar"),
+			},
+		},
 	}
 
 	for _, c := range testCases {
@@ -72,6 +81,16 @@ func TestMatch(t *testing.T) {
 		{
 			pattern:     "/v1/{my_arg_name}",
 			target:      "/v1/{my_old_arg_name}",
+			expectMatch: true,
+		},
+		{
+			pattern:     "/v1/*/{my_arg_name}",
+			target:      "/v1/foo/bar",
+			expectMatch: true,
+		},
+		{
+			pattern:     "/v1/*/{my_arg_name}",
+			target:      "/v1/{foo_param}/bar",
 			expectMatch: true,
 		},
 		{
