@@ -42,141 +42,125 @@ func main() {
 	// TODO: inner structs for oneOf need to be defined before their use, automate this somewhow?
 	gf.AddOneOf(reflect.TypeOf(pb.Primitive_BoolValue{}))
 	gf.AddOneOf(reflect.TypeOf(pb.Primitive_BytesValue{}))
-	gf.AddOneOf(reflect.TypeOf(pb.Primitive_FloatValue{}))
 	gf.AddOneOf(reflect.TypeOf(pb.Primitive_DoubleValue{}))
-	gf.AddOneOf(reflect.TypeOf(pb.Primitive_StringValue{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Primitive_FloatValue{}))
 	gf.AddOneOf(reflect.TypeOf(pb.Primitive_Int32Value{}))
 	gf.AddOneOf(reflect.TypeOf(pb.Primitive_Int64Value{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Primitive_StringValue{}))
 	gf.AddOneOf(reflect.TypeOf(pb.Primitive_Uint32Value{}))
 	gf.AddOneOf(reflect.TypeOf(pb.Primitive_Uint64Value{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Data_List{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Data_Oneof{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Data_Optional{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Data_Primitive{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Data_Struct{}))
 	gf.AddOneOf(reflect.TypeOf(pb.FormatOption_StringFormat{}))
 	gf.AddOneOf(reflect.TypeOf(pb.DataMeta_Grpc{}))
 	gf.AddOneOf(reflect.TypeOf(pb.DataMeta_Http{}))
+	gf.AddOneOf(reflect.TypeOf(pb.HTTPMeta_Auth{}))
+	gf.AddOneOf(reflect.TypeOf(pb.HTTPMeta_Body{}))
+	gf.AddOneOf(reflect.TypeOf(pb.HTTPMeta_Cookie{}))
+	gf.AddOneOf(reflect.TypeOf(pb.HTTPMeta_Empty{}))
+	gf.AddOneOf(reflect.TypeOf(pb.HTTPMeta_Header{}))
+	gf.AddOneOf(reflect.TypeOf(pb.HTTPMeta_Multipart{}))
+	gf.AddOneOf(reflect.TypeOf(pb.HTTPMeta_Path{}))
+	gf.AddOneOf(reflect.TypeOf(pb.HTTPMeta_Query{}))
 	gf.AddOneOf(reflect.TypeOf(pb.DataRef_ListRef{}))
 	gf.AddOneOf(reflect.TypeOf(pb.DataRef_PrimitiveRef{}))
 	gf.AddOneOf(reflect.TypeOf(pb.DataRef_StructRef{}))
+	gf.AddOneOf(reflect.TypeOf(pb.ListRef_ElemRef{}))
+	gf.AddOneOf(reflect.TypeOf(pb.ListRef_FullList{}))
+	gf.AddOneOf(reflect.TypeOf(pb.MethodMeta_Grpc{}))
+	gf.AddOneOf(reflect.TypeOf(pb.MethodMeta_Http{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Optional_Data{}))
+	gf.AddOneOf(reflect.TypeOf(pb.Optional_None{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_BoolType{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_BytesType{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_DoubleType{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_FloatType{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_Int32Type{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_Int64Type{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_StringType{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_Uint32Type{}))
+	gf.AddOneOf(reflect.TypeOf(pb.PrimitiveRef_Uint64Type{}))
 
+	// Message types
 	gf.AddHashFunc(reflect.TypeOf(pb.AkitaAnnotations{}))
-	//gf.AddHashFunc(reflect.TypeOf(pb.APISpec{}))
+	// gf.AddHashFunc(reflect.TypeOf(pb.APISpec{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Bool{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.BoolType{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Bytes{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.BytesType{}))
-	//gf.AddHashFunc(reflect.TypeOf(pb.Data{}))
-	//gf.AddHashFunc(reflect.TypeOf(pb.DataMeta{}))
-	//gf.AddHashFunc(reflect.TypeOf(pb.DataRef{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.Data{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.DataMeta{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.DataRef{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Double{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.DoubleType{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.ExampleValue{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.GRPCMeta{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.GRPCMethodMeta{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPAuth{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPBody{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPCookie{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPEmpty{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPHeader{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPMeta{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPMethodMeta{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPMultipart{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPPath{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPQuery{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Int32{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.IndexedDataRef{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Int32Type{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Int64{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Int64Type{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Float{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.FloatType{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.FormatOption{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.List{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.ListRef{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.ListRef_FullListRef{})) // looks like an inner sturct, but isn't
+	gf.AddHashFunc(reflect.TypeOf(pb.Method{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.MethodID{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.MethodMeta{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.None{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.OneOf{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.Optional{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Primitive{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.PrimitiveRef{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.StringType{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.String{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.Struct{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.StructRef{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Uint32{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Uint32Type{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Uint64{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Uint64Type{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.Witness{}))
 
 	/*
-		DataRef_ListRef
-		DataRef_PrimitiveRef
-		DataRef_StructRef
 		DataTemplate
 		DataTemplate_ListTemplate
 		DataTemplate_OptionalTemplate
 		DataTemplate_Ref
 		DataTemplate_StructTemplate
 		DataTemplate_Value
-		Data_List
-		Data_Oneof
-		Data_Optional
-		Data_Primitive
-		Data_Struct
-		Double
-		DoubleType
-		ExampleValue
-		FormatOption
-		FormatOption_StringFormat
-		GRPCMeta
-		GRPCMethodMeta
-		HTTPAuth
-		HTTPBody
-		HTTPCookie
-		HTTPEmpty
-		HTTPHeader
-		HTTPMeta
-		HTTPMeta_Auth
-		HTTPMeta_Body
-		HTTPMeta_Cookie
-		HTTPMeta_Empty
-		HTTPMeta_Header
-		HTTPMeta_Multipart
-		HTTPMeta_Path
-		HTTPMeta_Query
-		HTTPMethodMeta
-		HTTPMultipart
-		HTTPPath
-		HTTPQuery
-		IndexedDataRef
-		List
-		ListRef
-		ListRef_ElemRef
-		ListRef_FullList
-		ListRef_FullListRef
 		ListTemplate
 		Method
 		MethodCalls
 		MethodDataRef
 		MethodDataRef_ArgRef
 		MethodDataRef_ResponseRef
-		MethodID
-		MethodMeta
-		MethodMeta_Grpc
-		MethodMeta_Http
 		MethodTemplate
 		NamedDataRef
-		None
-		OneOf
-		Optional
 		OptionalTemplate
-		Optional_Data
-		Optional_None
-		Primitive
-		PrimitiveRef
-		PrimitiveRef_BoolType
-		PrimitiveRef_BytesType
-		PrimitiveRef_DoubleType
-		PrimitiveRef_FloatType
-		PrimitiveRef_Int32Type
-		PrimitiveRef_Int64Type
-		PrimitiveRef_StringType
-		PrimitiveRef_Uint32Type
-		PrimitiveRef_Uint64Type
-		Primitive_BoolValue
-		Primitive_BytesValue
-		Primitive_DoubleValue
-		Primitive_FloatValue
-		Primitive_Int32Value
-		Primitive_Int64Value
-		Primitive_StringValue
-		Primitive_Uint32Value
-		Primitive_Uint64Value
 		Sequence
 		SequenceRun
-		String
-		StringType
-		Struct
 		StructRef
 		StructRef_FieldRef
 		StructRef_FullStruct
 		StructRef_FullStructRef
 		StructTemplate
-		Witness
 	*/
 
 	fset := token.NewFileSet()
@@ -415,10 +399,11 @@ func returnHash() ast.Stmt {
 	}
 }
 
-func hashAfterComparison(localVar string, fieldName string,
+func hashAfterComparisonExpr(localVar string, fieldName string,
 	nullValue ast.Expr,
 	tag int64,
-	hashFunction string) ast.Stmt {
+	hashFunction string,
+	hashArg ast.Expr) ast.Stmt {
 	return &ast.IfStmt{
 		Cond: &ast.BinaryExpr{
 			X:  selector2(localVar, fieldName),
@@ -435,7 +420,7 @@ func hashAfterComparison(localVar string, fieldName string,
 							&ast.CallExpr{
 								Fun: ast.NewIdent(hashFunction),
 								Args: []ast.Expr{
-									selector2(localVar, fieldName),
+									hashArg,
 								},
 							},
 						},
@@ -444,6 +429,15 @@ func hashAfterComparison(localVar string, fieldName string,
 			},
 		},
 	}
+}
+
+func hashAfterComparison(localVar string, fieldName string,
+	nullValue ast.Expr,
+	tag int64,
+	hashFunction string) ast.Stmt {
+	return hashAfterComparisonExpr(localVar, fieldName, nullValue,
+		tag, hashFunction,
+		selector2(localVar, fieldName))
 }
 
 func hashGolangString(localVar string, fieldName string, tag int64) ast.Stmt {
@@ -461,22 +455,42 @@ func hashGolangBool(localVar string, fieldName string, tag int64) ast.Stmt {
 		tag, "Hash_Bool")
 }
 
-func hashGolangInt32(localVar string, fieldName string, tag int64) ast.Stmt {
-	return hashAfterComparison(localVar, fieldName,
+func hashGolangInt32(localVar string, fieldName string, tag int64, isEnum bool) ast.Stmt {
+	var hashArg ast.Expr = selector2(localVar, fieldName)
+	if isEnum {
+		// Cast to integer first
+		// TODO: support calling .String() instead, but we don't use that option in
+		// the original hasher.
+		hashArg = &ast.CallExpr{
+			Fun:  ast.NewIdent("int32"),
+			Args: []ast.Expr{hashArg},
+		}
+	}
+	return hashAfterComparisonExpr(localVar, fieldName,
 		&ast.BasicLit{
 			Kind:  token.INT,
 			Value: "0",
 		},
-		tag, "Hash_Int32")
+		tag, "Hash_Int32", hashArg,
+	)
 }
 
-func hashGolangInt64(localVar string, fieldName string, tag int64) ast.Stmt {
-	return hashAfterComparison(localVar, fieldName,
+func hashGolangInt64(localVar string, fieldName string, tag int64, isEnum bool) ast.Stmt {
+	var hashArg ast.Expr = selector2(localVar, fieldName)
+	if isEnum {
+		// Cast to integer first
+		hashArg = &ast.CallExpr{
+			Fun:  ast.NewIdent("int64"),
+			Args: []ast.Expr{hashArg},
+		}
+	}
+	return hashAfterComparisonExpr(localVar, fieldName,
 		&ast.BasicLit{
 			Kind:  token.INT,
 			Value: "0",
 		},
-		tag, "Hash_Int64")
+		tag, "Hash_Int64", hashArg,
+	)
 }
 
 func hashGolangUint32(localVar string, fieldName string, tag int64) ast.Stmt {
@@ -775,8 +789,9 @@ func (f *GeneratedFile) AddHashFunc(messageType reflect.Type) {
 			}
 
 		} else {
-			tag := int64(props.Prop[i].Tag)
 			// ordinary member
+			tag := int64(props.Prop[i].Tag)
+			isEnum := (props.Prop[i].Enum != "")
 
 			var s ast.Stmt
 			switch field.Type.Kind() {
@@ -798,9 +813,9 @@ func (f *GeneratedFile) AddHashFunc(messageType reflect.Type) {
 			case reflect.Bool:
 				s = hashGolangBool("node", field.Name, tag)
 			case reflect.Int32:
-				s = hashGolangInt32("node", field.Name, tag)
+				s = hashGolangInt32("node", field.Name, tag, isEnum)
 			case reflect.Int64:
-				s = hashGolangInt64("node", field.Name, tag)
+				s = hashGolangInt64("node", field.Name, tag, isEnum)
 			case reflect.Uint32:
 				s = hashGolangUint32("node", field.Name, tag)
 			case reflect.Uint64:
@@ -875,7 +890,7 @@ func (f *GeneratedFile) AddHashFunc(messageType reflect.Type) {
 // copy of the function in ir_hash, to avoid depdendency
 func Hash_Int64(i int64) []byte {
 	hf := xxhash.New64()
-	hf.Write([]byte(`u`))
+	hf.Write([]byte(`i`))
 	hf.Write([]byte(fmt.Sprintf("%d", i)))
 	return hf.Sum(nil)
 }
