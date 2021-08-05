@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"reflect"
 
+	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	protohash "github.com/akitasoftware/objecthash-proto"
 	"github.com/golang/protobuf/proto"
 )
