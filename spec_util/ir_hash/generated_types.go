@@ -158,14 +158,6 @@ func HashData(node *pb.Data) []byte {
 		hash.Write(intHashes[3])
 		hash.Write(HashList(val.List))
 	}
-	if len(node.ExampleValues) != 0 {
-		hash.Write(intHashes[8])
-		pairs := make ([]KeyValuePair, 0, len(node.ExampleValues))
-		for k, v := range node.ExampleValues {
-			pairs = append(pairs, KeyValuePair{Hash_Unicode(k), HashExampleValue(v)})
-		}
-		hash.Write(Hash_KeyValues(pairs))
-	}
 	if node.Nullable != false {
 		hash.Write(intHashes[7])
 		hash.Write(Hash_Bool(node.Nullable))

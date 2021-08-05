@@ -25,11 +25,12 @@ import (
 // we have to list them all here.
 
 func main() {
-	gf := &GeneratedFile{
-		File: &ast.File{},
-	}
+	gf := NewGeneratedFile()
 	gf.SetPackageName("ir_hash")
 	gf.AddImports()
+
+	gf.AddIgnoredField("HTTPMethodMeta", "ProcessingLatency")
+	gf.AddIgnoredField("Data", "ExampleValues")
 
 	// Dependencies from "wrappers" package
 	gf.AddHashFunc(reflect.TypeOf(wrappers.Int32Value{}))
@@ -176,7 +177,46 @@ type OneOfInnerStruct struct {
 type GeneratedFile struct {
 	File *ast.File
 
+	// Map is struct, field
+	// struct may be "*"
+	IgnoredFields map[string]map[string]struct{}
+
 	OneOfTypes []OneOfInnerStruct
+}
+
+func NewGeneratedFile() *GeneratedFile {
+	ignoredFields := map[string]map[string]struct{}{
+		"*": map[string]struct{}{},
+	}
+
+	return &GeneratedFile{
+		File:          &ast.File{},
+		IgnoredFields: ignoredFields,
+	}
+}
+
+func (f *GeneratedFile) AddIgnoredField(structName string, fieldName string) {
+	inStruct, present := f.IgnoredFields[structName]
+	if present {
+		inStruct[fieldName] = struct{}{}
+	} else {
+		f.IgnoredFields[structName] = map[string]struct{}{
+			fieldName: struct{}{},
+		}
+	}
+}
+
+func (f *GeneratedFile) IgnoreField(structName string, fieldName string) bool {
+	inStruct, present := f.IgnoredFields[structName]
+	if present {
+		_, ok := inStruct[fieldName]
+		if ok {
+			return ok
+		}
+	}
+	_, ok := f.IgnoredFields["*"][fieldName]
+	return ok
+
 }
 
 func (f *GeneratedFile) SetPackageName(pn string) {
@@ -772,7 +812,9 @@ func (f *GeneratedFile) AddHashFunc(messageType reflect.Type) {
 		if strings.HasPrefix(field.Name, "XXX_") {
 			continue
 		}
-		// TODO: user ignored fields
+		if f.IgnoreField(messageName, field.Name) {
+			continue
+		}
 
 		if field.Tag.Get("protobuf_oneof") != "" {
 			// field.Type is an interface type, find all the inner struct types that

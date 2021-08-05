@@ -306,10 +306,67 @@ func TestData(t *testing.T) {
 	}
 }
 
+func TestIgnoredField(t *testing.T) {
+	m1 := &pb.HTTPMethodMeta{
+		Method:            "POST",
+		PathTemplate:      "/v1/foo",
+		Host:              "localhost:8000",
+		ProcessingLatency: 32.0,
+	}
+	m2 := &pb.HTTPMethodMeta{
+		Method:            "POST",
+		PathTemplate:      "/v1/foo",
+		Host:              "localhost:8000",
+		ProcessingLatency: 0.0,
+	}
+	m3 := &pb.HTTPMethodMeta{
+		Method:            "POST",
+		PathTemplate:      "/v1/foo",
+		Host:              "localhost:8000",
+		ProcessingLatency: 1.1,
+	}
+
+	h1a, _ := pbhash.HashProto(m1)
+	h2a, _ := pbhash.HashProto(m2)
+	h3a, _ := pbhash.HashProto(m3)
+
+	h1b := base64.URLEncoding.EncodeToString(HashHTTPMethodMeta(m1))
+	h2b := base64.URLEncoding.EncodeToString(HashHTTPMethodMeta(m2))
+	h3b := base64.URLEncoding.EncodeToString(HashHTTPMethodMeta(m3))
+
+	if h1a != h2a || h2a != h3a {
+		t.Fatalf("Hashes are not identical using pbhash: %v %v %v", h1a, h2a, h3a)
+	}
+
+	if h1b != h2b || h2b != h3b {
+		t.Errorf("Hashes are not identical using gen hash: %v %v %v", h1b, h2b, h3b)
+	}
+
+	if h1a != h2a {
+		t.Errorf("Hashes are not equal: %v %v %v != %v %v %v", h1a, h2a, h3a, h1b, h2b, h3b)
+	}
+
+}
+
 func TestWitnesses(t *testing.T) {
 	witnessFiles := []string{
 		"../testdata/meld/meld_no_data_formats.pb.txt",
-		"../testdata/meld/meld_oneof_with_primitive_1.pb.txt",
+		"../testdata/meld/meld_examples_1.pb.txt",
+		"../testdata/meld/meld_examples_2.pb.txt",
+		"../testdata/meld/meld_examples_3.pb.txt",
+		// "../testdata/meld/meld_oneof_with_primitive_1.pb.txt",  // bad key
+		"../testdata/generalize_witnesses/gitlab.1.concrete.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.1.generalized.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.2.concrete.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.2.generalized.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.3.concrete.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.3.generalized.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.4.concrete.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.4.generalized.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.5.concrete.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.5.generalized.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.6.concrete.pb.txt",
+		"../testdata/generalize_witnesses/gitlab.6.generalized.pb.txt",
 	}
 
 	for _, wFile := range witnessFiles {
