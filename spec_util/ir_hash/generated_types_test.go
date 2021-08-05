@@ -408,3 +408,21 @@ func TestWitnesses(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkWitnessHash(b *testing.B) {
+	witness := test.LoadWitnessFromFileOrDile("../testdata/generalize_witnesses/gitlab.1.concrete.pb.txt")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = base64.URLEncoding.EncodeToString(HashWitness(witness))
+	}
+}
+
+func BenchmarkWitnessOldHash(b *testing.B) {
+	witness := test.LoadWitnessFromFileOrDile("../testdata/generalize_witnesses/gitlab.1.concrete.pb.txt")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = pbhash.HashProto(witness)
+	}
+}

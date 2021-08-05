@@ -87,7 +87,7 @@ func main() {
 
 	// Message types
 	gf.AddHashFunc(reflect.TypeOf(pb.AkitaAnnotations{}))
-	// gf.AddHashFunc(reflect.TypeOf(pb.APISpec{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.APISpec{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Bool{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.BoolType{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Bytes{}))
@@ -120,7 +120,7 @@ func main() {
 	gf.AddHashFunc(reflect.TypeOf(pb.FormatOption{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.List{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.ListRef{}))
-	gf.AddHashFunc(reflect.TypeOf(pb.ListRef_FullListRef{})) // looks like an inner sturct, but isn't
+	gf.AddHashFunc(reflect.TypeOf(pb.ListRef_FullListRef{})) // looks like an inner struct, but isn't
 	gf.AddHashFunc(reflect.TypeOf(pb.Method{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.MethodID{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.MethodMeta{}))
@@ -140,28 +140,30 @@ func main() {
 	gf.AddHashFunc(reflect.TypeOf(pb.Witness{}))
 
 	/*
-		DataTemplate
-		DataTemplate_ListTemplate
-		DataTemplate_OptionalTemplate
-		DataTemplate_Ref
-		DataTemplate_StructTemplate
-		DataTemplate_Value
-		ListTemplate
-		Method
-		MethodCalls
-		MethodDataRef
-		MethodDataRef_ArgRef
-		MethodDataRef_ResponseRef
-		MethodTemplate
-		NamedDataRef
-		OptionalTemplate
-		Sequence
-		SequenceRun
-		StructRef
-		StructRef_FieldRef
-		StructRef_FullStruct
-		StructRef_FullStructRef
-		StructTemplate
+		   These messages are still missing, but are not referred to from any of the
+		   types above.
+
+			DataTemplate
+			DataTemplate_ListTemplate
+			DataTemplate_OptionalTemplate
+			DataTemplate_Ref
+			DataTemplate_StructTemplate
+			DataTemplate_Value
+			ListTemplate
+			MethodCalls
+			MethodDataRef
+			MethodDataRef_ArgRef
+			MethodDataRef_ResponseRef
+			MethodTemplate
+			NamedDataRef
+			OptionalTemplate
+			Sequence
+			SequenceRun
+			StructRef
+			StructRef_FieldRef
+			StructRef_FullStruct
+			StructRef_FullStructRef
+			StructTemplate
 	*/
 
 	fset := token.NewFileSet()

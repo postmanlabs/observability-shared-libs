@@ -77,6 +77,28 @@ func HashAkitaAnnotations(node *pb.AkitaAnnotations) []byte {
 	}
 	return hash.Sum(nil)
 }
+func HashAPISpec(node *pb.APISpec) []byte {
+	hash := xxhash.New64()
+	hash.Write([]byte("d"))
+	if len(node.Methods) != 0 {
+		hash.Write(intHashes[1])
+		listHash := xxhash.New64()
+		listHash.Write([]byte("l"))
+		for _, v := range node.Methods {
+			listHash.Write(HashMethod(v))
+		}
+		hash.Write(listHash.Sum(nil))
+	}
+	if len(node.Tags) != 0 {
+		hash.Write(intHashes[2])
+		pairs := make ([]KeyValuePair, 0, len(node.Tags))
+		for k, v := range node.Tags {
+			pairs = append(pairs, KeyValuePair{Hash_Unicode(k), Hash_Unicode(v)})
+		}
+		hash.Write(Hash_KeyValues(pairs))
+	}
+	return hash.Sum(nil)
+}
 func HashBool(node *pb.Bool) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
