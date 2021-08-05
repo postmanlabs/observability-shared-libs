@@ -409,6 +409,21 @@ func TestWitnesses(t *testing.T) {
 	}
 }
 
+func TestSpec(t *testing.T) {
+	spec := test.LoadAPISpecFromFileOrDie("../testdata/generalize_witnesses/spec.pb.txt")
+
+	hash1, err := pbhash.HashProto(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	hash2 := base64.URLEncoding.EncodeToString(HashAPISpec(spec))
+
+	if hash1 != hash2 {
+		t.Errorf("Spec hashes are unequal, %v != %v", hash1, hash2)
+	}
+}
+
 func BenchmarkWitnessHash(b *testing.B) {
 	witness := test.LoadWitnessFromFileOrDile("../testdata/generalize_witnesses/gitlab.1.concrete.pb.txt")
 
