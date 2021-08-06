@@ -166,6 +166,13 @@ func main() {
 			StructTemplate
 	*/
 
+	gf.AddProtobufHashes(
+		"method.proto",
+		"witness.proto",
+		"types.proto",
+		"spec.proto",
+	)
+
 	fset := token.NewFileSet()
 	format.Node(os.Stdout, fset, gf.File)
 }
@@ -255,6 +262,68 @@ func (f *GeneratedFile) AddImports() {
 				f.File.Imports[0],
 				f.File.Imports[1],
 				f.File.Imports[2],
+			},
+		},
+	)
+}
+
+func (f *GeneratedFile) AddProtobufHashes(fileNames ...string) {
+	byteSliceType := &ast.ArrayType{
+		Len: nil,
+		Elt: ast.NewIdent("byte"),
+	}
+	mapType := &ast.MapType{
+		Key:   ast.NewIdent("string"),
+		Value: byteSliceType,
+	}
+	mapLiteral := &ast.CompositeLit{
+		Type: mapType,
+		Elts: []ast.Expr{},
+	}
+	for _, f := range fileNames {
+		fdgzip := proto.FileDescriptor(f)
+		if fdgzip == nil {
+			panic(fmt.Sprintf("Protobuf file descriptor not found for %q", f))
+		}
+		h := xxhash.New64()
+		h.Write([]byte(fdgzip))
+		result := h.Sum(nil)
+
+		kv := &ast.KeyValueExpr{
+			Key: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: fmt.Sprintf("%q", f),
+			},
+			Value: &ast.CompositeLit{
+				Type: byteSliceType,
+				Elts: []ast.Expr{
+					&ast.BasicLit{Kind: token.INT, Value: fmt.Sprintf("%d", result[0])},
+					&ast.BasicLit{Kind: token.INT, Value: fmt.Sprintf("%d", result[1])},
+					&ast.BasicLit{Kind: token.INT, Value: fmt.Sprintf("%d", result[2])},
+					&ast.BasicLit{Kind: token.INT, Value: fmt.Sprintf("%d", result[3])},
+					&ast.BasicLit{Kind: token.INT, Value: fmt.Sprintf("%d", result[4])},
+					&ast.BasicLit{Kind: token.INT, Value: fmt.Sprintf("%d", result[5])},
+					&ast.BasicLit{Kind: token.INT, Value: fmt.Sprintf("%d", result[6])},
+					&ast.BasicLit{Kind: token.INT, Value: fmt.Sprintf("%d", result[7])},
+				},
+			},
+		}
+		mapLiteral.Elts = append(mapLiteral.Elts, kv)
+	}
+
+	f.File.Decls = append(f.File.Decls,
+		&ast.GenDecl{
+			Tok: token.VAR,
+			Specs: []ast.Spec{
+				&ast.ValueSpec{
+					Names: []*ast.Ident{
+						ast.NewIdent("ProtobufFileHashes"),
+					},
+					Type: mapType,
+					Values: []ast.Expr{
+						mapLiteral,
+					},
+				},
 			},
 		},
 	)
