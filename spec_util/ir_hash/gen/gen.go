@@ -121,6 +121,7 @@ func main() {
 	gf.AddHashFunc(reflect.TypeOf(pb.List{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.ListRef{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.ListRef_FullListRef{})) // looks like an inner struct, but isn't
+	gf.AddHashFunc(reflect.TypeOf(pb.MapData{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.Method{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.MethodID{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.MethodMeta{}))

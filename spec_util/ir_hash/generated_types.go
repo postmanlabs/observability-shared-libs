@@ -551,6 +551,19 @@ func HashListRef_FullListRef(node *pb.ListRef_FullListRef) []byte {
 	hash.Write([]byte("d"))
 	return hash.Sum(nil)
 }
+func HashMapData(node *pb.MapData) []byte {
+	hash := xxhash.New64()
+	hash.Write([]byte("d"))
+	if node.Key != nil {
+		hash.Write(intHashes[1])
+		hash.Write(HashData(node.Key))
+	}
+	if node.Value != nil {
+		hash.Write(intHashes[2])
+		hash.Write(HashData(node.Value))
+	}
+	return hash.Sum(nil)
+}
 func HashMethod(node *pb.Method) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
@@ -789,6 +802,10 @@ func HashStruct(node *pb.Struct) []byte {
 		}
 		hash.Write(Hash_KeyValues(pairs))
 	}
+	if node.MapType != nil {
+		hash.Write(intHashes[2])
+		hash.Write(HashMapData(node.MapType))
+	}
 	return hash.Sum(nil)
 }
 func HashStructRef(node *pb.StructRef) []byte {
@@ -876,4 +893,4 @@ func HashWitness(node *pb.Witness) []byte {
 	return hash.Sum(nil)
 }
 
-var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{202, 234, 88, 159, 230, 233, 232, 151}, "witness.proto": []byte{54, 141, 143, 88, 152, 155, 40, 103}, "types.proto": []byte{122, 119, 134, 224, 248, 135, 159, 115}, "spec.proto": []byte{193, 136, 80, 123, 20, 101, 215, 240}}
+var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{225, 129, 15, 3, 212, 18, 213, 91}, "witness.proto": []byte{54, 141, 143, 88, 152, 155, 40, 103}, "types.proto": []byte{122, 119, 134, 224, 248, 135, 159, 115}, "spec.proto": []byte{193, 136, 80, 123, 20, 101, 215, 240}}
