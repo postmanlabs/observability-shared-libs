@@ -46,7 +46,9 @@ func Parse(v string) Pattern {
 	result := make(Pattern, 0, len(parts))
 
 	for _, p := range parts {
-		if p == "^" {
+		if p == "*" {
+			result = append(result, Wildcard{})
+		} else if p == "^" {
 			result = append(result, Placeholder{})
 		} else if strings.HasPrefix(p, "{") && strings.HasSuffix(p, "}") {
 			result = append(result, Var(p[1:len(p)-1]))

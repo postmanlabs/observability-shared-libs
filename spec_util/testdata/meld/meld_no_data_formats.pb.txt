@@ -9,7 +9,7 @@ method: {
     }
   }
   responses: {
-    key: "5de5a767-25ae-4ca2-8bda-b830e878b3ea"
+    key: "UFr84U5Yzi8="
     value: {
       struct: {
         fields: {

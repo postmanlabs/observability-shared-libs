@@ -28,6 +28,18 @@ func (v Var) String() string {
 	return "{" + string(v) + "}"
 }
 
+// A component that matches any path argument, either a concrete value or a
+// parameter.
+type Wildcard struct{}
+
+func (Wildcard) Match(c string) bool {
+	return true
+}
+
+func (Wildcard) String() string {
+	return "*"
+}
+
 // A component that should retain the original value verbatim, otherwise behaves
 // like a wildcard.
 type Placeholder struct{}
