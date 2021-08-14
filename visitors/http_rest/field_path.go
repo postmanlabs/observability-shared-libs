@@ -9,6 +9,9 @@ type FieldPathElement interface {
 
 	IsFieldName() bool
 	IsArrayElement() bool
+	IsOneOfVariant() bool
+	IsMapKeyType() bool
+	IsMapValueType() bool
 }
 
 type fieldPathElementKind int
@@ -17,6 +20,8 @@ const (
 	fieldNameKind fieldPathElementKind = iota
 	arrayElementKind
 	oneOfVariantKind
+	mapKeyTypeKind
+	mapValueTypeKind
 )
 
 type abstractFieldPathElement struct {
@@ -33,6 +38,14 @@ func (elt *abstractFieldPathElement) IsArrayElement() bool {
 
 func (elt *abstractFieldPathElement) IsOneOfVariant() bool {
 	return elt.kind == oneOfVariantKind
+}
+
+func (elt *abstractFieldPathElement) IsMapKeyType() bool {
+	return elt.kind == mapKeyTypeKind
+}
+
+func (elt *abstractFieldPathElement) IsMapValueType() bool {
+	return elt.kind == mapValueTypeKind
 }
 
 // Identifies a field of an object.
@@ -104,4 +117,42 @@ func NewOneOfVariant(index int, numVariants int) *OneOfVariant {
 
 func (oov *OneOfVariant) String() string {
 	return fmt.Sprintf("(format %d of %d)", oov.Index, oov.NumVariants)
+}
+
+// Identifies a map's key type.
+type MapKeyType struct {
+	abstractFieldPathElement
+}
+
+var _ FieldPathElement = (*MapKeyType)(nil)
+
+func NewMapKeyType() *MapKeyType {
+	return &MapKeyType{
+		abstractFieldPathElement: abstractFieldPathElement{
+			kind: mapKeyTypeKind,
+		},
+	}
+}
+
+func (mk *MapKeyType) String() string {
+	return "keys"
+}
+
+// Identifies a map's value type.
+type MapValueType struct {
+	abstractFieldPathElement
+}
+
+var _ FieldPathElement = (*MapValueType)(nil)
+
+func NewMapValueType() *MapValueType {
+	return &MapValueType{
+		abstractFieldPathElement: abstractFieldPathElement{
+			kind: mapValueTypeKind,
+		},
+	}
+}
+
+func (mv *MapValueType) String() string {
+	return "values"
 }

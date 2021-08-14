@@ -113,13 +113,17 @@ type SpecVisitorContext interface {
 // The original specVisitorContext is still in use by specPairVisitorContext so it can't
 // yet be altered or removed.
 type specVisitorContext struct {
+	// The concrete path through the IR being visited.
 	path            visitors.ContextPath
 	lastPathElement visitors.ContextPathElement
 
 	outer SpecVisitorContext
 
+	// See GetFieldPath().
 	fieldPath []FieldPathElement
-	restPath  []string
+
+	// See GetRestPath().
+	restPath []string
 
 	// nil means we're not sure if this is an arg or response value.
 	isArg *bool

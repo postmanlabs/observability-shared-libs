@@ -1,0 +1,3268 @@
+# api_spec.APISpec proto
+
+methods: <
+  id: <
+    name: "GET /api/0/issues/{issue_id}/events/"
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "arg-headers-0"
+    value: <
+      primitive: <
+        string_value: <
+          type: <
+            fixed_values: "Bearer 8f2c1206259843399b0e5cbaadb610d49b52b60a18ba4e21898b9375fbd6ee07"
+          >
+        >
+        akita_annotations: <
+          is_free: true
+          is_sensitive: true
+        >
+      >
+      meta: <
+        http: <
+          header: <
+            key: "Authorization"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-0"
+    value: <
+      primitive: <
+        type_hint: "issue_id"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "issue_id"
+          >
+        >
+      >
+    >
+  >
+  responses: <
+    key: "200-body-0"
+    value: <
+      list: <
+        elems: <
+          struct: <
+            fields: <
+              key: "culprit"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "dateCreated"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "event.type"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "eventID"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "groupID"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "id"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "message"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "platform"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "projectID"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "tags"
+              value: <
+                optional: <
+                  data: <
+                    list: <
+                      elems: <
+                        struct: <
+                          fields: <
+                            key: "key"
+                            value: <
+                              optional: <
+                                data: <
+                                  primitive: <
+                                    string_value: <
+                                      type: <
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                          fields: <
+                            key: "value"
+                            value: <
+                              optional: <
+                                data: <
+                                  primitive: <
+                                    string_value: <
+                                      type: <
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "title"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "user"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "data"
+                        value: <
+                          optional: <
+                            data: <
+                              struct: <
+                                fields: <
+                                  key: "subscription"
+                                  value: <
+                                    optional: <
+                                      data: <
+                                        primitive: <
+                                          string_value: <
+                                            type: <
+                                            >
+                                          >
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "email"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "user_email"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                                akita_annotations: <
+                                  is_sensitive: true
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "id"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "user_id"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                                akita_annotations: <
+                                  is_sensitive: true
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "ip_address"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "user_ip_address"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                                akita_annotations: <
+                                  is_sensitive: true
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "username"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "user_username"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                                akita_annotations: <
+                                  is_sensitive: true
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "GET"
+      path_template: "/api/0/issues/{issue_id}/events/"
+      host: "localhost:9000"
+    >
+  >
+>
+methods: <
+  id: <
+    name: "GET /api/0/projects/"
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "arg-headers-0"
+    value: <
+      primitive: <
+        string_value: <
+          type: <
+            fixed_values: "Bearer 8f2c1206259843399b0e5cbaadb610d49b52b60a18ba4e21898b9375fbd6ee07"
+          >
+        >
+        akita_annotations: <
+          is_free: true
+          is_sensitive: true
+        >
+      >
+      meta: <
+        http: <
+          header: <
+            key: "Authorization"
+          >
+        >
+      >
+    >
+  >
+  responses: <
+    key: "200-body-0"
+    value: <
+      list: <
+        elems: <
+          struct: <
+            fields: <
+              key: "avatar"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "avatarType"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "color"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "dateCreated"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "features"
+              value: <
+                optional: <
+                  data: <
+                    list: <
+                      elems: <
+                        primitive: <
+                          string_value: <
+                            type: <
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "firstEvent"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "hasAccess"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "id"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "isBookmarked"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "isInternal"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "isMember"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "isPublic"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "name"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "organization"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "avatar"
+                        value: <
+                          optional: <
+                            data: <
+                              struct: <
+                                fields: <
+                                  key: "avatarType"
+                                  value: <
+                                    optional: <
+                                      data: <
+                                        primitive: <
+                                          string_value: <
+                                            type: <
+                                            >
+                                          >
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "dateCreated"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "features"
+                        value: <
+                          optional: <
+                            data: <
+                              list: <
+                                elems: <
+                                  primitive: <
+                                    string_value: <
+                                      type: <
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "id"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "isEarlyAdopter"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                bool_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "name"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "require2FA"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                bool_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "slug"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "organization_slug"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "status"
+                        value: <
+                          optional: <
+                            data: <
+                              struct: <
+                                fields: <
+                                  key: "id"
+                                  value: <
+                                    optional: <
+                                      data: <
+                                        primitive: <
+                                          string_value: <
+                                            type: <
+                                            >
+                                          >
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                                fields: <
+                                  key: "name"
+                                  value: <
+                                    optional: <
+                                      data: <
+                                        primitive: <
+                                          string_value: <
+                                            type: <
+                                            >
+                                          >
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "slug"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      type_hint: "project_slug"
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "status"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "GET"
+      path_template: "/api/0/projects/"
+      host: "localhost:9000"
+    >
+  >
+>
+methods: <
+  id: <
+    name: "GET /api/0/{organization_slug}/{project_slug}/events/"
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "arg-headers-0"
+    value: <
+      primitive: <
+        string_value: <
+          type: <
+            fixed_values: "Bearer 8f2c1206259843399b0e5cbaadb610d49b52b60a18ba4e21898b9375fbd6ee07"
+          >
+        >
+        akita_annotations: <
+          is_free: true
+          is_sensitive: true
+        >
+      >
+      meta: <
+        http: <
+          header: <
+            key: "Authorization"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-0"
+    value: <
+      primitive: <
+        type_hint: "organization_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "organization_slug"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-1"
+    value: <
+      primitive: <
+        type_hint: "project_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "project_slug"
+          >
+        >
+      >
+    >
+  >
+  responses: <
+    key: "200-body-0"
+    value: <
+      list: <
+        elems: <
+          struct: <
+            fields: <
+              key: "culprit"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "dateCreated"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "event.type"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "eventID"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "groupID"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "id"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "message"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "platform"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "projectID"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "tags"
+              value: <
+                optional: <
+                  data: <
+                    list: <
+                      elems: <
+                        struct: <
+                          fields: <
+                            key: "key"
+                            value: <
+                              optional: <
+                                data: <
+                                  primitive: <
+                                    string_value: <
+                                      type: <
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                          fields: <
+                            key: "value"
+                            value: <
+                              optional: <
+                                data: <
+                                  primitive: <
+                                    string_value: <
+                                      type: <
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "title"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "user"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "data"
+                        value: <
+                          optional: <
+                            data: <
+                              struct: <
+                                fields: <
+                                  key: "subscription"
+                                  value: <
+                                    optional: <
+                                      data: <
+                                        primitive: <
+                                          string_value: <
+                                            type: <
+                                            >
+                                          >
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "email"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "user_email"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                                akita_annotations: <
+                                  is_sensitive: true
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "id"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "user_id"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                                akita_annotations: <
+                                  is_sensitive: true
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "ip_address"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "user_ip_address"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                                akita_annotations: <
+                                  is_sensitive: true
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "username"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "user_username"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                                akita_annotations: <
+                                  is_sensitive: true
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "GET"
+      path_template: "/api/0/projects/{organization_slug}/{project_slug}/events/"
+      host: "localhost:9000"
+    >
+  >
+>
+methods: <
+  id: <
+    name: "GET /api/0/projects/{organization_slug}/{project_slug}/issues/"
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "arg-headers-0"
+    value: <
+      primitive: <
+        string_value: <
+          type: <
+            fixed_values: "Bearer 8f2c1206259843399b0e5cbaadb610d49b52b60a18ba4e21898b9375fbd6ee07"
+          >
+        >
+        akita_annotations: <
+          is_free: true
+          is_sensitive: true
+        >
+      >
+      meta: <
+        http: <
+          header: <
+            key: "Authorization"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-0"
+    value: <
+      primitive: <
+        type_hint: "organization_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "organization_slug"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-1"
+    value: <
+      primitive: <
+        type_hint: "project_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "project_slug"
+          >
+        >
+      >
+    >
+  >
+  responses: <
+    key: "200-body-0"
+    value: <
+      list: <
+        elems: <
+          struct: <
+            fields: <
+              key: "count"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "culprit"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "firstSeen"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "hasSeen"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "id"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      type_hint: "issue_id"
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "isBookmarked"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "isPublic"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "isSubscribed"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "lastSeen"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "level"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "logger"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "metadata"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "type"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "value"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "numComments"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      int64_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "permalink"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "platform"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "project"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "id"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "name"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "slug"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                type_hint: "project_slug"
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "shortId"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "stats"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "24h"
+                        value: <
+                          optional: <
+                            data: <
+                              list: <
+                                elems: <
+                                  list: <
+                                    elems: <
+                                      primitive: <
+                                        int64_value: <
+                                          type: <
+                                          >
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "status"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "statusDetails"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "title"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "type"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "userCount"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      int64_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "GET"
+      path_template: "/api/0/projects/{organization_slug}/{project_slug}/issues/"
+      host: "localhost:9000"
+    >
+  >
+>
+methods: <
+  id: <
+    name: "GET /api/0/{organization_slug}/{project_slug}/keys/"
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "arg-headers-0"
+    value: <
+      primitive: <
+        string_value: <
+          type: <
+            fixed_values: "Bearer 8f2c1206259843399b0e5cbaadb610d49b52b60a18ba4e21898b9375fbd6ee07"
+          >
+        >
+        akita_annotations: <
+          is_free: true
+          is_sensitive: true
+        >
+      >
+      meta: <
+        http: <
+          header: <
+            key: "Authorization"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-0"
+    value: <
+      primitive: <
+        type_hint: "organization_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "organization_slug"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-1"
+    value: <
+      primitive: <
+        type_hint: "project_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "project_slug"
+          >
+        >
+      >
+    >
+  >
+  responses: <
+    key: "200-body-0"
+    value: <
+      list: <
+        elems: <
+          struct: <
+            fields: <
+              key: "browserSdk"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "choices"
+                        value: <
+                          optional: <
+                            data: <
+                              list: <
+                                elems: <
+                                  list: <
+                                    elems: <
+                                      primitive: <
+                                        string_value: <
+                                          type: <
+                                          >
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "browserSdkVersion"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "dateCreated"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "dsn"
+              value: <
+                optional: <
+                  data: <
+                    struct: <
+                      fields: <
+                        key: "cdn"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "csp"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "minidump"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "public"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "secret"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "security"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                      fields: <
+                        key: "unreal"
+                        value: <
+                          optional: <
+                            data: <
+                              primitive: <
+                                string_value: <
+                                  type: <
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "id"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "isActive"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      bool_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "label"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "name"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "projectId"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      int64_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "public"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      type_hint: "sentry_key"
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "secret"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "GET"
+      path_template: "/api/0/projects/{organization_slug}/{project_slug}/keys/"
+      host: "localhost:9000"
+    >
+  >
+>
+methods: <
+  id: <
+    name: "POST /api/0/projects/{organization_slug}/{project_slug}/user-feedback/"
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "arg-body-0"
+    value: <
+      struct: <
+        fields: <
+          key: "comments"
+          value: <
+            primitive: <
+              string_value: <
+                type: <
+                >
+              >
+              akita_annotations: <
+                is_free: true
+              >
+            >
+          >
+        >
+        fields: <
+          key: "email"
+          value: <
+            primitive: <
+              type_hint: "user_email"
+              string_value: <
+                type: <
+                  regex: "^[a-z0-9]+@[a-z0-9]+\\.[a-z0-9]+$"
+                >
+              >
+              akita_annotations: <
+                is_free: true
+                is_sensitive: true
+              >
+            >
+          >
+        >
+        fields: <
+          key: "event_id"
+          value: <
+            primitive: <
+              type_hint: "event_id"
+              string_value: <
+                type: <
+                >
+              >
+              akita_annotations: <
+                is_free: true
+              >
+            >
+          >
+        >
+        fields: <
+          key: "name"
+          value: <
+            primitive: <
+              type_hint: "user_name"
+              string_value: <
+                type: <
+                >
+              >
+              akita_annotations: <
+                is_free: true
+                is_sensitive: true
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-headers-0"
+    value: <
+      primitive: <
+        string_value: <
+          type: <
+            fixed_values: "Bearer 8f2c1206259843399b0e5cbaadb610d49b52b60a18ba4e21898b9375fbd6ee07"
+          >
+        >
+        akita_annotations: <
+          is_free: true
+          is_sensitive: true
+        >
+      >
+      meta: <
+        http: <
+          header: <
+            key: "Authorization"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-0"
+    value: <
+      primitive: <
+        type_hint: "organization_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "organization_slug"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-1"
+    value: <
+      primitive: <
+        type_hint: "project_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "project_slug"
+          >
+        >
+      >
+    >
+  >
+  responses: <
+    key: "200-body-0"
+    value: <
+      struct: <
+        fields: <
+          key: "comments"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "dateCreated"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "email"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  type_hint: "user_email"
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_sensitive: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "event"
+          value: <
+            optional: <
+              data: <
+                struct: <
+                  fields: <
+                    key: "eventID"
+                    value: <
+                      optional: <
+                        data: <
+                          primitive: <
+                            type_hint: "event_id"
+                            string_value: <
+                              type: <
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                  fields: <
+                    key: "id"
+                    value: <
+                      optional: <
+                        data: <
+                          primitive: <
+                            string_value: <
+                              type: <
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "eventID"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  type_hint: "event_id"
+                  string_value: <
+                    type: <
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "id"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "name"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  type_hint: "user_name"
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_sensitive: true
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "POST"
+      path_template: "/api/0/projects/{organization_slug}/{project_slug}/user-feedback/"
+      host: "localhost:9000"
+    >
+  >
+>
+methods: <
+  id: <
+    name: "GET /api/0/projects/{organization_slug}/{project_slug}/users/"
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "arg-headers-0"
+    value: <
+      primitive: <
+        string_value: <
+          type: <
+            fixed_values: "Bearer 8f2c1206259843399b0e5cbaadb610d49b52b60a18ba4e21898b9375fbd6ee07"
+          >
+        >
+        akita_annotations: <
+          is_free: true
+          is_sensitive: true
+        >
+      >
+      meta: <
+        http: <
+          header: <
+            key: "Authorization"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-0"
+    value: <
+      primitive: <
+        type_hint: "organization_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "organization_slug"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-path-1"
+    value: <
+      primitive: <
+        type_hint: "project_slug"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          path: <
+            key: "project_slug"
+          >
+        >
+      >
+    >
+  >
+  responses: <
+    key: "200-body-0"
+    value: <
+      list: <
+        elems: <
+          struct: <
+            map_type: <
+              key: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                >
+              >
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+        elems: <
+          struct: <
+            fields: <
+              key: "avatarUrl"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "dateCreated"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "email"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      type_hint: "user_email"
+                      string_value: <
+                        type: <
+                        >
+                      >
+                      akita_annotations: <
+                        is_sensitive: true
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "hash"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "id"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      type_hint: "user_id"
+                      string_value: <
+                        type: <
+                        >
+                      >
+                      akita_annotations: <
+                        is_sensitive: true
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "identifier"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "ipAddress"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      type_hint: "user_ip_address"
+                      string_value: <
+                        type: <
+                        >
+                      >
+                      akita_annotations: <
+                        is_sensitive: true
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "name"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      type_hint: "user_name"
+                      string_value: <
+                        type: <
+                        >
+                      >
+                      akita_annotations: <
+                        is_sensitive: true
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "tagValue"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+            fields: <
+              key: "username"
+              value: <
+                optional: <
+                  data: <
+                    primitive: <
+                      type_hint: "user_username"
+                      string_value: <
+                        type: <
+                        >
+                      >
+                      akita_annotations: <
+                        is_sensitive: true
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "GET"
+      path_template: "/api/0/projects/{organization_slug}/{project_slug}/users/"
+      host: "localhost:9000"
+    >
+  >
+>
+methods: <
+  id: <
+    name: "POST /api/1/store/"
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "arg-body-0"
+    value: <
+      struct: <
+        fields: <
+          key: "culprit"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_free: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "dist"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_free: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "environment"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_free: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "event_id"
+          value: <
+            primitive: <
+              type_hint: "event_id"
+              string_value: <
+                type: <
+                >
+              >
+              akita_annotations: <
+                is_free: true
+              >
+            >
+          >
+        >
+        fields: <
+          key: "exception"
+          value: <
+            optional: <
+              data: <
+                struct: <
+                  fields: <
+                    key: "values"
+                    value: <
+                      list: <
+                        elems: <
+                          struct: <
+                            fields: <
+                              key: "module"
+                              value: <
+                                primitive: <
+                                  string_value: <
+                                    type: <
+                                    >
+                                  >
+                                  akita_annotations: <
+                                    is_free: true
+                                  >
+                                >
+                              >
+                            >
+                            fields: <
+                              key: "type"
+                              value: <
+                                primitive: <
+                                  string_value: <
+                                    type: <
+                                    >
+                                  >
+                                  akita_annotations: <
+                                    is_free: true
+                                  >
+                                >
+                              >
+                            >
+                            fields: <
+                              key: "value"
+                              value: <
+                                primitive: <
+                                  string_value: <
+                                    type: <
+                                    >
+                                  >
+                                  akita_annotations: <
+                                    is_free: true
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "fingerprint"
+          value: <
+            optional: <
+              data: <
+                list: <
+                  elems: <
+                    primitive: <
+                      string_value: <
+                        type: <
+                        >
+                      >
+                      akita_annotations: <
+                        is_free: true
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "level"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_free: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "logger"
+          value: <
+            primitive: <
+              string_value: <
+                type: <
+                >
+              >
+              akita_annotations: <
+                is_free: true
+              >
+            >
+          >
+        >
+        fields: <
+          key: "message"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_free: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "platform"
+          value: <
+            primitive: <
+              string_value: <
+                type: <
+                  fixed_values: "as3"
+                  fixed_values: "c"
+                  fixed_values: "cfml"
+                  fixed_values: "cocoa"
+                  fixed_values: "csharp"
+                  fixed_values: "elixir"
+                  fixed_values: "haskell"
+                  fixed_values: "go"
+                  fixed_values: "groovy"
+                  fixed_values: "java"
+                  fixed_values: "javascript"
+                  fixed_values: "native"
+                  fixed_values: "node"
+                  fixed_values: "objc"
+                  fixed_values: "other"
+                  fixed_values: "perl"
+                  fixed_values: "php"
+                  fixed_values: "python"
+                  fixed_values: "ruby"
+                >
+              >
+              akita_annotations: <
+                is_free: true
+              >
+            >
+          >
+        >
+        fields: <
+          key: "release"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_free: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "server_name"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_free: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "timestamp"
+          value: <
+            primitive: <
+              string_value: <
+                type: <
+                >
+              >
+              akita_annotations: <
+                is_free: true
+              >
+            >
+          >
+        >
+        fields: <
+          key: "transaction"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                  akita_annotations: <
+                    is_free: true
+                  >
+                >
+              >
+            >
+          >
+        >
+        fields: <
+          key: "user"
+          value: <
+            optional: <
+              data: <
+                struct: <
+                  fields: <
+                    key: "email"
+                    value: <
+                      primitive: <
+                        type_hint: "user_email"
+                        string_value: <
+                          type: <
+                            regex: "^[a-z0-9]+@[a-z0-9]+\\.[a-z0-9]+$"
+                          >
+                        >
+                        akita_annotations: <
+                          is_free: true
+                          is_sensitive: true
+                        >
+                      >
+                    >
+                  >
+                  fields: <
+                    key: "id"
+                    value: <
+                      primitive: <
+                        type_hint: "user_id"
+                        string_value: <
+                          type: <
+                          >
+                        >
+                        akita_annotations: <
+                          is_free: true
+                          is_sensitive: true
+                        >
+                      >
+                    >
+                  >
+                  fields: <
+                    key: "ip_address"
+                    value: <
+                      primitive: <
+                        type_hint: "user_ip_address"
+                        string_value: <
+                          type: <
+                          >
+                        >
+                        akita_annotations: <
+                          is_free: true
+                          is_sensitive: true
+                        >
+                      >
+                    >
+                  >
+                  fields: <
+                    key: "subscription"
+                    value: <
+                      optional: <
+                        data: <
+                          primitive: <
+                            string_value: <
+                              type: <
+                              >
+                            >
+                            akita_annotations: <
+                              is_free: true
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                  fields: <
+                    key: "username"
+                    value: <
+                      primitive: <
+                        type_hint: "user_username"
+                        string_value: <
+                          type: <
+                          >
+                        >
+                        akita_annotations: <
+                          is_free: true
+                          is_sensitive: true
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-headers-0"
+    value: <
+      primitive: <
+        string_value: <
+          type: <
+            fixed_values: "Bearer 8f2c1206259843399b0e5cbaadb610d49b52b60a18ba4e21898b9375fbd6ee07"
+          >
+        >
+        akita_annotations: <
+          is_free: true
+          is_sensitive: true
+        >
+      >
+      meta: <
+        http: <
+          header: <
+            key: "Authorization"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-query-0"
+    value: <
+      primitive: <
+        type_hint: "sentry_key"
+        string_value: <
+          type: <
+          >
+        >
+      >
+      meta: <
+        http: <
+          query: <
+            key: "sentry_key"
+          >
+        >
+      >
+    >
+  >
+  args: <
+    key: "arg-query-1"
+    value: <
+      primitive: <
+        int32_value: <
+          type: <
+            fixed_values: 7
+          >
+        >
+      >
+      meta: <
+        http: <
+          query: <
+            key: "sentry_version"
+          >
+        >
+      >
+    >
+  >
+  responses: <
+    key: "200-body-0"
+    value: <
+      struct: <
+        fields: <
+          key: "id"
+          value: <
+            optional: <
+              data: <
+                primitive: <
+                  string_value: <
+                    type: <
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "POST"
+      path_template: "/api/1/store/"
+      host: "localhost:9000"
+    >
+  >
+>

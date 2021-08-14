@@ -514,12 +514,24 @@ func extendContext(cin Context, node interface{}) {
 			// visited.
 			astPath := ctx.GetPath()
 			if !astPath.IsEmpty() {
+				astParent := astPath.GetLast().AncestorNode
 				astPathEdge := astPath.GetLast().OutEdge
 
 				// Update the field path.
 				switch edge := astPathEdge.(type) {
 				case *StructFieldEdge:
-					ctx.appendFieldPath(NewFieldName(edge.FieldName))
+					if _, isMap := astParent.(*pb.MapData); isMap {
+						// Visiting the key type or value type of a map.
+						if edge.FieldName == "Key" {
+							ctx.appendFieldPath(NewMapKeyType())
+						} else if edge.FieldName == "Value" {
+							ctx.appendFieldPath(NewMapValueType())
+						} else {
+							panic(fmt.Sprintf("Unknown field of MapData: %s", edge.FieldName))
+						}
+					} else {
+						ctx.appendFieldPath(NewFieldName(edge.FieldName))
+					}
 				case *ArrayElementEdge:
 					ctx.appendFieldPath(NewArrayElement(edge.ElementIndex))
 				case *MapValueEdge:

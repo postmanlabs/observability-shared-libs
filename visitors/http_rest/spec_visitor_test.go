@@ -146,26 +146,45 @@ func (v *responsePathVisitor) EnterPrimitive(self interface{}, c SpecVisitorCont
 }
 
 func TestGetDataPath(t *testing.T) {
-	spec := test.LoadAPISpecFromFileOrDie("../testdata/sentry_ir_spec.pb.txt")
-
-	expectedPaths = []string{
-		"Response.200.Body.JSON.0.avatarUrl.Data.api_spec.String",
-		"Response.200.Body.JSON.0.dateCreated.Data.api_spec.String",
-		"Response.200.Body.JSON.0.email.Data.api_spec.String",
-		"Response.200.Body.JSON.0.hash.Data.api_spec.String",
-		"Response.200.Body.JSON.0.id.Data.api_spec.String",
-		"Response.200.Body.JSON.0.identifier.Data.api_spec.String",
-		"Response.200.Body.JSON.0.ipAddress.Data.api_spec.String",
-		"Response.200.Body.JSON.0.name.Data.api_spec.String",
-		"Response.200.Body.JSON.0.tagValue.Data.api_spec.String",
-		"Response.200.Body.JSON.0.username.Data.api_spec.String",
+	// Maps test files to expected paths.
+	tests := map[string][]string{
+		"../testdata/sentry_ir_spec.pb.txt": {
+			"Response.200.Body.JSON.0.avatarUrl.Data.api_spec.String",
+			"Response.200.Body.JSON.0.dateCreated.Data.api_spec.String",
+			"Response.200.Body.JSON.0.email.Data.api_spec.String",
+			"Response.200.Body.JSON.0.hash.Data.api_spec.String",
+			"Response.200.Body.JSON.0.id.Data.api_spec.String",
+			"Response.200.Body.JSON.0.identifier.Data.api_spec.String",
+			"Response.200.Body.JSON.0.ipAddress.Data.api_spec.String",
+			"Response.200.Body.JSON.0.name.Data.api_spec.String",
+			"Response.200.Body.JSON.0.tagValue.Data.api_spec.String",
+			"Response.200.Body.JSON.0.username.Data.api_spec.String",
+		},
+		"../testdata/sentry_ir_map_spec.pb.txt": {
+			"Response.200.Body.JSON.0.Key.api_spec.String",
+			"Response.200.Body.JSON.0.Value.Data.api_spec.String",
+			"Response.200.Body.JSON.1.avatarUrl.Data.api_spec.String",
+			"Response.200.Body.JSON.1.dateCreated.Data.api_spec.String",
+			"Response.200.Body.JSON.1.email.Data.api_spec.String",
+			"Response.200.Body.JSON.1.hash.Data.api_spec.String",
+			"Response.200.Body.JSON.1.id.Data.api_spec.String",
+			"Response.200.Body.JSON.1.identifier.Data.api_spec.String",
+			"Response.200.Body.JSON.1.ipAddress.Data.api_spec.String",
+			"Response.200.Body.JSON.1.name.Data.api_spec.String",
+			"Response.200.Body.JSON.1.tagValue.Data.api_spec.String",
+			"Response.200.Body.JSON.1.username.Data.api_spec.String",
+		},
 	}
 
-	var visitor responsePathVisitor
-	Apply(&visitor, spec)
-	sort.Strings(expectedPaths)
-	sort.Strings(visitor.actualPaths)
-	assert.Equal(t, expectedPaths, visitor.actualPaths)
+	for testFile, expectedPaths := range tests {
+		spec := test.LoadAPISpecFromFileOrDie(testFile)
+
+		var visitor responsePathVisitor
+		Apply(&visitor, spec)
+		sort.Strings(expectedPaths)
+		sort.Strings(visitor.actualPaths)
+		assert.Equal(t, expectedPaths, visitor.actualPaths)
+	}
 }
 
 type primitiveCounter struct {
