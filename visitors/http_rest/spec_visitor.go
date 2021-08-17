@@ -520,7 +520,7 @@ func extendContext(cin Context, node interface{}) {
 				// Update the field path.
 				switch edge := astPathEdge.(type) {
 				case *StructFieldEdge:
-					if _, isMap := astParent.(*pb.MapData); isMap {
+					if _, isMap := astParent.(pb.MapData); isMap {
 						// Visiting the key type or value type of a map.
 						if edge.FieldName == "Key" {
 							ctx.appendFieldPath(NewMapKeyType())
