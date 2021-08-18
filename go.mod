@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/akitasoftware/akita-ir v0.0.0-20210813190635-7a54ce102fa3
+	github.com/akitasoftware/akita-ir v0.0.0-20210818150446-55531f1ef499
 	github.com/akitasoftware/objecthash-proto v0.0.0-20210728061301-b7904b31cc09
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
