@@ -1,6 +1,8 @@
 package spec_util
 
 import (
+	"errors"
+
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 )
 
@@ -155,4 +157,15 @@ func HTTPSuccessResponses(m *pb.Method) map[string]*pb.Data {
 	default:
 		return m.Responses
 	}
+}
+
+// Extract the response code from the first response (meaningful for witnesses,
+// which contain only at most one response.)
+func HTTPResponseCode(m *pb.Method) (int32, error) {
+	for _, data := range m.Responses {
+		if m, ok := data.GetMeta().GetMeta().(*pb.DataMeta_Http); ok {
+			return m.Http.GetResponseCode(), nil
+		}
+	}
+	return 0, errors.New("No HTTP response code found")
 }
