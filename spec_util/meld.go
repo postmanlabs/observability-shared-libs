@@ -559,7 +559,8 @@ func structToMap(struc *pb.Struct) {
 		curValue = stripOptional(curValue)
 		if mapValue == nil {
 			mapValue = curValue
-		} else {
+			//} else if curValue != nil {
+		} else if curValue != nil {
 			MeldData(mapValue, curValue)
 		}
 	}

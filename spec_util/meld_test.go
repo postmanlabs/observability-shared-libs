@@ -207,6 +207,15 @@ var tests = []testData{
 		},
 		"testdata/meld/meld_map_1_map_2_expected.pb.txt",
 	},
+	// Test conversion of structs into maps with an optional none
+	{
+		"struct to map with none type",
+		[]string{
+			"testdata/meld/meld_map_1.pb.txt",
+			"testdata/meld/meld_map_3.pb.txt",
+		},
+		"testdata/meld/meld_map_1_map_2_expected.pb.txt",
+	},
 }
 
 func TestMeldWithFormats(t *testing.T) {
