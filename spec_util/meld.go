@@ -476,7 +476,7 @@ func isMap(struc *pb.Struct) bool {
 }
 
 // Tuning parameters for deciding when a struct should be turned into a map.
-const maxOptionalFieldsPerStruct = 15
+const maxOptionalFieldsPerStruct = 50
 const maxFieldsPerStruct = 100
 
 // Heuristically determines whether the given pb.Struct (assumed to not
