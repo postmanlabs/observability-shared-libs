@@ -209,7 +209,7 @@ var tests = []testData{
 	},
 	// Test conversion of structs into maps with an optional none
 	{
-		"map_1, map_2",
+		"struct to map with none type",
 		[]string{
 			"testdata/meld/meld_map_1.pb.txt",
 			"testdata/meld/meld_map_3.pb.txt",
