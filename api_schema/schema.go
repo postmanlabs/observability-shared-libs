@@ -314,3 +314,74 @@ type SpecInfo struct {
 type ListSpecsResponse struct {
 	Specs []SpecInfo `json:"specs"`
 }
+
+type TimelineAggregation string
+type TimelineValue string
+
+// Time along with a map of values such as
+// count, latency, etc.
+type TimelineEvent struct {
+	Time   time.Time                 `json:"time"`
+	Values map[TimelineValue]float32 `json:"values"`
+}
+
+// These arguments may be given as the "aggregate" query parameter.
+// They correspond with the keys in the response below.
+const (
+	Aggr_Count  TimelineAggregation = "count"  // count of events within bucket
+	Aggr_Max                        = "max"    // max of latency and RTT
+	Aggr_Min                        = "min"    // min of latency and RTT
+	Aggr_Mean                       = "mean"   // arithmetic mean of latency and RTT
+	Aggr_Median                     = "median" // median value of latency and RTT
+	Aggr_90p                        = "90p"    // 90th percentile latency and RTT
+	Aggr_95p                        = "95p"    // 95th percentile latency and RTT
+	Aggr_99p                        = "99p"    // 99th percentile latency and RTT
+)
+
+// These are the available keys for Timeline.Values.
+const (
+	Event_Count          TimelineValue = "count"          // count of events within bucket
+	Event_Rate                         = "rate"           // rate in events per minutes
+	Event_Latency                      = "latency"        // processing latency in milliseconds
+	Event_Latency_Max                  = "latency_max"    // maximum latency
+	Event_Latency_Min                  = "latency_min"    // minimum latency
+	Event_Latency_Mean                 = "latency_mean"   // arithmetic mean latency
+	Event_Latency_Median               = "latency_median" // median (50th percentile) latency
+	Event_Latency_90p                  = "latency_90p"    // 90th percentile latency
+	Event_Latency_95p                  = "latency_95p"    // 95th percentile latency
+	Event_Latency_99p                  = "latency_99p"    // 99th percentile latency
+	Event_RTT                          = "rtt"            // estimated network round-trip time, in milliseconds
+	Event_RTT_Max                      = "rtt_max"        // maximum rtt
+	Event_RTT_Min                      = "rtt_min"        // minimum rtt
+	Event_RTT_Mean                     = "rtt_mean"       // arithmetic mean rtt
+	Event_RTT_Median                   = "rtt_median"     // median (50th percentile) rtt
+	Event_RTT_90p                      = "rtt_90p"        // 90th percentile rtt
+	Event_RTT_95p                      = "rtt_95p"        // 95th percentile rtt
+	Event_RTT_99p                      = "rtt_99p"        // 99th percentile rtt
+
+)
+
+type Timeline struct {
+	// Key; may be "*" if user combined different values into the same timeline.
+	// (This is the default for ResponseCode)
+	Method       string `json:"method"`
+	Host         string `json:"host"`
+	PathTemplate string `json:"path_template"`
+	ResponseCode string `json:"reponse_code"`
+
+	// Events in time order
+	Events []TimelineEvent `json:"events"`
+}
+
+type TimelineResponse struct {
+	// Report what time range is included in this reponses; less than
+	// request if data is not available or limit was hit.
+	ActualStartTime time.Time `json:"actual_start_time"`
+	ActualEndTime   time.Time `json:"actual_end_time"`
+
+	// One timeline per selected endpoint
+	Timelines []Timeline `json:"timelines"`
+
+	// If incomplete due to limit, the first unreported start time
+	NextStartTime *time.Time `json:"next_start_time"`
+}
