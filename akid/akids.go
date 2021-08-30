@@ -9,6 +9,7 @@ import (
 
 const (
 	APISpecTag         = "api"
+	APIKeyTag          = "apk"
 	ClientTag          = "cli"
 	DataCategoryTag    = "dct"
 	IdentityTag        = "idt"
@@ -32,6 +33,7 @@ type tagToIDConstructor func(uuid.UUID) ID
 
 var idConstructorMap = map[string]tagToIDConstructor{
 	APISpecTag:         func(ID uuid.UUID) ID { return NewAPISpecID(ID) },
+	APIKeyTag:          func(ID uuid.UUID) ID { return NewAPIKeyID(ID) },
 	ClientTag:          func(ID uuid.UUID) ID { return NewClientID(ID) },
 	DataCategoryTag:    func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
 	IdentityTag:        func(ID uuid.UUID) ID { return NewIdentityID(ID) },
@@ -124,6 +126,31 @@ func (id APISpecID) MarshalText() ([]byte, error) {
 }
 
 func (id *APISpecID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// APIKeyIDs
+type APIKeyID struct {
+	baseID
+}
+
+func (APIKeyID) GetType() string {
+	return APIKeyTag
+}
+
+func NewAPIKeyID(ID uuid.UUID) APIKeyID {
+	return APIKeyID{baseID(ID)}
+}
+
+func GenerateAPIKeyID() APIKeyID {
+	return NewAPIKeyID(uuid.New())
+}
+
+func (id APIKeyID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *APIKeyID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
 
