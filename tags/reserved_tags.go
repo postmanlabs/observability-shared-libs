@@ -94,12 +94,16 @@ const (
 
 // Deployment tags
 const (
-	// The name of the deployment environment, suggested values "production"
-	// or "staging" but may be a user-defined value
+	// The name of the deployment environment. Suggested values are "production"
+	// or "staging", but may be a user-defined value.
 	XAkitaDeployment Key = "x-akita-deployment"
 
 	// Used for specifications where the number of witnesses is too large.
 	XAkitaTruncated Key = "x-akita-truncated"
+
+	// The presence of this tag indicates that the associated model should not be
+	// incorporated into any aggregate models. The value of this tag is ignored.
+	XAkitaDoNotAggregate Key = "x-akita-do-not-aggregate"
 )
 
 // AWS deployment tags
