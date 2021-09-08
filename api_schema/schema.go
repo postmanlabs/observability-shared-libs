@@ -368,14 +368,14 @@ type Timeline struct {
 	Method       string `json:"method"`
 	Host         string `json:"host"`
 	PathTemplate string `json:"path_template"`
-	ResponseCode string `json:"reponse_code"`
+	ResponseCode string `json:"response_code"`
 
 	// Events in time order
 	Events []TimelineEvent `json:"events"`
 }
 
 type TimelineResponse struct {
-	// Report what time range is included in this reponses; less than
+	// Report what time range is included in this responses; less than
 	// request if data is not available or limit was hit.
 	ActualStartTime time.Time `json:"actual_start_time"`
 	ActualEndTime   time.Time `json:"actual_end_time"`
