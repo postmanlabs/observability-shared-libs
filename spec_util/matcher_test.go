@@ -228,16 +228,89 @@ func TestHostMatching(t *testing.T) {
 			"/users/{xyz}/files",
 		},
 		{
+			// this case now falls back to the GET path
 			"POST",
 			"api-server:8000",
 			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d9555/files",
-			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d9555/files",
+			"/users/{xyz}/files",
 		},
 		{
 			"GET",
 			"api-server:8000",
 			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d9666",
 			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d9666",
+		},
+	}
+
+	for _, tc := range testCases {
+		actual := m.LookupWithHost(tc.TestOperation, tc.TestHost, tc.TestPath)
+		if actual != tc.ExpectedMatch {
+			t.Errorf("expected %q but got %q for input %s %s", tc.ExpectedMatch, actual, tc.TestOperation, tc.TestPath)
+		}
+	}
+}
+
+func TestMoreSpecificMatching(t *testing.T) {
+	spec := &pb.APISpec{
+		Methods: []*pb.Method{
+			testMethodWithHost("GET", "api-server", "/users/{arg2}/files/{arg4}"),
+			testMethodWithHost("GET", "api-server", "/users/admin/files/{arg4}"),
+			testMethodWithHost("GET", "api-server", "/users/admin/files/foo"),
+			testMethodWithHost("GET", "api-server", "/users/{arg2}/files/bar"),
+			testMethodWithHost("GET", "api-server", "/users/{arg2}/{arg3}/{arg4}"),
+		},
+	}
+	m, err := NewMethodMatcher(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testCases := []struct {
+		TestOperation string
+		TestHost      string
+		TestPath      string
+		ExpectedMatch string
+	}{
+		{
+			"GET",
+			"api-server",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d9111",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d9111",
+		},
+		{
+			"GET",
+			"api-server",
+			"/users/2b9046ac-6112-11eb-ae07-3e22fb0d9111/files/abcdef",
+			"/users/{arg2}/files/{arg4}",
+		},
+		{
+			"GET",
+			"api-server",
+			"/users/admin/files/abcdef",
+			"/users/admin/files/{arg4}",
+		},
+		{
+			"GET",
+			"api-server",
+			"/users/admin/files/foo",
+			"/users/admin/files/foo",
+		},
+		{
+			"GET",
+			"api-server",
+			"/users/mark/directories/bar",
+			"/users/{arg2}/{arg3}/{arg4}",
+		},
+		{
+			"GET",
+			"api-server",
+			"/users/mark/files/bar",
+			"/users/{arg2}/files/bar",
+		},
+		{
+			"GET",
+			"api-server",
+			"/users/mark/files/foo",
+			"/users/{arg2}/files/{arg4}",
 		},
 	}
 
