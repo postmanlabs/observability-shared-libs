@@ -15,7 +15,7 @@ type methodRegexp struct {
 	Host              string         // HTTP host
 	Template          string         // original method template
 	RE                *regexp.Regexp // template converted to regexp on path
-	VariablePositions []int          // positions of path variables in templates
+	VariablePositions []int          // positions of path variables in templates, in sorted order
 }
 
 func (r methodRegexp) LessThan(other methodRegexp) bool {
@@ -111,8 +111,8 @@ var (
 // to a regular expression that matches the entire path like
 // ^v1/api/get/user/([^/]+)/([^/]+)$
 //
-// Return the position of each argument within the original template,
-// counting variables as length 1.
+// Return the position of each argument within the original template, in sorted order,
+// counting all variables as length 1.
 func templateToRegexp(pathTemplate string) (*regexp.Regexp, []int, error) {
 	// If there are special characters, then the easiest way to escape them is
 	// to break the string up by arguments, and escape everything in between.
