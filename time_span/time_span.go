@@ -26,6 +26,7 @@ type BaseInterval struct {
 }
 
 // A closed interval of time.
+// Empty intervals are represented by having Start > End.
 type ClosedInterval BaseInterval
 
 func NewClosedInterval(start time.Time, end time.Time) ClosedInterval {
@@ -103,6 +104,7 @@ func (t ClosedInterval) Combine(t2 ClosedInterval) ClosedInterval {
 }
 
 // An half-open interval [start,end)
+// Empty intervals are represented by having Start >= End.
 type HalfOpenInterval BaseInterval
 
 func NewHalfOpenInterval(start time.Time, end time.Time) HalfOpenInterval {
