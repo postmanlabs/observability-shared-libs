@@ -53,7 +53,7 @@ func (span ClosedInterval) Duration() time.Duration {
 
 // Determines whether the span includes the given query.
 func (span ClosedInterval) Includes(query time.Time) bool {
-	return span.Start.Before(query) && query.Before(span.End) || span.Start.Equal(query) || span.End.Equal(query)
+	return !(span.Empty() || query.Before(span.Start) || query.After(span.End))
 }
 
 // Extend an interval by "delta" in each direction (thus it gets 2*delta longer.)
