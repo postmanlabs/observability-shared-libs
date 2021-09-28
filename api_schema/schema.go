@@ -362,13 +362,23 @@ const (
 
 )
 
+// Describes a common set of attributes for a group of endpoints. If a
+// non-default value (i.e., non-empty string or non-zero int) is provided for
+// any attribute in this struct, then all endpoints in the group will have that
+// value for that attribute.
+//
+// XXX Would be nice for this to just be map[attribute]string, but then we
+// wouldn't be able to use this as a map key.
+type EndpointGroupAttributes struct {
+	Method       string `json:"method,omitempty"`
+	Host         string `json:"host,omitempty"`
+	PathTemplate string `json:"path_template,omitempty"`
+	ResponseCode int    `json:"response_code,omitempty"`
+}
+
 type Timeline struct {
-	// Key; may be "*" if user combined different values into the same timeline.
-	// (This is the default for ResponseCode)
-	Method       string `json:"method"`
-	Host         string `json:"host"`
-	PathTemplate string `json:"path_template"`
-	ResponseCode string `json:"response_code"`
+	// Describes the common set of attributes for the endpoints in this timeline.
+	GroupAttributes EndpointGroupAttributes `json:"group_attrs"`
 
 	// Events in time order
 	Events []TimelineEvent `json:"events"`
