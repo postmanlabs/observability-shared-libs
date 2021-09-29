@@ -396,3 +396,23 @@ type TimelineResponse struct {
 	// If incomplete due to limit, the first unreported start time
 	NextStartTime *time.Time `json:"next_start_time,omitempty"`
 }
+
+type GraphEdge struct {
+	// Describe the source and destination vertices by the attributes
+	// they share in common: either just Host for a service-level vertex,
+	// or Host + Method + PathTemplate for a end-point level vertex, although
+	// we could imagine other possibilities.
+	SourceAttributes EndpointGroupAttributes `json:"source_attrs"`
+	TargetAttributes EndpointGroupAttributes `json:"target_attrs"`
+
+	// Aggregate values attached to the edge, e.g., "count"
+	Values map[TimelineValue]float32 `json:"values"`
+}
+
+type GraphResponse struct {
+	// Edges of the graph
+	Edges []GraphEdge `json:"edges"`
+
+	// TODO: vertex list? vertex or edge count?
+	// TODO: pagination
+}
