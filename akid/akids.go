@@ -12,6 +12,7 @@ const (
 	APIKeyTag          = "apk"
 	ClientTag          = "cli"
 	DataCategoryTag    = "dct"
+	GraphTag           = "gph"
 	IdentityTag        = "idt"
 	InvalidTag         = "xxx"
 	LearnSessionTag    = "lrn"
@@ -37,6 +38,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	ClientTag:          func(ID uuid.UUID) ID { return NewClientID(ID) },
 	DataCategoryTag:    func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
 	IdentityTag:        func(ID uuid.UUID) ID { return NewIdentityID(ID) },
+	GraphTag:           func(ID uuid.UUID) ID { return NewGraphID(ID) },
 	LearnSessionTag:    func(ID uuid.UUID) ID { return NewLearnSessionID(ID) },
 	MessageTag:         func(ID uuid.UUID) ID { return NewMessageID(ID) },
 	OrganizationTag:    func(ID uuid.UUID) ID { return NewOrganizationID(ID) },
@@ -219,6 +221,31 @@ func (id IdentityID) MarshalText() ([]byte, error) {
 }
 
 func (id *IdentityID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// GraphIDs
+type GraphID struct {
+	baseID
+}
+
+func (GraphID) GetType() string {
+	return GraphTag
+}
+
+func NewGraphID(ID uuid.UUID) GraphID {
+	return GraphID{baseID(ID)}
+}
+
+func GenerateGraphID() GraphID {
+	return NewGraphID(uuid.New())
+}
+
+func (id GraphID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *GraphID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
 
