@@ -11,6 +11,7 @@ const (
 	APISpecTag         = "api"
 	APIKeyTag          = "apk"
 	ClientTag          = "cli"
+	ConnectionTag      = "cxn"
 	DataCategoryTag    = "dct"
 	GraphTag           = "gph"
 	IdentityTag        = "idt"
@@ -36,6 +37,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	APISpecTag:         func(ID uuid.UUID) ID { return NewAPISpecID(ID) },
 	APIKeyTag:          func(ID uuid.UUID) ID { return NewAPIKeyID(ID) },
 	ClientTag:          func(ID uuid.UUID) ID { return NewClientID(ID) },
+	ConnectionTag:      func(ID uuid.UUID) ID { return NewConnectionID(ID) },
 	DataCategoryTag:    func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
 	IdentityTag:        func(ID uuid.UUID) ID { return NewIdentityID(ID) },
 	GraphTag:           func(ID uuid.UUID) ID { return NewGraphID(ID) },
@@ -179,6 +181,31 @@ func (id ClientID) MarshalText() ([]byte, error) {
 }
 
 func (id *ClientID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// ConnectionIDs represent a network connection
+type ConnectionID struct {
+	baseID
+}
+
+func (ConnectionID) GetType() string {
+	return ConnectionTag
+}
+
+func NewConnectionID(ID uuid.UUID) ConnectionID {
+	return ConnectionID{baseID(ID)}
+}
+
+func GenerateConnectionID() ConnectionID {
+	return NewConnectionID(uuid.New())
+}
+
+func (id ConnectionID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *ConnectionID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
 

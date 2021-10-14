@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/akitasoftware/akita-libs/akid"
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
@@ -43,6 +44,61 @@ func (RawBytes) implParsedNetworkContent() {}
 func (rb RawBytes) String() string {
 	return memview.MemView(rb).String()
 }
+
+// Represents metadata from an observed TCP packet.
+type TCPPacketMetadata struct {
+	// Uniquely identifies a TCP connection.
+	ConnectionID akid.ConnectionID
+
+	// Whether the SYN flag was set in the observed packet.
+	SYN bool
+
+	// Whether the ACK flag was set in the observed packet.
+	ACK bool
+
+	// Whether the FIN flag was set in the observed packet.
+	FIN bool
+
+	// Whether the RST flag was set in the observed packet.
+	RST bool
+}
+
+func (TCPPacketMetadata) implParsedNetworkContent() {}
+
+// Represents metadata from an observed TCP connection.
+type TCPConnectionMetadata struct {
+	// Uniquely identifies a TCP connection.
+	ConnectionID akid.ConnectionID
+
+	// The direction in which the connection was established, if known.
+	Direction TCPConnectionDirection
+
+	// Whether and how the connection was closed.
+	EndState TCPConnectionEndState
+}
+
+func (TCPConnectionMetadata) implParsedNetworkContent() {}
+
+type TCPConnectionDirection int
+
+const (
+	UnknownTCPConnectionDirection TCPConnectionDirection = iota
+	SourceToDest
+	DestToSource
+)
+
+type TCPConnectionEndState int
+
+const (
+	// Neither the FIN nor RST flag was seen.
+	StillOpen TCPConnectionEndState = iota
+
+	// The FIN flag was seen, but not the RST flag.
+	ConnectionClosed
+
+	// The RST flag was seen.
+	ConnectionReset
+)
 
 type HTTPRequest struct {
 	// StreamID and Seq uniquely identify a pair of request and response.
