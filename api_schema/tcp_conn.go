@@ -22,7 +22,7 @@ type TCPConnectionReport struct {
 
 	// If true, source is known to have initiated the connection. Otherwise,
 	// "source" and "destination" is arbitrary.
-	DirectionKnown bool `json:"direction_known"`
+	InitiatorKnown bool `json:"initiator_known"`
 
 	// Whether and how the connection was closed.
 	EndState akinet.TCPConnectionEndState `json:"end_state"`
