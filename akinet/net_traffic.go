@@ -94,17 +94,17 @@ const (
 )
 
 // Indicates whether a TCP connection was closed, and if so, how.
-type TCPConnectionEndState int
+type TCPConnectionEndState string
 
 const (
 	// Neither the FIN nor RST flag was seen.
-	StillOpen TCPConnectionEndState = iota
+	ConnectionOpen TCPConnectionEndState = "OPEN"
 
 	// The FIN flag was seen, but not the RST flag.
-	ConnectionClosed
+	ConnectionClosed TCPConnectionEndState = "CLOSED"
 
 	// The RST flag was seen.
-	ConnectionReset
+	ConnectionReset TCPConnectionEndState = "RESET"
 )
 
 type HTTPRequest struct {
