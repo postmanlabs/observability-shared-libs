@@ -70,8 +70,8 @@ type TCPConnectionMetadata struct {
 	// Uniquely identifies a TCP connection.
 	ConnectionID akid.ConnectionID
 
-	// The direction in which the connection was established, if known.
-	Direction TCPConnectionDirection
+	// Identifies which side of the connection was the connection initiator.
+	Initiator TCPConnectionInitiator
 
 	// Whether and how the connection was closed.
 	EndState TCPConnectionEndState
@@ -79,14 +79,21 @@ type TCPConnectionMetadata struct {
 
 func (TCPConnectionMetadata) implParsedNetworkContent() {}
 
-type TCPConnectionDirection int
+// Identifies which of the two endpoints of a connection initiated that
+// connection.
+type TCPConnectionInitiator int
 
 const (
-	UnknownTCPConnectionDirection TCPConnectionDirection = iota
-	SourceToDest
-	DestToSource
+	UnknownTCPConnectionInitiator TCPConnectionInitiator = iota
+
+	// Indicates that the "source" endpoint initiated the connection.
+	SourceInitiator
+
+	// Indicates that the "destination" endpoint initiated the connection.
+	DestInitiator
 )
 
+// Indicates whether a TCP connection was closed, and if so, how.
 type TCPConnectionEndState int
 
 const (
