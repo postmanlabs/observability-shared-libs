@@ -61,6 +61,9 @@ type TCPPacketMetadata struct {
 
 	// Whether the RST flag was set in the observed packet.
 	RST bool
+
+	// The size of the TCP payload.
+	PayloadLength_bytes int
 }
 
 func (TCPPacketMetadata) implParsedNetworkContent() {}
