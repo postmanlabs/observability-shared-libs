@@ -30,6 +30,10 @@ type TCPConnectionReport struct {
 	EndState akinet.TCPConnectionEndState `json:"end_state"`
 }
 
+func (report TCPConnectionReport) GetID() akid.ID {
+	return report.ID
+}
+
 type UploadTCPConnectionReportsRequest struct {
 	ClientID akid.ClientID          `json:"client_id"`
 	Reports  []*TCPConnectionReport `json:"reports"`
