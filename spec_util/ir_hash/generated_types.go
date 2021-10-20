@@ -2,11 +2,11 @@ package ir_hash
 
 import (
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	"github.com/OneOfOne/xxhash"
 )
 
-func HashInt32Value(node *wrappers.Int32Value) []byte {
+func HashInt32Value(node *wrapperspb.Int32Value) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
 	if node.Value != 0 {
@@ -15,7 +15,7 @@ func HashInt32Value(node *wrappers.Int32Value) []byte {
 	}
 	return hash.Sum(nil)
 }
-func HashInt64Value(node *wrappers.Int64Value) []byte {
+func HashInt64Value(node *wrapperspb.Int64Value) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
 	if node.Value != 0 {
@@ -24,7 +24,7 @@ func HashInt64Value(node *wrappers.Int64Value) []byte {
 	}
 	return hash.Sum(nil)
 }
-func HashUInt32Value(node *wrappers.UInt32Value) []byte {
+func HashUInt32Value(node *wrapperspb.UInt32Value) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
 	if node.Value != 0 {
@@ -33,7 +33,7 @@ func HashUInt32Value(node *wrappers.UInt32Value) []byte {
 	}
 	return hash.Sum(nil)
 }
-func HashUInt64Value(node *wrappers.UInt64Value) []byte {
+func HashUInt64Value(node *wrapperspb.UInt64Value) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
 	if node.Value != 0 {
@@ -42,7 +42,7 @@ func HashUInt64Value(node *wrappers.UInt64Value) []byte {
 	}
 	return hash.Sum(nil)
 }
-func HashFloatValue(node *wrappers.FloatValue) []byte {
+func HashFloatValue(node *wrapperspb.FloatValue) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
 	if node.Value != 0.0 {
@@ -51,7 +51,7 @@ func HashFloatValue(node *wrappers.FloatValue) []byte {
 	}
 	return hash.Sum(nil)
 }
-func HashDoubleValue(node *wrappers.DoubleValue) []byte {
+func HashDoubleValue(node *wrapperspb.DoubleValue) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
 	if node.Value != 0.0 {
@@ -893,4 +893,4 @@ func HashWitness(node *pb.Witness) []byte {
 	return hash.Sum(nil)
 }
 
-var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{225, 129, 15, 3, 212, 18, 213, 91}, "witness.proto": []byte{54, 141, 143, 88, 152, 155, 40, 103}, "types.proto": []byte{122, 119, 134, 224, 248, 135, 159, 115}, "spec.proto": []byte{193, 136, 80, 123, 20, 101, 215, 240}}
+var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{123, 92, 153, 152, 73, 68, 208, 226}, "witness.proto": []byte{42, 213, 185, 25, 124, 226, 76, 187}, "types.proto": []byte{98, 84, 34, 180, 249, 140, 214, 227}, "spec.proto": []byte{13, 101, 129, 126, 232, 252, 1, 146}}
