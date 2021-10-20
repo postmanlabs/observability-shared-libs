@@ -397,7 +397,7 @@ type TimelineResponse struct {
 	NextStartTime *time.Time `json:"next_start_time,omitempty"`
 }
 
-type GraphEdge struct {
+type HTTPGraphEdge struct {
 	// Describe the source and destination vertices by the attributes
 	// they share in common: either just Host for a service-level vertex,
 	// or Host + Method + PathTemplate for a end-point level vertex, although
@@ -410,9 +410,17 @@ type GraphEdge struct {
 }
 
 type GraphResponse struct {
-	// Edges of the graph
-	Edges []GraphEdge `json:"edges"`
+	// Graph edges representing HTTP requests and responses.
+	HTTPEdges []HTTPGraphEdge `json:"edges"`
 
 	// TODO: vertex list? vertex or edge count?
 	// TODO: pagination
+}
+
+func (g *GraphResponse) NumEdges() int {
+	return len(g.HTTPEdges)
+}
+
+func (g *GraphResponse) IsEmpty() bool {
+	return g.NumEdges() == 0
 }
