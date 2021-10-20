@@ -32,7 +32,8 @@ func main() {
 	gf.AddIgnoredField("HTTPMethodMeta", "ProcessingLatency")
 	gf.AddIgnoredField("Data", "ExampleValues")
 
-	// Newer protobuf compiler uses these istead of XXX prefix
+	// Newer protobuf compiler (1.39, v2 of go API) uses these instead of older XXX prefix (1.26, v1 of go API)
+	gf.AddIgnoredField("*", "state")
 	gf.AddIgnoredField("*", "sizeCache")
 	gf.AddIgnoredField("*", "unknownFields")
 
