@@ -8,6 +8,8 @@ github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de h1:rWkj
 github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de/go.mod h1:qDTWoRR9LvzAsPM1JYaThR7tyE63cEy3XPkox/4pP1A=
 github.com/akitasoftware/objecthash-proto v0.0.0-20210728061301-b7904b31cc09 h1:jFDx6V2CBAdfbpPOduXgj3E+Se2Unadvu0pfDMZ1aQI=
 github.com/akitasoftware/objecthash-proto v0.0.0-20210728061301-b7904b31cc09/go.mod h1:5/6U7s9Kj5GXRZBiQejikd06mPYYWC+C1RoO8ehvifs=
+github.com/akitasoftware/objecthash-proto v0.0.0-20211020003201-08b3014c5610 h1:lkHSIAhYNv0gHY3Q+tt0kMrtu247QdyC29bNRrcLtZ0=
+github.com/akitasoftware/objecthash-proto v0.0.0-20211020003201-08b3014c5610/go.mod h1:otNn0Cq1YGR1daOez6qwaCaF9tzRk1YkIsxF+6faKNE=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
 github.com/benlaurie/objecthash v0.0.0-20180202135721-d1e3d6079fc1 h1:VRtJdDi2lqc3MFwmouppm2jlm6icF+7H3WYKpLENMTo=
