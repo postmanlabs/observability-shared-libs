@@ -5,12 +5,10 @@ go 1.15
 require (
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/akitasoftware/akita-ir v0.0.0-20211019194545-68f0981c005a
-	github.com/akitasoftware/objecthash-proto v0.0.0-20211020003201-08b3014c5610
+	github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/benlaurie/objecthash v0.0.0-20180202135721-d1e3d6079fc1 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	// Golang protobuf APIv1, needed to compatibility with objecthash-proto. See
-	// pb/README.md
 	github.com/golang/protobuf v1.5.0
 	github.com/google/go-cmp v0.5.6
 	github.com/google/gopacket v1.1.19
