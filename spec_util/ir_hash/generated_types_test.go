@@ -379,6 +379,7 @@ func TestWitnesses(t *testing.T) {
 		}
 
 		hash2 := base64.URLEncoding.EncodeToString(HashWitness(witness))
+		t.Logf("Hash: %v", hash1)
 
 		if hash1 != hash2 {
 			t.Errorf("Witness hashes are unequal, %v != %v", hash1, hash2)

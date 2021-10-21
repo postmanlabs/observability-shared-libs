@@ -15,7 +15,7 @@ import (
 
 	"github.com/OneOfOne/xxhash"
 	"github.com/golang/protobuf/proto"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // Generate hashing code for Akita IR.
@@ -32,13 +32,18 @@ func main() {
 	gf.AddIgnoredField("HTTPMethodMeta", "ProcessingLatency")
 	gf.AddIgnoredField("Data", "ExampleValues")
 
+	// Newer protobuf compiler (1.39, v2 of go API) uses these instead of older XXX prefix (1.26, v1 of go API)
+	gf.AddIgnoredField("*", "state")
+	gf.AddIgnoredField("*", "sizeCache")
+	gf.AddIgnoredField("*", "unknownFields")
+
 	// Dependencies from "wrappers" package
-	gf.AddHashFunc(reflect.TypeOf(wrappers.Int32Value{}))
-	gf.AddHashFunc(reflect.TypeOf(wrappers.Int64Value{}))
-	gf.AddHashFunc(reflect.TypeOf(wrappers.UInt32Value{}))
-	gf.AddHashFunc(reflect.TypeOf(wrappers.UInt64Value{}))
-	gf.AddHashFunc(reflect.TypeOf(wrappers.FloatValue{}))
-	gf.AddHashFunc(reflect.TypeOf(wrappers.DoubleValue{}))
+	gf.AddHashFunc(reflect.TypeOf(wrapperspb.Int32Value{}))
+	gf.AddHashFunc(reflect.TypeOf(wrapperspb.Int64Value{}))
+	gf.AddHashFunc(reflect.TypeOf(wrapperspb.UInt32Value{}))
+	gf.AddHashFunc(reflect.TypeOf(wrapperspb.UInt64Value{}))
+	gf.AddHashFunc(reflect.TypeOf(wrapperspb.FloatValue{}))
+	gf.AddHashFunc(reflect.TypeOf(wrapperspb.DoubleValue{}))
 
 	// TODO: inner structs for oneOf need to be defined before their use, automate this somewhow?
 	gf.AddOneOf(reflect.TypeOf(pb.Primitive_BoolValue{}))
@@ -243,10 +248,10 @@ func (f *GeneratedFile) AddImports() {
 			},
 		},
 		&ast.ImportSpec{
-			Name: ast.NewIdent("wrappers"),
+			Name: ast.NewIdent("wrapperspb"),
 			Path: &ast.BasicLit{
 				Kind:  token.STRING,
-				Value: "\"github.com/golang/protobuf/ptypes/wrappers\"",
+				Value: "\"google.golang.org/protobuf/types/known/wrapperspb\"",
 			},
 		},
 		&ast.ImportSpec{
@@ -976,6 +981,10 @@ func (f *GeneratedFile) AddHashFunc(messageType reflect.Type) {
 	pkg := "pb"
 	if strings.HasSuffix(messageType.PkgPath(), "wrappers") {
 		pkg = "wrappers"
+	}
+
+	if strings.HasSuffix(messageType.PkgPath(), "wrapperspb") {
+		pkg = "wrapperspb"
 	}
 
 	decl := &ast.FuncDecl{

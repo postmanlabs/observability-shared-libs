@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/akitasoftware/akita-libs/test"
 )
@@ -103,7 +104,7 @@ func TestExtractValueFromTemplate(t *testing.T) {
 				t.Errorf("[%s] expected error, didn't get one", c.name)
 			} else {
 				expectedValue := test.LoadDataFromFileOrDie(c.expectedDataFile)
-				if diff := cmp.Diff(expectedValue, v); diff != "" {
+				if diff := cmp.Diff(expectedValue, v, protocmp.Transform()); diff != "" {
 					t.Errorf("[%s] found diff in value: %s", c.name, diff)
 				}
 			}
