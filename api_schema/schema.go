@@ -397,6 +397,7 @@ type TimelineResponse struct {
 	NextStartTime *time.Time `json:"next_start_time,omitempty"`
 }
 
+// An HTTP request and response between two nodes in a graph.
 type HTTPGraphEdge struct {
 	// Describe the source and destination vertices by the attributes
 	// they share in common: either just Host for a service-level vertex,
@@ -409,16 +410,34 @@ type HTTPGraphEdge struct {
 	Values map[TimelineValue]float32 `json:"values"`
 }
 
+// Represents a TCP connection between two nodes in a graph.
+type TCPGraphEdge struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+
+	// If true, the source is known to have initiated the connection. Otherwise,
+	// the "source" and "target" designations are chosen so that `source` <=
+	// `target`. One way to render this is to use a directed edge if
+	// "InitiatorKnown" is true, and an undirected edge if false.
+	InitiatorKnown bool `json:"initiator_known"`
+
+	// Aggregate values attached to the edge, e.g., "count"
+	Values map[TimelineValue]float32 `json:"values"`
+}
+
 type GraphResponse struct {
 	// Graph edges representing HTTP requests and responses.
 	HTTPEdges []HTTPGraphEdge `json:"edges"`
+
+	// Graph edges representing TCP connections.
+	TCPEdges []TCPGraphEdge `json:"tcp_edges"`
 
 	// TODO: vertex list? vertex or edge count?
 	// TODO: pagination
 }
 
 func (g *GraphResponse) NumEdges() int {
-	return len(g.HTTPEdges)
+	return len(g.HTTPEdges) + len(g.TCPEdges)
 }
 
 func (g *GraphResponse) IsEmpty() bool {
