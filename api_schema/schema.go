@@ -341,24 +341,29 @@ const (
 
 // These are the available keys for Timeline.Values.
 const (
-	Event_Count          TimelineValue = "count"          // count of events within bucket
-	Event_Rate                         = "rate"           // rate in events per minute
-	Event_Latency                      = "latency"        // processing latency in milliseconds
-	Event_Latency_Max                  = "latency_max"    // maximum latency
-	Event_Latency_Min                  = "latency_min"    // minimum latency
-	Event_Latency_Mean                 = "latency_mean"   // arithmetic mean latency
-	Event_Latency_Median               = "latency_median" // median (50th percentile) latency
-	Event_Latency_90p                  = "latency_90p"    // 90th percentile latency
-	Event_Latency_95p                  = "latency_95p"    // 95th percentile latency
-	Event_Latency_99p                  = "latency_99p"    // 99th percentile latency
-	Event_RTT                          = "rtt"            // estimated network round-trip time, in milliseconds
-	Event_RTT_Max                      = "rtt_max"        // maximum rtt
-	Event_RTT_Min                      = "rtt_min"        // minimum rtt
-	Event_RTT_Mean                     = "rtt_mean"       // arithmetic mean rtt
-	Event_RTT_Median                   = "rtt_median"     // median (50th percentile) rtt
-	Event_RTT_90p                      = "rtt_90p"        // 90th percentile rtt
-	Event_RTT_95p                      = "rtt_95p"        // 95th percentile rtt
-	Event_RTT_99p                      = "rtt_99p"        // 99th percentile rtt
+	Event_Count                TimelineValue = "count"                // count of events within bucket
+	Event_Rate                               = "rate"                 // rate in events per minute
+	Event_Latency                            = "latency"              // processing latency in milliseconds
+	Event_Latency_Max                        = "latency_max"          // maximum latency
+	Event_Latency_Min                        = "latency_min"          // minimum latency
+	Event_Latency_Mean                       = "latency_mean"         // arithmetic mean latency
+	Event_Latency_Median                     = "latency_median"       // median (50th percentile) latency
+	Event_Latency_90p                        = "latency_90p"          // 90th percentile latency
+	Event_Latency_95p                        = "latency_95p"          // 95th percentile latency
+	Event_Latency_99p                        = "latency_99p"          // 99th percentile latency
+	Event_RTT                                = "rtt"                  // estimated network round-trip time, in milliseconds
+	Event_RTT_Max                            = "rtt_max"              // maximum rtt
+	Event_RTT_Min                            = "rtt_min"              // minimum rtt
+	Event_RTT_Mean                           = "rtt_mean"             // arithmetic mean rtt
+	Event_RTT_Median                         = "rtt_median"           // median (50th percentile) rtt
+	Event_RTT_90p                            = "rtt_90p"              // 90th percentile rtt
+	Event_RTT_95p                            = "rtt_95p"              // 95th percentile rtt
+	Event_RTT_99p                            = "rtt_99p"              // 99th percentile rtt
+	Event_Latency_1ms_Count                  = "latency_1ms_count"    // Count of events with latency <1ms
+	Event_Latency_10ms_Count                 = "latency_10ms_count"   // Count of events with latency >1ms and <=10ms
+	Event_Latency_100ms_Count                = "latency_100ms_count"  // Count of events with latency >10ms and <=100ms
+	Event_Latency_1000ms_Count               = "latency_1000ms_count" // Count of events with latency >100ms and <=1s
+	Event_Latency_Inf_Count                  = "latency_inf_count"    // Count of events with latency >1 second
 
 )
 
