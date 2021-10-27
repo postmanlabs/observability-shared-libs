@@ -359,7 +359,7 @@ const (
 	Event_RTT_90p                            = "rtt_90p"              // 90th percentile rtt
 	Event_RTT_95p                            = "rtt_95p"              // 95th percentile rtt
 	Event_RTT_99p                            = "rtt_99p"              // 99th percentile rtt
-	Event_Latency_1ms_Count                  = "latency_1ms_count"    // Count of events with latency <1ms
+	Event_Latency_1ms_Count                  = "latency_1ms_count"    // Count of events with latency <=1ms
 	Event_Latency_10ms_Count                 = "latency_10ms_count"   // Count of events with latency >1ms and <=10ms
 	Event_Latency_100ms_Count                = "latency_100ms_count"  // Count of events with latency >10ms and <=100ms
 	Event_Latency_1000ms_Count               = "latency_1000ms_count" // Count of events with latency >100ms and <=1s
