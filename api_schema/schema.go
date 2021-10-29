@@ -34,6 +34,7 @@ type APISpecReference struct {
 
 // Also used as a model in specs_db.
 type APISpecVersion struct {
+	//lint:ignore U1000 Used by pg-go
 	tableName struct{} `pg:"api_spec_versions" json:"-"`
 
 	Name         string         `pg:"name" json:"name"`
@@ -167,6 +168,7 @@ func NewLearnSessionStats(NumWitnesses int) *LearnSessionStats {
 }
 
 type LearnSessionTag struct {
+	//lint:ignore U1000 Used by pg-go
 	tableName struct{} `pg:"learn_session_tags"`
 
 	LearnSessionID akid.LearnSessionID `pg:"learn_session_id" json:"learn_session_id"`
@@ -230,15 +232,6 @@ type CreateSpecResponse struct {
 }
 
 type GetSpecMetadataResponse struct {
-	// TODO: remove
-	// If the spec was created from a learn session, the session's ID is included.
-	LearnSessionID *akid.LearnSessionID `json:"learn_session_id,omitempty"`
-
-	// If the spec was created from a learn session, the session's ID is included.
-	// If the spec was created by merging other API specs, those spec's session
-	// IDs are included.
-	LearnSessionIDs []akid.LearnSessionID `json:"learn_session_ids,omitempty"`
-
 	Name string `json:"name"`
 
 	State APISpecState `json:"state"`
@@ -329,41 +322,41 @@ type TimelineEvent struct {
 // They correspond with the keys in the response below.
 const (
 	Aggr_Count  TimelineAggregation = "count"  // count of events within bucket
-	Aggr_Rate                       = "rate"   // rate in events per minute
-	Aggr_Max                        = "max"    // max of latency and RTT
-	Aggr_Min                        = "min"    // min of latency and RTT
-	Aggr_Mean                       = "mean"   // arithmetic mean of latency and RTT
-	Aggr_Median                     = "median" // median value of latency and RTT
-	Aggr_90p                        = "90p"    // 90th percentile latency and RTT
-	Aggr_95p                        = "95p"    // 95th percentile latency and RTT
-	Aggr_99p                        = "99p"    // 99th percentile latency and RTT
+	Aggr_Rate   TimelineAggregation = "rate"   // rate in events per minute
+	Aggr_Max    TimelineAggregation = "max"    // max of latency and RTT
+	Aggr_Min    TimelineAggregation = "min"    // min of latency and RTT
+	Aggr_Mean   TimelineAggregation = "mean"   // arithmetic mean of latency and RTT
+	Aggr_Median TimelineAggregation = "median" // median value of latency and RTT
+	Aggr_90p    TimelineAggregation = "90p"    // 90th percentile latency and RTT
+	Aggr_95p    TimelineAggregation = "95p"    // 95th percentile latency and RTT
+	Aggr_99p    TimelineAggregation = "99p"    // 99th percentile latency and RTT
 )
 
 // These are the available keys for Timeline.Values.
 const (
 	Event_Count                TimelineValue = "count"                // count of events within bucket
-	Event_Rate                               = "rate"                 // rate in events per minute
-	Event_Latency                            = "latency"              // processing latency in milliseconds
-	Event_Latency_Max                        = "latency_max"          // maximum latency
-	Event_Latency_Min                        = "latency_min"          // minimum latency
-	Event_Latency_Mean                       = "latency_mean"         // arithmetic mean latency
-	Event_Latency_Median                     = "latency_median"       // median (50th percentile) latency
-	Event_Latency_90p                        = "latency_90p"          // 90th percentile latency
-	Event_Latency_95p                        = "latency_95p"          // 95th percentile latency
-	Event_Latency_99p                        = "latency_99p"          // 99th percentile latency
-	Event_RTT                                = "rtt"                  // estimated network round-trip time, in milliseconds
-	Event_RTT_Max                            = "rtt_max"              // maximum rtt
-	Event_RTT_Min                            = "rtt_min"              // minimum rtt
-	Event_RTT_Mean                           = "rtt_mean"             // arithmetic mean rtt
-	Event_RTT_Median                         = "rtt_median"           // median (50th percentile) rtt
-	Event_RTT_90p                            = "rtt_90p"              // 90th percentile rtt
-	Event_RTT_95p                            = "rtt_95p"              // 95th percentile rtt
-	Event_RTT_99p                            = "rtt_99p"              // 99th percentile rtt
-	Event_Latency_1ms_Count                  = "latency_1ms_count"    // Count of events with latency <=1ms
-	Event_Latency_10ms_Count                 = "latency_10ms_count"   // Count of events with latency >1ms and <=10ms
-	Event_Latency_100ms_Count                = "latency_100ms_count"  // Count of events with latency >10ms and <=100ms
-	Event_Latency_1000ms_Count               = "latency_1000ms_count" // Count of events with latency >100ms and <=1s
-	Event_Latency_Inf_Count                  = "latency_inf_count"    // Count of events with latency >1 second
+	Event_Rate                 TimelineValue = "rate"                 // rate in events per minute
+	Event_Latency              TimelineValue = "latency"              // processing latency in milliseconds
+	Event_Latency_Max          TimelineValue = "latency_max"          // maximum latency
+	Event_Latency_Min          TimelineValue = "latency_min"          // minimum latency
+	Event_Latency_Mean         TimelineValue = "latency_mean"         // arithmetic mean latency
+	Event_Latency_Median       TimelineValue = "latency_median"       // median (50th percentile) latency
+	Event_Latency_90p          TimelineValue = "latency_90p"          // 90th percentile latency
+	Event_Latency_95p          TimelineValue = "latency_95p"          // 95th percentile latency
+	Event_Latency_99p          TimelineValue = "latency_99p"          // 99th percentile latency
+	Event_RTT                  TimelineValue = "rtt"                  // estimated network round-trip time, in milliseconds
+	Event_RTT_Max              TimelineValue = "rtt_max"              // maximum rtt
+	Event_RTT_Min              TimelineValue = "rtt_min"              // minimum rtt
+	Event_RTT_Mean             TimelineValue = "rtt_mean"             // arithmetic mean rtt
+	Event_RTT_Median           TimelineValue = "rtt_median"           // median (50th percentile) rtt
+	Event_RTT_90p              TimelineValue = "rtt_90p"              // 90th percentile rtt
+	Event_RTT_95p              TimelineValue = "rtt_95p"              // 95th percentile rtt
+	Event_RTT_99p              TimelineValue = "rtt_99p"              // 99th percentile rtt
+	Event_Latency_1ms_Count    TimelineValue = "latency_1ms_count"    // Count of events with latency <=1ms
+	Event_Latency_10ms_Count   TimelineValue = "latency_10ms_count"   // Count of events with latency >1ms and <=10ms
+	Event_Latency_100ms_Count  TimelineValue = "latency_100ms_count"  // Count of events with latency >10ms and <=100ms
+	Event_Latency_1000ms_Count TimelineValue = "latency_1000ms_count" // Count of events with latency >100ms and <=1s
+	Event_Latency_Inf_Count    TimelineValue = "latency_inf_count"    // Count of events with latency >1 second
 
 )
 
