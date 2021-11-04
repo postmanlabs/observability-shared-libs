@@ -33,8 +33,3 @@ type TCPConnectionReport struct {
 func (report TCPConnectionReport) GetID() akid.ID {
 	return report.ID
 }
-
-type UploadTCPConnectionReportsRequest struct {
-	ClientID akid.ClientID          `json:"client_id"`
-	Reports  []*TCPConnectionReport `json:"reports"`
-}

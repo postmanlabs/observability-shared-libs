@@ -203,9 +203,10 @@ type ListSessionsResponse struct {
 	Sessions []*ListedLearnSession `json:"sessions"`
 }
 
-type UploadWitnessesRequest struct {
-	ClientID akid.ClientID    `json:"client_id"`
-	Reports  []*WitnessReport `json:"reports"`
+type ReportsUploadRequest struct {
+	ClientID       akid.ClientID          `json:"client_id"`
+	Witnesses      []*WitnessReport       `json:"witnesses"`
+	TCPConnections []*TCPConnectionReport `json:"tcp_connections"`
 }
 
 type WitnessReport struct {
