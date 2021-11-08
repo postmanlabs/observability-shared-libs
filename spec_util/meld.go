@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
-	"github.com/akitasoftware/akita-libs/pbhash"
+	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
 )
 
 type dataAndHash struct {
@@ -21,19 +21,13 @@ type dataAndHash struct {
 func meldTopLevelDataMap(dst, src map[string]*pb.Data) error {
 	dstByMetaHash := map[string]dataAndHash{}
 	for k, d := range dst {
-		h, err := pbhash.HashProto(d.Meta)
-		if err != nil {
-			return errors.Wrapf(err, "failed to hash %v", d.Meta)
-		}
+		h := ir_hash.HashDataMetaToString(d.Meta)
 		dstByMetaHash[h] = dataAndHash{hash: k, data: d}
 	}
 
 	results := make(map[string]*pb.Data, len(dstByMetaHash))
 	for k, s := range src {
-		h, err := pbhash.HashProto(s.Meta)
-		if err != nil {
-			return errors.Wrapf(err, "failed to hash %v", s.Meta)
-		}
+		h := ir_hash.HashDataMetaToString(s.Meta)
 
 		if d, ok := dstByMetaHash[h]; ok {
 			// d and s have the same DataMeta, meaning that they are refering to the
@@ -43,10 +37,7 @@ func meldTopLevelDataMap(dst, src map[string]*pb.Data) error {
 			}
 
 			// Rehash because the proto has changed.
-			dh, err := pbhash.HashProto(d.data)
-			if err != nil {
-				return errors.Wrapf(err, "failed to hash %v", d)
-			}
+			dh := ir_hash.HashDataToString(d.data)
 			results[dh] = d.data
 
 			delete(dstByMetaHash, h)
@@ -241,11 +232,7 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		}
 
 		// Create a new conflict option.
-		h, err := pbhash.HashProto(srcNoMeta)
-		if err != nil {
-			return errors.Wrapf(err, "failed to hash data: %v", srcNoMeta)
-		}
-
+		h := ir_hash.HashDataToString(srcNoMeta)
 		if existing, ok := v.Oneof.Options[h]; ok {
 			// There might be an existing option with the same hash because we
 			// ignore example values in the hash. If this is the case, merge
@@ -269,7 +256,7 @@ func meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNo
 	if err != nil {
 		return err
 	}
-	newHash, err := pbhash.HashProto(option)
+	newHash := ir_hash.HashDataToString(option)
 	if err != nil {
 		return err
 	}
@@ -348,10 +335,7 @@ func recordConflict(dst, src *pb.Data) error {
 		srcNoMeta.Meta = nil
 		options := make(map[string]*pb.Data, 2)
 		for _, d := range []*pb.Data{dstNoMeta, srcNoMeta} {
-			h, err := pbhash.HashProto(d)
-			if err != nil {
-				return errors.Wrapf(err, "failed to hash data: %v", d)
-			}
+			h := ir_hash.HashDataToString(d)
 			options[h] = d
 		}
 

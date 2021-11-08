@@ -4,7 +4,7 @@ import (
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/pkg/errors"
 
-	"github.com/akitasoftware/akita-libs/pbhash"
+	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
 	. "github.com/akitasoftware/akita-libs/visitors"
 	"github.com/akitasoftware/akita-libs/visitors/http_rest"
 )
@@ -31,11 +31,7 @@ func (vis *hashOneOfVisitor) LeaveData(self interface{}, c http_rest.SpecVisitor
 
 	for _, k := range keys {
 		v := options[k]
-		h, err := pbhash.HashProto(v)
-		if err != nil {
-			vis.err = err
-			return Abort
-		}
+		h := ir_hash.HashDataToString(v)
 		if k != h {
 			delete(options, k)
 			options[h] = v
@@ -68,10 +64,7 @@ func RewriteHashKeys(spec *pb.APISpec) error {
 			}
 			for _, k := range keys {
 				arg := m[k]
-				h, err := pbhash.HashProto(arg)
-				if err != nil {
-					return errors.Wrap(err, "failed to compute hash of method argument")
-				}
+				h := ir_hash.HashDataToString(arg)
 				if h != k {
 					delete(m, k)
 					m[h] = arg
