@@ -139,10 +139,50 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m, "Data", node.Data)
 		}
+	case *pb.Bytes:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
+	case *pb.String:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
+	case *pb.Int32:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
+	case *pb.Int64:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
+	case *pb.Uint32:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
+	case *pb.Uint64:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
+	case *pb.Float:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
+	case *pb.Double:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
 	// These all have No non-basic types as children, so no further recursion is needed
 	case *pb.MethodID: // FIXME: should we even enter this one? Not used by SpecVisitor
 	case *pb.FormatOption_StringFormat: // only contains a string
 	case *pb.None:
+	case *pb.StringType:
+	case *pb.BytesType:
+	case *pb.Int32Type:
+	case *pb.Int64Type:
+	case *pb.Uint32Type:
+	case *pb.Uint64Type:
+	case *pb.FloatType:
+	case *pb.DoubleType:
 	default:
 		// Fallback to reflection-based implementation
 		return go_ast.DefaultVisitChildren(ctx, vm, m)
