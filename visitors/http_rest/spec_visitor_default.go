@@ -30,9 +30,6 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 	// to nil, which is different than interface{}(nil).
 
 	switch node := m.(type) {
-	case *pb.APISpec:
-		// Methods is a []*Method, but Tags is just map[string]string
-		keepGoing = visitStructMembers(ctx, vm, m, "Methods", node.Methods)
 	case []*pb.Method:
 		for i, m := range node {
 			keepGoing = visitSliceMember(ctx, vm, m, i, node[i])
@@ -48,15 +45,6 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 				break
 			}
 		}
-	case *pb.Method:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m,
-				"Id", node.Id,
-				"Args", node.Args,
-				"Responses", node.Responses,
-				"Meta", node.Meta,
-			)
-		}
 	case map[string]*pb.Data: // No other maps to non-basic types exist?
 		for k, v := range node {
 			keepGoing = visitMapMember(ctx, vm, m, k, v)
@@ -64,25 +52,9 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 				break
 			}
 		}
-	case *pb.MethodMeta:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m, "Meta", node.Meta)
-		}
 	case *pb.MethodMeta_Http:
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m, "Http", node.Http)
-		}
-	case *pb.Data:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m,
-				"Value", node.Value,
-				"Meta", node.Meta,
-				"ExampleValues", node.ExampleValues,
-			)
-		}
-	case *pb.DataMeta:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m, "Meta", node.Meta)
 		}
 	case *pb.DataMeta_Http:
 		if node != nil {
@@ -107,13 +79,6 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 	case *pb.Data_Oneof:
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m, "Oneof", node.Oneof)
-		}
-	case *pb.Primitive:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m,
-				"Value", node.Value,
-				"AkitaAnnotations", node.AkitaAnnotations, // TODO: don't recurse into this one?
-			)
 		}
 	case *pb.AkitaAnnotations:
 		if node != nil {
@@ -159,13 +124,6 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m, "FloatValue", node.FloatValue)
 		}
-	case *pb.Struct:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m,
-				"Fields", node.Fields, // already handled map[string]*Data
-				"MapType", node.MapType,
-			)
-		}
 	case *pb.MapData:
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m,
@@ -173,37 +131,16 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 				"Value", node.Value,
 			)
 		}
-	case *pb.List:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m, "Elems", node.Elems)
-		}
-	case *pb.Optional:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m, "Value", node.Value)
-		}
 	case *pb.Optional_None:
 		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m, "None", node.None) // TODO: don't recurse?
+			keepGoing = visitStructMembers(ctx, vm, m, "None", node.None)
 		}
 	case *pb.Optional_Data:
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m, "Data", node.Data)
 		}
-	case *pb.OneOf:
-		if node != nil {
-			keepGoing = visitStructMembers(ctx, vm, m, "Options", node.Options)
-		}
 	// These all have No non-basic types as children, so no further recursion is needed
 	case *pb.MethodID: // FIXME: should we even enter this one? Not used by SpecVisitor
-	case *pb.HTTPMethodMeta:
-	case *pb.HTTPPath:
-	case *pb.HTTPQuery:
-	case *pb.HTTPHeader:
-	case *pb.HTTPCookie:
-	case *pb.HTTPBody:
-	case *pb.HTTPEmpty:
-	case *pb.HTTPAuth:
-	case *pb.HTTPMultipart:
 	case *pb.FormatOption_StringFormat: // only contains a string
 	case *pb.None:
 	default:
