@@ -94,7 +94,6 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 		}
 	case *pb.Data_Struct:
 		if node != nil {
-
 			keepGoing = visitStructMembers(ctx, vm, m, "Struct", node.Struct)
 		}
 	case *pb.Data_List:
