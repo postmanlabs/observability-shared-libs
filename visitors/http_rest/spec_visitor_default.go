@@ -45,16 +45,32 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 				break
 			}
 		}
-	case map[string]*pb.Data: // No other maps to non-basic types exist?
+	case map[string]*pb.Data:
 		for k, v := range node {
 			keepGoing = visitMapMember(ctx, vm, m, k, v)
 			if keepGoing != Continue {
 				break
 			}
 		}
+	case map[string]*pb.ExampleValue:
+		// Yes, this is identical to the one above
+		for k, v := range node {
+			keepGoing = visitMapMember(ctx, vm, m, k, v)
+			if keepGoing != Continue {
+				break
+			}
+		}
+	case *pb.Witness:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Method", node.Method)
+		}
 	case *pb.MethodMeta_Http:
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m, "Http", node.Http)
+		}
+	case *pb.DataMeta_Grpc:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Grpc", node.Grpc)
 		}
 	case *pb.DataMeta_Http:
 		if node != nil {
@@ -139,6 +155,42 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m, "Data", node.Data)
 		}
+	case *pb.HTTPMeta_Path:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Path", node.Path)
+		}
+	case *pb.HTTPMeta_Query:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Query", node.Query)
+		}
+	case *pb.HTTPMeta_Header:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Header", node.Header)
+		}
+	case *pb.HTTPMeta_Cookie:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Cookie", node.Cookie)
+		}
+	case *pb.HTTPMeta_Body:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Body", node.Body)
+		}
+	case *pb.HTTPMeta_Empty:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Empty", node.Empty)
+		}
+	case *pb.HTTPMeta_Auth:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Auth", node.Auth)
+		}
+	case *pb.HTTPMeta_Multipart:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Multipart", node.Multipart)
+		}
+	case *pb.Bool:
+		if node != nil {
+			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
+		}
 	case *pb.Bytes:
 		if node != nil {
 			keepGoing = visitStructMembers(ctx, vm, m, "Type", node.Type)
@@ -183,8 +235,10 @@ func DefaultVisitIRChildren(ctx Context, vm VisitorManager, m interface{}) Cont 
 	case *pb.Uint64Type:
 	case *pb.FloatType:
 	case *pb.DoubleType:
+	case *pb.GRPCMeta:
+	case *pb.GRPCMethodMeta:
+	case *pb.ExampleValue:
 	default:
-		// Fallback to reflection-based implementation
 		return go_ast.DefaultVisitChildren(ctx, vm, m)
 	}
 	return keepGoing

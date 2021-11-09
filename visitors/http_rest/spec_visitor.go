@@ -722,6 +722,8 @@ func visitChildren(cin Context, vm VisitorManager, node interface{}) Cont {
 		return v.VisitDataChildren(visitor, ctx, vm, node)
 	case *pb.DataMeta:
 		return v.VisitDataMetaChildren(visitor, ctx, vm, node)
+	case *pb.HTTPMeta:
+		return v.VisitHTTPMetaChildren(visitor, ctx, vm, node)
 	case *pb.HTTPPath:
 		return v.VisitHTTPPathChildren(visitor, ctx, vm, node)
 	case *pb.HTTPQuery:
