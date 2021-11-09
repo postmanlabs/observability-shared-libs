@@ -119,7 +119,7 @@ func (*DefaultSpecVisitorImpl) EnterNode(self interface{}, ctxt SpecVisitorConte
 }
 
 func (*DefaultSpecVisitorImpl) VisitNodeChildren(self interface{}, ctxt SpecVisitorContext, vm VisitorManager, node interface{}) Cont {
-	return go_ast.DefaultVisitChildren(ctxt, vm, node)
+	return DefaultVisitIRChildren(ctxt, vm, node)
 }
 
 func (*DefaultSpecVisitorImpl) LeaveNode(self interface{}, ctxt SpecVisitorContext, node interface{}, cont Cont) Cont {
