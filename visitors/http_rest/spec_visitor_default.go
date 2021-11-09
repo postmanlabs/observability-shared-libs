@@ -209,44 +209,5 @@ func visitMapMember(ctx Context, vm VisitorManager, inSlice interface{}, key str
 // Cont value.
 // This is a copy of astVisitor's visit function.
 func VisitInterface(c Context, vm VisitorManager, m interface{}) Cont {
-	if m == nil {
-		return Continue
-	}
-
-	vm.ExtendContext(c, vm.Visitor(), m)
-
-	keepGoing := vm.EnterNode(c, vm.Visitor(), m)
-	switch keepGoing {
-	case Abort:
-		return Abort
-	case Continue:
-	case SkipChildren:
-	case Stop:
-	default:
-		panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
-	}
-
-	// Don't visit children if we are stopping or skipping children.
-	if keepGoing == Continue {
-		keepGoing = vm.VisitChildren(c, vm, m)
-		switch keepGoing {
-		case Abort:
-			return Abort
-		case Continue:
-		case SkipChildren:
-			panic("VisitChildren shouldn't return SkipChildren")
-		case Stop:
-		default:
-			panic(fmt.Sprintf("Unknown Cont value: %d", keepGoing))
-		}
-	}
-
-	keepGoing = vm.LeaveNode(c, vm.Visitor(), m, keepGoing)
-
-	// For convenience, convert SkipChildren into Continue, so that LeaveNode
-	// implementations can just return keepGoing unchanged.
-	if keepGoing == SkipChildren {
-		keepGoing = Continue
-	}
-	return keepGoing
+	return go_ast.ApplyWithContext(vm, c, m)
 }
