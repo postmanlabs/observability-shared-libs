@@ -282,9 +282,9 @@ func HashHTTPBody(node *pb.HTTPBody) []byte {
 		hash.Write(intHashes[1])
 		hash.Write(Hash_Int32(int32(node.ContentType)))
 	}
-	if node.OtherType != nil {
+	if node.OtherType != "" {
 		hash.Write(intHashes[2])
-		hash.Write(HashString(node.OtherType))
+		hash.Write(Hash_Unicode(node.OtherType))
 	}
 	return hash.Sum(nil)
 }
@@ -897,4 +897,4 @@ func HashWitness(node *pb.Witness) []byte {
 	return hash.Sum(nil)
 }
 
-var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{90, 163, 173, 15, 200, 83, 168, 153}, "witness.proto": []byte{42, 213, 185, 25, 124, 226, 76, 187}, "types.proto": []byte{98, 84, 34, 180, 249, 140, 214, 227}, "spec.proto": []byte{13, 101, 129, 126, 232, 252, 1, 146}}
+var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{69, 16, 236, 176, 97, 180, 164, 70}, "witness.proto": []byte{42, 213, 185, 25, 124, 226, 76, 187}, "types.proto": []byte{98, 84, 34, 180, 249, 140, 214, 227}, "spec.proto": []byte{13, 101, 129, 126, 232, 252, 1, 146}}
