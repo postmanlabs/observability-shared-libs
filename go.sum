@@ -4,6 +4,8 @@ github.com/akitasoftware/akita-ir v0.0.0-20211019194545-68f0981c005a h1:RoaxWSGc
 github.com/akitasoftware/akita-ir v0.0.0-20211019194545-68f0981c005a/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
 github.com/akitasoftware/akita-ir v0.0.0-20211020161529-944af4d11d6e h1:zBjVbWV3ZHEv4N+TXfitP10gdAUdAWIECsVH0WhHAms=
 github.com/akitasoftware/akita-ir v0.0.0-20211020161529-944af4d11d6e/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
+github.com/akitasoftware/akita-ir v0.0.0-20211110213116-ee3ab25e8b68 h1:oxuWuydpIZHrmV6qLl058ZyP9DdwHh9sbcWbJGFNhdA=
+github.com/akitasoftware/akita-ir v0.0.0-20211110213116-ee3ab25e8b68/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
 github.com/akitasoftware/gopacket v1.1.18-0.20210730205736-879e93dac35b h1:toBhS5rhCjo/N4YZ1cYtlsdSTGjMFH+gbJGCc+OmZiY=
 github.com/akitasoftware/gopacket v1.1.18-0.20210730205736-879e93dac35b/go.mod h1:wteInquxIdgWpGJEJmJEMJVtqM2i2vFZJ4W7B8G9ex8=
 github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de h1:rWkji88f/EWUY+qGc6pEyhpjgFbpsXwrnlTDTu5mLjY=
