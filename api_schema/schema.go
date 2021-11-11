@@ -209,11 +209,14 @@ type UploadWitnessesRequest struct {
 }
 
 type WitnessReport struct {
-	Direction       NetworkDirection `json:"direction"`
-	OriginAddr      net.IP           `json:"origin_addr"`
-	OriginPort      uint16           `json:"origin_port"`
-	DestinationAddr net.IP           `json:"destination_addr"`
-	DestinationPort uint16           `json:"destination_port"`
+	// CLI v0.20.0 and later will only ever provide "INBOUND" reports. Anything
+	// marked "OUTBOUND" is ignored by the Akita back end.
+	Direction NetworkDirection `json:"direction"`
+
+	OriginAddr      net.IP `json:"origin_addr"`
+	OriginPort      uint16 `json:"origin_port"`
+	DestinationAddr net.IP `json:"destination_addr"`
+	DestinationPort uint16 `json:"destination_port"`
 
 	ClientWitnessTime time.Time `json:"client_witness_time"`
 
