@@ -1,6 +1,7 @@
 package spec_util
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/golang/protobuf/proto"
@@ -21,12 +22,18 @@ type dataAndHash struct {
 func meldTopLevelDataMap(dst, src map[string]*pb.Data) error {
 	dstByMetaHash := map[string]dataAndHash{}
 	for k, d := range dst {
+		if d.Meta == nil {
+			return fmt.Errorf("missing Meta in top-level dst Data %q", k)
+		}
 		h := ir_hash.HashDataMetaToString(d.Meta)
 		dstByMetaHash[h] = dataAndHash{hash: k, data: d}
 	}
 
 	results := make(map[string]*pb.Data, len(dstByMetaHash))
 	for k, s := range src {
+		if s.Meta == nil {
+			return fmt.Errorf("missing Meta in top-level src Data %q", k)
+		}
 		h := ir_hash.HashDataMetaToString(s.Meta)
 
 		if d, ok := dstByMetaHash[h]; ok {
