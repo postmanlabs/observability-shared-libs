@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
-	"github.com/akitasoftware/akita-libs/pbhash"
+	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
 )
 
 func GetPathRegexps(spec *pb.APISpec) map[*regexp.Regexp]string {
@@ -77,10 +77,7 @@ func GeneralizeWitness(pathMatchers map[*regexp.Regexp]string, witnessIn *pb.Wit
 				Meta:     argMeta,
 				Nullable: false,
 			}
-			hash, err := pbhash.HashProto(argData)
-			if err != nil {
-				return nil, err
-			}
+			hash := ir_hash.HashDataToString(argData)
 			witness.GetMethod().Args[hash] = argData
 		}
 
@@ -118,12 +115,11 @@ func getPathRegexps(paths []string) map[*regexp.Regexp]string {
 	parameterMatcher := regexp.MustCompile("{(.*?)}")
 	for _, path := range paths {
 		// Remove trailing slash, if any
-		if len(path) > 0 && path[len(path) - 1] == '/' {
-			path = path[0:len(path) - 1]
+		if len(path) > 0 && path[len(path)-1] == '/' {
+			path = path[0 : len(path)-1]
 		}
 		pathRegexp := regexp.MustCompile("^" + parameterMatcher.ReplaceAllString(path, "(?P<$1>[^{/}]*)") + "$")
 		rv[pathRegexp] = path
 	}
 	return rv
 }
-

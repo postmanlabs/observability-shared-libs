@@ -119,7 +119,7 @@ func (*DefaultSpecVisitorImpl) EnterNode(self interface{}, ctxt SpecVisitorConte
 }
 
 func (*DefaultSpecVisitorImpl) VisitNodeChildren(self interface{}, ctxt SpecVisitorContext, vm VisitorManager, node interface{}) Cont {
-	return go_ast.DefaultVisitChildren(ctxt, vm, node)
+	return DefaultVisitIRChildren(ctxt, vm, node)
 }
 
 func (*DefaultSpecVisitorImpl) LeaveNode(self interface{}, ctxt SpecVisitorContext, node interface{}, cont Cont) Cont {
@@ -137,7 +137,8 @@ func (*DefaultSpecVisitorImpl) EnterAPISpec(self interface{}, c SpecVisitorConte
 }
 
 func (*DefaultSpecVisitorImpl) VisitAPISpecChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, spec *pb.APISpec) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, spec)
+	// Methods is a []*Method, but Tags is just map[string]string
+	return visitStructMembers(c, vm, spec, "Methods", spec.Methods)
 }
 
 func (*DefaultSpecVisitorImpl) LeaveAPISpec(self interface{}, c SpecVisitorContext, spec *pb.APISpec, cont Cont) Cont {
@@ -151,7 +152,15 @@ func (*DefaultSpecVisitorImpl) EnterMethod(self interface{}, c SpecVisitorContex
 }
 
 func (*DefaultSpecVisitorImpl) VisitMethodChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, m *pb.Method) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, m)
+	if m != nil {
+		return visitStructMembers(c, vm, m,
+			"Id", m.Id,
+			"Args", m.Args,
+			"Responses", m.Responses,
+			"Meta", m.Meta,
+		)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveMethod(self interface{}, c SpecVisitorContext, m *pb.Method, cont Cont) Cont {
@@ -165,7 +174,10 @@ func (*DefaultSpecVisitorImpl) EnterMethodMeta(self interface{}, c SpecVisitorCo
 }
 
 func (*DefaultSpecVisitorImpl) VisitMethodMetaChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, m *pb.MethodMeta) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, m)
+	if m != nil {
+		return visitStructMembers(c, vm, m, "Meta", m.Meta)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveMethodMeta(self interface{}, c SpecVisitorContext, m *pb.MethodMeta, cont Cont) Cont {
@@ -179,7 +191,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPMethodMeta(self interface{}, c SpecVisit
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPMethodMetaChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, m *pb.HTTPMethodMeta) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, m)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPMethodMeta(self interface{}, c SpecVisitorContext, m *pb.HTTPMethodMeta, cont Cont) Cont {
@@ -193,7 +206,14 @@ func (*DefaultSpecVisitorImpl) EnterData(self interface{}, c SpecVisitorContext,
 }
 
 func (*DefaultSpecVisitorImpl) VisitDataChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, d *pb.Data) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, d)
+	if d != nil {
+		return visitStructMembers(c, vm, d,
+			"Value", d.Value,
+			"Meta", d.Meta,
+			"ExampleValues", d.ExampleValues,
+		)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveData(self interface{}, c SpecVisitorContext, d *pb.Data, cont Cont) Cont {
@@ -207,7 +227,10 @@ func (*DefaultSpecVisitorImpl) EnterDataMeta(self interface{}, c SpecVisitorCont
 }
 
 func (*DefaultSpecVisitorImpl) VisitDataMetaChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, d *pb.DataMeta) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, d)
+	if d != nil {
+		return visitStructMembers(c, vm, d, "Meta", d.Meta)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveDataMeta(self interface{}, c SpecVisitorContext, d *pb.DataMeta, cont Cont) Cont {
@@ -221,7 +244,10 @@ func (*DefaultSpecVisitorImpl) EnterHTTPMeta(self interface{}, c SpecVisitorCont
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPMetaChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, m *pb.HTTPMeta) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, m)
+	if m != nil {
+		return visitStructMembers(c, vm, m, "Location", m.Location)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPMeta(self interface{}, c SpecVisitorContext, m *pb.HTTPMeta, cont Cont) Cont {
@@ -235,7 +261,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPPath(self interface{}, c SpecVisitorCont
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPPathChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, p *pb.HTTPPath) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, p)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPPath(self interface{}, c SpecVisitorContext, p *pb.HTTPPath, cont Cont) Cont {
@@ -249,7 +276,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPQuery(self interface{}, c SpecVisitorCon
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPQueryChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, q *pb.HTTPQuery) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, q)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPQuery(self interface{}, c SpecVisitorContext, q *pb.HTTPQuery, cont Cont) Cont {
@@ -263,7 +291,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPHeader(self interface{}, c SpecVisitorCo
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPHeaderChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, b *pb.HTTPHeader) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, b)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPHeader(self interface{}, c SpecVisitorContext, b *pb.HTTPHeader, cont Cont) Cont {
@@ -277,7 +306,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPCookie(self interface{}, c SpecVisitorCo
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPCookieChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, ck *pb.HTTPCookie) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, ck)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPCookie(self interface{}, c SpecVisitorContext, ck *pb.HTTPCookie, cont Cont) Cont {
@@ -291,7 +321,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPBody(self interface{}, c SpecVisitorCont
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPBodyChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, b *pb.HTTPBody) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, b)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPBody(self interface{}, c SpecVisitorContext, b *pb.HTTPBody, cont Cont) Cont {
@@ -305,7 +336,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPEmpty(self interface{}, c SpecVisitorCon
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPEmptyChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, e *pb.HTTPEmpty) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, e)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPEmpty(self interface{}, c SpecVisitorContext, e *pb.HTTPEmpty, cont Cont) Cont {
@@ -319,7 +351,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPAuth(self interface{}, c SpecVisitorCont
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPAuthChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, a *pb.HTTPAuth) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, a)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPAuth(self interface{}, c SpecVisitorContext, a *pb.HTTPAuth, cont Cont) Cont {
@@ -333,7 +366,8 @@ func (*DefaultSpecVisitorImpl) EnterHTTPMultipart(self interface{}, c SpecVisito
 }
 
 func (*DefaultSpecVisitorImpl) VisitHTTPMultipartChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, m *pb.HTTPMultipart) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, m)
+	// No child nodes to visit: only has primitives.
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveHTTPMultipart(self interface{}, c SpecVisitorContext, m *pb.HTTPMultipart, cont Cont) Cont {
@@ -347,7 +381,13 @@ func (*DefaultSpecVisitorImpl) EnterPrimitive(self interface{}, c SpecVisitorCon
 }
 
 func (*DefaultSpecVisitorImpl) VisitPrimitiveChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, d *pb.Primitive) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, d)
+	if d != nil {
+		return visitStructMembers(c, vm, d,
+			"Value", d.Value,
+			"AkitaAnnotations", d.AkitaAnnotations, // TODO: don't recurse into this one?
+		)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeavePrimitive(self interface{}, c SpecVisitorContext, d *pb.Primitive, cont Cont) Cont {
@@ -361,7 +401,13 @@ func (*DefaultSpecVisitorImpl) EnterStruct(self interface{}, c SpecVisitorContex
 }
 
 func (*DefaultSpecVisitorImpl) VisitStructChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, d *pb.Struct) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, d)
+	if d != nil {
+		return visitStructMembers(c, vm, d,
+			"Fields", d.Fields,
+			"MapType", d.MapType,
+		)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveStruct(self interface{}, c SpecVisitorContext, d *pb.Struct, cont Cont) Cont {
@@ -375,7 +421,10 @@ func (*DefaultSpecVisitorImpl) EnterList(self interface{}, c SpecVisitorContext,
 }
 
 func (*DefaultSpecVisitorImpl) VisitListChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, d *pb.List) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, d)
+	if d != nil {
+		return visitStructMembers(c, vm, d, "Elems", d.Elems)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveList(self interface{}, c SpecVisitorContext, d *pb.List, cont Cont) Cont {
@@ -389,7 +438,10 @@ func (*DefaultSpecVisitorImpl) EnterOptional(self interface{}, c SpecVisitorCont
 }
 
 func (*DefaultSpecVisitorImpl) VisitOptionalChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, d *pb.Optional) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, d)
+	if d != nil {
+		return visitStructMembers(c, vm, d, "Value", d.Value)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveOptional(self interface{}, c SpecVisitorContext, d *pb.Optional, cont Cont) Cont {
@@ -403,7 +455,10 @@ func (*DefaultSpecVisitorImpl) EnterOneOf(self interface{}, c SpecVisitorContext
 }
 
 func (*DefaultSpecVisitorImpl) VisitOneOfChildren(self interface{}, c SpecVisitorContext, vm VisitorManager, d *pb.OneOf) Cont {
-	return self.(DefaultSpecVisitor).VisitNodeChildren(self, c, vm, d)
+	if d != nil {
+		return visitStructMembers(c, vm, d, "Options", d.Options)
+	}
+	return Continue
 }
 
 func (*DefaultSpecVisitorImpl) LeaveOneOf(self interface{}, c SpecVisitorContext, d *pb.OneOf, cont Cont) Cont {
@@ -667,6 +722,8 @@ func visitChildren(cin Context, vm VisitorManager, node interface{}) Cont {
 		return v.VisitDataChildren(visitor, ctx, vm, node)
 	case *pb.DataMeta:
 		return v.VisitDataMetaChildren(visitor, ctx, vm, node)
+	case *pb.HTTPMeta:
+		return v.VisitHTTPMetaChildren(visitor, ctx, vm, node)
 	case *pb.HTTPPath:
 		return v.VisitHTTPPathChildren(visitor, ctx, vm, node)
 	case *pb.HTTPQuery:

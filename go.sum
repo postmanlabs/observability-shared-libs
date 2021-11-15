@@ -1,17 +1,11 @@
 github.com/OneOfOne/xxhash v1.2.8 h1:31czK/TI9sNkxIKfaUfGlU47BAxQ0ztGgd9vPyqimf8=
 github.com/OneOfOne/xxhash v1.2.8/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
-github.com/akitasoftware/akita-ir v0.0.0-20211019194545-68f0981c005a h1:RoaxWSGcofsQNr3xw63yvRrZhVvvqu0h0FdgCWP2YMU=
-github.com/akitasoftware/akita-ir v0.0.0-20211019194545-68f0981c005a/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
-github.com/akitasoftware/akita-ir v0.0.0-20211020161529-944af4d11d6e h1:zBjVbWV3ZHEv4N+TXfitP10gdAUdAWIECsVH0WhHAms=
-github.com/akitasoftware/akita-ir v0.0.0-20211020161529-944af4d11d6e/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
+github.com/akitasoftware/akita-ir v0.0.0-20211111012430-2a7dcb20a144 h1:mcrsbJ/+2PJ4HOZ3ZodyevF3SL/al34+cmk044Sr1tk=
+github.com/akitasoftware/akita-ir v0.0.0-20211111012430-2a7dcb20a144/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
 github.com/akitasoftware/gopacket v1.1.18-0.20210730205736-879e93dac35b h1:toBhS5rhCjo/N4YZ1cYtlsdSTGjMFH+gbJGCc+OmZiY=
 github.com/akitasoftware/gopacket v1.1.18-0.20210730205736-879e93dac35b/go.mod h1:wteInquxIdgWpGJEJmJEMJVtqM2i2vFZJ4W7B8G9ex8=
 github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de h1:rWkji88f/EWUY+qGc6pEyhpjgFbpsXwrnlTDTu5mLjY=
 github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de/go.mod h1:qDTWoRR9LvzAsPM1JYaThR7tyE63cEy3XPkox/4pP1A=
-github.com/akitasoftware/objecthash-proto v0.0.0-20210728061301-b7904b31cc09 h1:jFDx6V2CBAdfbpPOduXgj3E+Se2Unadvu0pfDMZ1aQI=
-github.com/akitasoftware/objecthash-proto v0.0.0-20210728061301-b7904b31cc09/go.mod h1:5/6U7s9Kj5GXRZBiQejikd06mPYYWC+C1RoO8ehvifs=
-github.com/akitasoftware/objecthash-proto v0.0.0-20211020003201-08b3014c5610 h1:lkHSIAhYNv0gHY3Q+tt0kMrtu247QdyC29bNRrcLtZ0=
-github.com/akitasoftware/objecthash-proto v0.0.0-20211020003201-08b3014c5610/go.mod h1:otNn0Cq1YGR1daOez6qwaCaF9tzRk1YkIsxF+6faKNE=
 github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0 h1:kFSvcyPgHPECo8gl6RrZFzGJJLL2TM3lmGxvymF5e9s=
 github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0/go.mod h1:5/6U7s9Kj5GXRZBiQejikd06mPYYWC+C1RoO8ehvifs=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
@@ -26,7 +20,6 @@ github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfU
 github.com/golang/protobuf v1.3.4/go.mod h1:vzj43D7+SQXF/4pzW/hwtAqwc6iTitCiVSaWz5lYuqw=
 github.com/golang/protobuf v1.5.0 h1:LUVKkCeviFUMKqHa4tXIIij/lbhnMbP7Fn5wKdKkRh4=
 github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=
-github.com/google/go-cmp v0.5.5 h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.6 h1:BKbKCqvP6I+rmFHt06ZmyQtvB8xAkWdhFyr0ZUNZcxQ=
 github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
