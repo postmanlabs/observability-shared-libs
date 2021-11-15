@@ -20,8 +20,6 @@ type TCPConnectionReport struct {
 	FirstObserved time.Time `json:"first_observed"`
 	LastObserved  time.Time `json:"last_observed"`
 
-	Direction NetworkDirection `json:"direction"`
-
 	// If true, source is known to have initiated the connection. Otherwise,
 	// "source" and "destination" is arbitrary.
 	InitiatorKnown bool `json:"initiator_known"`
