@@ -28,6 +28,34 @@ func (factory *tlsServerParserFactory) Accepts(input memview.MemView, isEnd bool
 	return decision, discardFront
 }
 
+var serverHelloHandshakeBytes = []byte{
+	// Record header (5 bytes)
+	0x16,       // handshake record
+	0x03, 0x03, // protocol version 3.3 (TLS 1.2)
+	0x00, 0x00, // handshake payload size (ignored)
+
+	// Handshake header (4 bytes)
+	0x02,             // Server Hello
+	0x00, 0x00, 0x00, // Server Hello payload size (ignored)
+
+	// Server Version (2 bytes)
+	0x03, 0x03, // protocol version 3.3 (TLS 1.2)
+}
+
+var serverHelloHandshakeMask = []byte{
+	// Record header (5 bytes)
+	0xff,       // handshake record
+	0xff, 0xff, // protocol version
+	0x00, 0x00, // handshake payload size (ignored)
+
+	// Handshake header (4 bytes)
+	0xff,             // Server Hello
+	0x00, 0x00, 0x00, // Server Hello payload size (ignored)
+
+	// Server Version (2 bytes)
+	0xff, 0xff, // protocol version
+}
+
 func (*tlsServerParserFactory) accepts(input memview.MemView) (decision akinet.AcceptDecision, discardFront int64) {
 	if input.Len() < minTLSServerHelloLength_bytes {
 		return akinet.NeedMoreData, 0
@@ -35,23 +63,8 @@ func (*tlsServerParserFactory) accepts(input memview.MemView) (decision akinet.A
 
 	// Accept if we match a "Server Hello" handshake message. Reject if we fail to
 	// match.
-
-	expectedBytes := map[int]byte{
-		// Record header (5 bytes)
-		0: 0x16,          // handshake record
-		1: 0x03, 2: 0x03, // protocol version 3.3 (TLS 1.2)
-		// 2 bytes of handshake payload size
-
-		// Handshake header (4 bytes)
-		5: 0x02, // Server Hello
-		// 3 bytes of Server Hello payload size
-
-		// Server Version (2 bytes)
-		9: 0x03, 10: 0x03, // protocol version 3.3 (TLS 1.2)
-	}
-
-	for idx, expectedByte := range expectedBytes {
-		if input.GetByte(int64(idx)) != expectedByte {
+	for idx, expectedByte := range serverHelloHandshakeBytes {
+		if input.GetByte(int64(idx))&serverHelloHandshakeMask[idx] != expectedByte {
 			return akinet.Reject, input.Len()
 		}
 	}
