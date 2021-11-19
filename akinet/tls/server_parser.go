@@ -56,7 +56,7 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 	// The last two bytes of the record header give the total length of the
 	// handshake message that appears after the record header.
-	handshakeMsgLen_bytes := uint16At(parser.allInput, tlsRecordHeaderLength_bytes-2)
+	handshakeMsgLen_bytes := parser.allInput.GetUint16(tlsRecordHeaderLength_bytes - 2)
 	handshakeMsgEndPos := int64(tlsRecordHeaderLength_bytes + handshakeMsgLen_bytes)
 
 	// Wait until we have the full handshake record.
@@ -89,7 +89,7 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 	// Now at the extensions. The first two bytes gives the length of the
 	// extensions in bytes.
-	extensionsLength_bytes := uint16At(buf, 0)
+	extensionsLength_bytes := buf.GetUint16(0)
 	buf, err = seek(buf, 2)
 	if err != nil {
 		return nil, 0, err
@@ -107,14 +107,14 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 	for buf.Len() > 0 {
 		// The first two bytes of the extension give the extension type.
-		extensionType := tlsExtensionID(uint16At(buf, 0))
+		extensionType := tlsExtensionID(buf.GetUint16(0))
 		buf, err = seek(buf, 2)
 		if err != nil {
 			return nil, 0, err
 		}
 
 		// The following two bytes give the extension's content length in bytes.
-		extensionContentLength_bytes := uint16At(buf, 0)
+		extensionContentLength_bytes := buf.GetUint16(0)
 		buf, err = seek(buf, 2)
 		if err != nil {
 			return nil, 0, err
@@ -165,7 +165,7 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 		// The last two bytes of the record header give the total length of the
 		// handshake message that appears after the record header.
-		handshakeMsgLen_bytes := uint16At(buf, tlsRecordHeaderLength_bytes-2)
+		handshakeMsgLen_bytes := buf.GetUint16(tlsRecordHeaderLength_bytes - 2)
 		handshakeMsgEndPos = int64(tlsRecordHeaderLength_bytes + handshakeMsgLen_bytes)
 
 		// Wait until we have the full handshake record.
@@ -188,7 +188,7 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 		}
 
 		// The next three bytes gives the length of the certificate message.
-		certMsgLen_bytes := int64(uint24At(buf, 0))
+		certMsgLen_bytes := int64(buf.GetUint24(0))
 		buf, err = seek(buf, 3)
 		if err != nil {
 			return nil, 0, errors.New("expected a TLS message containing the server's certificate, but found a malformed certificate handshake message")
@@ -202,7 +202,7 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 		// The next three bytes gives the length of the certificate data that
 		// follows.
-		certDataLen_bytes := int64(uint24At(buf, 0))
+		certDataLen_bytes := int64(buf.GetUint24(0))
 		buf, err = seek(buf, 3)
 		if err != nil {
 			return nil, 0, errors.New("expected a TLS message containing the server's certificate, but found a malformed certificate handshake message")
@@ -218,7 +218,7 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 		// only need to look at that.
 
 		// The next three bytes gives the length of the first certificate.
-		certLen_bytes := int64(uint24At(buf, 0))
+		certLen_bytes := int64(buf.GetUint24(0))
 		buf, err = seek(buf, 3)
 		if err != nil {
 			return nil, 0, errors.New("expected a TLS message containing the server's certificate, but found a malformed certificate handshake message")
@@ -256,7 +256,7 @@ func (*tlsServerHelloParser) parseSupportedVersionsExtension(buf memview.MemView
 		return "", errors.New("malformed Supported Versions extension")
 	}
 
-	selected := uint16At(buf, 0)
+	selected := buf.GetUint16(0)
 	if result, exists := tlsVersionMap[selected]; exists {
 		return result, nil
 	}
@@ -268,7 +268,7 @@ func (*tlsServerHelloParser) parseSupportedVersionsExtension(buf memview.MemView
 // containing a TLS ALPN extension.
 func (*tlsServerHelloParser) parseALPNExtension(buf memview.MemView) (string, error) {
 	// The first two bytes give the length of the rest of the ALPN extension.
-	length := int64(uint16At(buf, 0))
+	length := int64(buf.GetUint16(0))
 	buf, err := seek(buf, 2)
 	if err != nil {
 		return "", err

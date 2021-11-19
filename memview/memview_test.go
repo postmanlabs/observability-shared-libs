@@ -2,6 +2,7 @@ package memview
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -138,6 +139,99 @@ func TestGetByte(t *testing.T) {
 	for i := 0; i < len(input); i++ {
 		if b := mv.GetByte(int64(i)); b != input[i] {
 			t.Errorf(`GetByte(%d) expected %s, got %s`, i, strconv.Quote(string(input[i])), strconv.Quote(string(b)))
+		}
+	}
+}
+
+func Test_getBytes(t *testing.T) {
+	input := "prince is a good boy"
+	var mv MemView
+	mv.Append(New([]byte("prince ")))
+	mv.Append(New([]byte("is a ")))
+	mv.Append(New([]byte("good ")))
+	mv.Append(New([]byte("boy")))
+
+	for start := range input {
+		for end := start; end <= len(input); end++ {
+			b := string(mv.getBytes(int64(start), int64(end)))
+			if input[start:end] != b {
+				t.Errorf(`getBytes(%d, %d) expected %s, got %s`, start, end, input[start:end], b)
+			}
+		}
+	}
+
+	negativeTests := [][]int64{
+		{-1, 0},
+		{1, 0},
+		{0, int64(len(input)) + 1},
+	}
+	for _, test := range negativeTests {
+		b := mv.getBytes(test[0], test[1])
+		if b != nil {
+			t.Errorf(`getBytes(%d, %d) expected nil, got %s`, test[0], test[1], b)
+		}
+	}
+}
+
+func TestGetUint16(t *testing.T) {
+	input := "prince is a good boy"
+	var mv MemView
+	mv.Append(New([]byte("prince ")))
+	mv.Append(New([]byte("is a ")))
+	mv.Append(New([]byte("good ")))
+	mv.Append(New([]byte("boy")))
+
+	for offset := -1; offset <= len(input); offset++ {
+		expected := uint16(0)
+		if 0 <= offset && offset <= len(input)-2 {
+			expected = binary.BigEndian.Uint16([]byte(input[offset : offset+2]))
+		}
+
+		actual := mv.GetUint16(int64(offset))
+		if expected != actual {
+			t.Errorf(`GetUint16(%d) expected %d, got %d`, offset, expected, actual)
+		}
+	}
+}
+
+func TestGetUint24(t *testing.T) {
+	input := "prince is a good boy"
+	var mv MemView
+	mv.Append(New([]byte("prince ")))
+	mv.Append(New([]byte("is a ")))
+	mv.Append(New([]byte("good ")))
+	mv.Append(New([]byte("boy")))
+
+	for offset := -1; offset <= len(input); offset++ {
+		expected := uint32(0)
+		if 0 <= offset && offset <= len(input)-3 {
+			expected = binary.BigEndian.Uint32([]byte{0, input[offset], input[offset+1], input[offset+2]})
+		}
+
+		actual := mv.GetUint24(int64(offset))
+		if expected != actual {
+			t.Errorf(`GetUint24(%d) expected %d, got %d`, offset, expected, actual)
+		}
+	}
+}
+
+func TestGetUint32(t *testing.T) {
+	input := "prince is a good boy"
+	var mv MemView
+	mv.Append(New([]byte("prince ")))
+	mv.Append(New([]byte("is a ")))
+	mv.Append(New([]byte("good ")))
+	mv.Append(New([]byte("boy")))
+
+	for offset := -1; offset <= len(input); offset++ {
+		expected := uint32(0)
+		if 0 <= offset && offset <= len(input)-4 {
+			expected = binary.BigEndian.Uint32([]byte(input[offset : offset+4]))
+		}
+
+		actual := mv.GetUint32(int64(offset))
+		if expected != actual {
+			t.Errorf(`GetUint32(%d) expected %d, got %d`, offset, expected, actual)
 		}
 	}
 }

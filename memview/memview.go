@@ -2,6 +2,7 @@ package memview
 
 import (
 	"bytes"
+	"encoding/binary"
 	"io"
 )
 
@@ -76,6 +77,72 @@ func (mv MemView) GetByte(index int64) byte {
 		n -= lb
 	}
 	return 0
+}
+
+// Returns a copy of mv[start:end]. Returns nil if start is negative, start >
+// end, or end is out of bounds.
+func (mv MemView) getBytes(start, end int64) []byte {
+	if !(0 <= start && start <= end && end <= mv.Len()) {
+		return nil
+	}
+
+	result := make([]byte, end-start)
+	resultIdx := int64(0) // Points to the next result byte to be written.
+
+	for bufIdx := 0; bufIdx < len(mv.buf) && start < end; bufIdx++ {
+		bufLen := int64(len(mv.buf[bufIdx]))
+		if start >= bufLen {
+			// Current buffer is before the part to be copied.
+			start -= bufLen
+			end -= bufLen
+			continue
+		}
+
+		copyEnd := end
+		if copyEnd > bufLen {
+			copyEnd = bufLen
+		}
+
+		copy(result[resultIdx:], mv.buf[bufIdx][start:copyEnd])
+
+		copySize := copyEnd - start
+		start = 0
+		end -= bufLen
+		resultIdx += copySize
+	}
+
+	return result
+}
+
+// Returns mv[offset:offset+2], interpreted as a uint16 in network (big endian)
+// order. Returns 0 if offset+1 is out of bounds.
+func (mv MemView) GetUint16(offset int64) uint16 {
+	buf := mv.getBytes(offset, offset+2)
+	if buf == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint16(buf)
+}
+
+// Returns mv[offset:offset+3], interpreted as an unsigned 24-bit integer in
+// network (big endian) order. Returns 0 if offset+2 is out of bounds.
+func (mv MemView) GetUint24(offset int64) uint32 {
+	buf := mv.getBytes(offset, offset+3)
+	if buf == nil {
+		return 0
+	}
+	buf = append([]byte{0}, buf...)
+	return binary.BigEndian.Uint32(buf)
+}
+
+// Returns mv[offset:offset+4], interpreted as a uint32 in network (big endian)
+// order. Returns 0 if offset+3 is out of bounds.
+func (mv MemView) GetUint32(offset int64) uint32 {
+	buf := mv.getBytes(offset, offset+4)
+	if buf == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint32(buf)
 }
 
 // Returns mv[start:end] (end is not inclusive). Returns an empty MemView if
@@ -214,7 +281,7 @@ func (mv MemView) Index(start int64, sep []byte) int64 {
 func (mv MemView) String() string {
 	var buf bytes.Buffer
 	io.Copy(&buf, mv.CreateReader())
-	return string(buf.Bytes())
+	return buf.String()
 }
 
 type MemViewReader struct {

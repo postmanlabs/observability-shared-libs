@@ -55,7 +55,7 @@ func (parser *tlsClientHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 	// The last two bytes of the record header give the total length of the
 	// handshake message that appears after the record header.
-	handshakeMsgLen_bytes := uint16At(parser.allInput, tlsRecordHeaderLength_bytes-2)
+	handshakeMsgLen_bytes := parser.allInput.GetUint16(tlsRecordHeaderLength_bytes - 2)
 	handshakeMsgEndPos := int64(tlsRecordHeaderLength_bytes + handshakeMsgLen_bytes)
 
 	// Wait until we have the full handshake record.
@@ -82,7 +82,7 @@ func (parser *tlsClientHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 	// Now at the cipher suites. The first two bytes gives the length of this
 	// header in bytes.
-	cipherSuitesLen_bytes := uint16At(buf, 0)
+	cipherSuitesLen_bytes := buf.GetUint16(0)
 	buf, err = seek(buf, int64(cipherSuitesLen_bytes)+2)
 	if err != nil {
 		return nil, 0, err
@@ -98,7 +98,7 @@ func (parser *tlsClientHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 	// Now at the extensions. The first two bytes gives the length of the
 	// extensions in bytes.
-	extensionsLength_bytes := uint16At(buf, 0)
+	extensionsLength_bytes := buf.GetUint16(0)
 	buf, err = seek(buf, 2)
 	if err != nil {
 		return nil, 0, err
@@ -115,14 +115,14 @@ func (parser *tlsClientHelloParser) parse(input memview.MemView, isEnd bool) (re
 
 	for buf.Len() > 0 {
 		// The first two bytes of the extension give the extension type.
-		extensionType := tlsExtensionID(uint16At(buf, 0))
+		extensionType := tlsExtensionID(buf.GetUint16(0))
 		buf, err = seek(buf, 2)
 		if err != nil {
 			return nil, 0, err
 		}
 
 		// The following two bytes give the extension's content length in bytes.
-		extensionContentLength_bytes := uint16At(buf, 0)
+		extensionContentLength_bytes := buf.GetUint16(0)
 		buf, err = seek(buf, 2)
 		if err != nil {
 			return nil, 0, err
@@ -162,7 +162,7 @@ func (*tlsClientHelloParser) parseServerNameExtension(buf memview.MemView) (host
 	// 6066.
 	for buf.Len() > 0 {
 		// First two bytes gives the length of the list entry.
-		entryLen_bytes := uint16At(buf, 0)
+		entryLen_bytes := buf.GetUint16(0)
 		buf, err = seek(buf, 2)
 		if err != nil {
 			return "", err
@@ -178,7 +178,7 @@ func (*tlsClientHelloParser) parseServerNameExtension(buf memview.MemView) (host
 		switch entryType {
 		case dnsHostnameSNIType:
 			// The next two bytes gives the length of the hostname in bytes.
-			hostnameLen_bytes := uint16At(buf, 0)
+			hostnameLen_bytes := buf.GetUint16(0)
 			buf, err = seek(buf, 2)
 			if err != nil {
 				return "", err
@@ -206,7 +206,7 @@ func (*tlsClientHelloParser) parseALPNExtension(buf memview.MemView) []string {
 
 	// The ALPN extension is a list of strings indicating the protocols supported
 	// by the client. The first two bytes gives the length of the list in bytes.
-	listLen_bytes := uint16At(buf, 0)
+	listLen_bytes := buf.GetUint16(0)
 	buf, err = seek(buf, 2)
 	if err != nil {
 		return result
