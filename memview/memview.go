@@ -322,6 +322,17 @@ func (r *MemViewReader) ReadByte() (byte, error) {
 	return 0, io.EOF
 }
 
+// Seeks past a variable-length field by reading the next byte value and seeking
+// that number of bytes.
+func (r *MemViewReader) ReadByteAndSeek() error {
+	length, err := r.ReadByte()
+	if err != nil {
+		return err
+	}
+	_, err = r.Seek(int64(length), io.SeekCurrent)
+	return err
+}
+
 func (r *MemViewReader) ReadUint16() (uint16, error) {
 	buf := make([]byte, 2)
 	read, err := r.Read(buf)
@@ -332,6 +343,30 @@ func (r *MemViewReader) ReadUint16() (uint16, error) {
 		return 0, io.EOF
 	}
 	return binary.BigEndian.Uint16(buf), nil
+}
+
+// Seeks past a variable-length field by reading the next uint16 value and
+// seeking that number of bytes.
+func (r *MemViewReader) ReadUint16AndSeek() error {
+	length, err := r.ReadUint16()
+	if err != nil {
+		return err
+	}
+	_, err = r.Seek(int64(length), io.SeekCurrent)
+	return err
+}
+
+// Returns a new reader for a field whose length is indicated by the next uint16
+// value, and the length of that field. On return, this reader will have its
+// position advanced by two bytes and the returned reader will be the result of
+// truncating to the field's length.
+func (r *MemViewReader) ReadUint16AndTruncate() (length uint16, fieldReader *MemViewReader, err error) {
+	length, err = r.ReadUint16()
+	if err != nil {
+		return 0, nil, err
+	}
+	fieldReader, err = r.Truncate(int64(length))
+	return length, fieldReader, err
 }
 
 func (r *MemViewReader) ReadUint24() (uint32, error) {
@@ -347,6 +382,19 @@ func (r *MemViewReader) ReadUint24() (uint32, error) {
 	return binary.BigEndian.Uint32(buf), nil
 }
 
+// Returns a new reader for a field whose length is indicated by the next uint24
+// value, and the length of that field. On return, this reader will have its
+// position advanced by three bytes and the returned reader will be the result
+// of truncating to the field's length.
+func (r *MemViewReader) ReadUint24AndTruncate() (length uint32, fieldReader *MemViewReader, err error) {
+	length, err = r.ReadUint24()
+	if err != nil {
+		return 0, nil, err
+	}
+	fieldReader, err = r.Truncate(int64(length))
+	return length, fieldReader, err
+}
+
 func (r *MemViewReader) ReadUint32() (uint32, error) {
 	buf := make([]byte, 4)
 	read, err := r.Read(buf)
@@ -357,6 +405,38 @@ func (r *MemViewReader) ReadUint32() (uint32, error) {
 		return 0, io.EOF
 	}
 	return binary.BigEndian.Uint32(buf), nil
+}
+
+// Reads a string of the given length.
+func (r *MemViewReader) ReadString(length int) (string, error) {
+	result := make([]byte, length)
+	read, err := r.Read(result)
+	if err != nil {
+		return "", err
+	}
+
+	if read != int(length) {
+		return "", io.EOF
+	}
+	return string(result), nil
+}
+
+// Reads a string whose length is indicated by the next byte.
+func (r *MemViewReader) ReadString_byte() (string, error) {
+	length, err := r.ReadByte()
+	if err != nil {
+		return "", err
+	}
+	return r.ReadString(int(length))
+}
+
+// Reads a string whose length is indicated by the next uint16.
+func (r *MemViewReader) ReadString_uint16() (string, error) {
+	length, err := r.ReadUint16()
+	if err != nil {
+		return "", err
+	}
+	return r.ReadString(int(length))
 }
 
 // If MemView has no data to return, err is io.EOF (unless len(out) is zero),

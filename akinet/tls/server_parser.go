@@ -75,10 +75,9 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 		return nil, 0, err
 	}
 
-	// Now at the session ID, which is a variable-length vector. The first byte
-	// indicates the vector's length in bytes.
-	sessionIdLen_bytes, err := reader.ReadByte()
-	_, err = reader.Seek(int64(sessionIdLen_bytes), io.SeekCurrent)
+	// Now at the session ID, which is a variable-length vector. Seek past this.
+	// The first byte indicates the vector's length in bytes.
+	err = reader.ReadByteAndSeek()
 	if err != nil {
 		return nil, 0, err
 	}
@@ -89,15 +88,9 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 		return nil, 0, err
 	}
 
-	// Now at the extensions. The first two bytes gives the length of the
-	// extensions in bytes.
-	extensionsLength_bytes, err := reader.ReadUint16()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// Isolate the section that contains the TLS extensions.
-	reader, err = reader.Truncate(int64(extensionsLength_bytes))
+	// Now at the extensions. Isolate this section in the reader. The first two
+	// bytes gives the length of the extensions in bytes.
+	_, reader, err = reader.ReadUint16AndTruncate()
 	if err != nil {
 		return nil, 0, errors.New("malformed TLS message")
 	}
@@ -121,13 +114,8 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 		}
 
 		// The following two bytes give the extension's content length in bytes.
-		extensionContentLength_bytes, err := reader.ReadUint16()
-		if err != nil {
-			return nil, 0, err
-		}
-
 		// Isolate the extension in its own reader.
-		extensionReader, err := reader.Truncate(int64(extensionContentLength_bytes))
+		extensionContentLength_bytes, extensionReader, err := reader.ReadUint16AndTruncate()
 		if err != nil {
 			return nil, 0, err
 		}
@@ -199,35 +187,16 @@ func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (re
 			return nil, 0, errors.Errorf("expected a TLS certificate handshake message (type 13) containing the server's certificate, but found a type %d handshake message", messageType)
 		}
 
-		// The next three bytes gives the length of the certificate message.
-		var certMsgLen_bytes int64
-		{
-			val, err := reader.ReadUint24()
-			if err != nil {
-				return nil, 0, errors.New("expected a TLS message containing the server's certificate, but found a malformed certificate handshake message")
-			}
-			certMsgLen_bytes = int64(val)
-		}
-
-		// Isolate the section that contains the certificate message.
-		reader, err = reader.Truncate(certMsgLen_bytes)
+		// The next three bytes gives the length of the certificate message. Isolate
+		// the certificate message in the reader.
+		_, reader, err = reader.ReadUint24AndTruncate()
 		if err != nil {
 			return nil, 0, errors.New("expected a TLS message containing the server's certificate, but found a malformed certificate handshake message")
 		}
 
 		// The next three bytes gives the length of the certificate data that
-		// follows.
-		var certDataLen_bytes int64
-		{
-			val, err := reader.ReadUint24()
-			if err != nil {
-				return nil, 0, errors.New("expected a TLS message containing the server's certificate, but found a malformed certificate handshake message")
-			}
-			certDataLen_bytes = int64(val)
-		}
-
-		// Isolate the section that contains the certificate data.
-		reader, err = reader.Truncate(certDataLen_bytes)
+		// follows. Isolate the certificate data in the reader.
+		_, reader, err = reader.ReadUint24AndTruncate()
 		if err != nil {
 			return nil, 0, errors.New("expected a TLS message containing the server's certificate, but found a malformed certificate handshake message")
 		}
@@ -290,35 +259,17 @@ func (*tlsServerHelloParser) parseSupportedVersionsExtension(reader *memview.Mem
 // containing a TLS ALPN extension.
 func (*tlsServerHelloParser) parseALPNExtension(reader *memview.MemViewReader) (string, error) {
 	// The first two bytes give the length of the rest of the ALPN extension.
-	var length int64
-	{
-		val, err := reader.ReadUint16()
-		if err != nil {
-			return "", err
-		}
-		length = int64(val)
-	}
-
-	// Isolate the section that contains the rest of the ALPN extension.
-	reader, err := reader.Truncate(length)
+	// Isolate the rest of the extension in the reader.
+	_, reader, err := reader.ReadUint16AndTruncate()
 	if err != nil {
 		return "", errors.New("malformed ALPN extension")
 	}
 
 	// The next byte gives the length of the string indicating the selected
 	// protocol.
-	{
-		val, err := reader.ReadByte()
-		if err != nil {
-			return "", err
-		}
-		length = int64(val)
-	}
-
-	alpnBytes := make([]byte, length)
-	read, err := reader.Read(alpnBytes)
-	if read != int(length) || err != nil {
+	alpn, err := reader.ReadString_byte()
+	if err != nil {
 		return "", errors.New("malformed ALPN extension")
 	}
-	return string(alpnBytes), nil
+	return alpn, nil
 }

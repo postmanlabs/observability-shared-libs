@@ -74,48 +74,30 @@ func (parser *tlsClientHelloParser) parse(input memview.MemView, isEnd bool) (re
 		return nil, 0, err
 	}
 
-	// Now at the session ID, which is a variable-length vector. The first byte
-	// indicates the vector's length in bytes.
-	sessionIdLen_bytes, err := reader.ReadByte()
-	if err != nil {
-		return nil, 0, err
-	}
-	_, err = reader.Seek(int64(sessionIdLen_bytes), io.SeekCurrent)
+	// Now at the session ID, which is a variable-length vector. Seek past this.
+	// The first byte indicates the vector's length in bytes.
+	err = reader.ReadByteAndSeek()
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Now at the cipher suites. The first two bytes gives the length of this
-	// header in bytes.
-	cipherSuitesLen_bytes, err := reader.ReadUint16()
-	if err != nil {
-		return nil, 0, err
-	}
-	_, err = reader.Seek(int64(cipherSuitesLen_bytes), io.SeekCurrent)
+	// Now at the cipher suites. Seek past this. The first two bytes gives the
+	// length of this header in bytes.
+	err = reader.ReadUint16AndSeek()
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Now at the compression methods. The first byte gives the length of this
-	// header in bytes.
-	compressionMethodsLen_bytes, err := reader.ReadByte()
-	if err != nil {
-		return nil, 0, err
-	}
-	_, err = reader.Seek(int64(compressionMethodsLen_bytes), io.SeekCurrent)
+	// Now at the compression methods. Seek past this. The first byte gives the
+	// length of this header in bytes.
+	err = reader.ReadByteAndSeek()
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Now at the extensions. The first two bytes gives the length of the
-	// extensions in bytes.
-	extensionsLength_bytes, err := reader.ReadUint16()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// Isolate the section that contains the TLS extensions.
-	reader, err = reader.Truncate(int64(extensionsLength_bytes))
+	// Now at the extensions. Isolate this section in the reader. The first two
+	// bytes gives the length of the extensions in bytes.
+	_, reader, err = reader.ReadUint16AndTruncate()
 	if err != nil {
 		return nil, 0, errors.New("malformed TLS message")
 	}
@@ -138,13 +120,8 @@ func (parser *tlsClientHelloParser) parse(input memview.MemView, isEnd bool) (re
 		}
 
 		// The following two bytes give the extension's content length in bytes.
-		extensionContentLength_bytes, err := reader.ReadUint16()
-		if err != nil {
-			return nil, 0, err
-		}
-
 		// Isolate the extension in its own reader.
-		extensionReader, err := reader.Truncate(int64(extensionContentLength_bytes))
+		extensionContentLength_bytes, extensionReader, err := reader.ReadUint16AndTruncate()
 		if err != nil {
 			return nil, 0, err
 		}
@@ -182,18 +159,13 @@ func (*tlsClientHelloParser) parseServerNameExtension(reader *memview.MemViewRea
 	// Currently, the only supported type is DNS (type 0x00) according to RFC
 	// 6066.
 	for {
-		// First two bytes gives the length of the list entry.
-		entryLen_bytes, err := reader.ReadUint16()
+		// First two bytes gives the length of the list entry. Isolate the entry in
+		// its own reader.
+		entryLen_bytes, entryReader, err := reader.ReadUint16AndTruncate()
 		if err == io.EOF {
 			// Out of entries.
 			break
 		} else if err != nil {
-			return "", err
-		}
-
-		// Isolate the entry in its own reader.
-		entryReader, err := reader.Truncate(int64(entryLen_bytes))
-		if err != nil {
 			return "", err
 		}
 
@@ -216,17 +188,11 @@ func (*tlsClientHelloParser) parseServerNameExtension(reader *memview.MemViewRea
 		switch entryType {
 		case dnsHostnameSNIType:
 			// The next two bytes gives the length of the hostname in bytes.
-			hostnameLen_bytes, err := entryReader.ReadUint16()
+			hostname, err := entryReader.ReadString_uint16()
 			if err != nil {
-				return "", err
-			}
-
-			hostname := make([]byte, hostnameLen_bytes)
-			read, err := entryReader.Read(hostname)
-			if read != int(hostnameLen_bytes) || err != nil {
 				return "", errors.New("malformed SNI extension entry")
 			}
-			return string(hostname), nil
+			return hostname, nil
 		}
 	}
 
@@ -239,14 +205,9 @@ func (*tlsClientHelloParser) parseALPNExtension(reader *memview.MemViewReader) [
 	var err error
 
 	// The ALPN extension is a list of strings indicating the protocols supported
-	// by the client. The first two bytes gives the length of the list in bytes.
-	listLen_bytes, err := reader.ReadUint16()
-	if err != nil {
-		return result
-	}
-
-	// Isolate the section that contains just the list.
-	reader, err = reader.Truncate(int64(listLen_bytes))
+	// by the client. Isolate this list in the reader. The first two bytes gives
+	// the length of the list in bytes.
+	_, reader, err = reader.ReadUint16AndTruncate()
 	if err != nil {
 		return result
 	}
@@ -254,20 +215,12 @@ func (*tlsClientHelloParser) parseALPNExtension(reader *memview.MemViewReader) [
 	for {
 		// The first byte of each list element gives the length of the string in
 		// bytes.
-		entryLen_bytes, err := reader.ReadByte()
+		protocol, err := reader.ReadString_byte()
 		if err != nil {
 			// Out of elements.
-			break
-		}
-
-		protocol := make([]byte, entryLen_bytes)
-		read, err := reader.Read(protocol)
-		if read != int(entryLen_bytes) || err != nil {
 			return result
 		}
 
 		result = append(result, string(protocol))
 	}
-
-	return result
 }
