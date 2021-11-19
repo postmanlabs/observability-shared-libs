@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 // MemView represents a "view" on a collection of byte slices. Conceptually, you
@@ -290,8 +292,71 @@ type MemViewReader struct {
 	// Index for the element from mv.buf to read next.
 	rIndex int
 
-	// Offest into mv.buf[rIndex] for the next read.
+	// Offset into mv.buf[rIndex] for the next read.
 	rOffset int
+
+	// Global offset into mv for the next read.
+	gOffset int64
+}
+
+var _ io.ReadSeeker = (*MemViewReader)(nil)
+
+func (r *MemViewReader) ReadByte() (byte, error) {
+	if r.rIndex >= len(r.mv.buf) {
+		return 0, io.EOF
+	}
+
+	for i := r.rIndex; i < len(r.mv.buf); i++ {
+		curBuf := r.mv.buf[r.rIndex]
+		if r.rOffset < len(curBuf) {
+			result := curBuf[r.rOffset]
+			r.rOffset++
+			r.gOffset++
+			return result, nil
+		} else {
+			r.rIndex++
+			r.rOffset = 0
+		}
+	}
+
+	return 0, io.EOF
+}
+
+func (r *MemViewReader) ReadUint16() (uint16, error) {
+	buf := make([]byte, 2)
+	read, err := r.Read(buf)
+	if err != nil {
+		return 0, err
+	}
+	if read != len(buf) {
+		return 0, io.EOF
+	}
+	return binary.BigEndian.Uint16(buf), nil
+}
+
+func (r *MemViewReader) ReadUint24() (uint32, error) {
+	buf := make([]byte, 3)
+	read, err := r.Read(buf)
+	if err != nil {
+		return 0, err
+	}
+	if read != len(buf) {
+		return 0, io.EOF
+	}
+	buf = append([]byte{0}, buf...)
+	return binary.BigEndian.Uint32(buf), nil
+}
+
+func (r *MemViewReader) ReadUint32() (uint32, error) {
+	buf := make([]byte, 4)
+	read, err := r.Read(buf)
+	if err != nil {
+		return 0, err
+	}
+	if read != len(buf) {
+		return 0, io.EOF
+	}
+	return binary.BigEndian.Uint32(buf), nil
 }
 
 // If MemView has no data to return, err is io.EOF (unless len(out) is zero),
@@ -311,9 +376,11 @@ func (r *MemViewReader) Read(out []byte) (int, error) {
 		if cp == len(curr) {
 			r.rIndex += 1
 			r.rOffset = 0
+			r.gOffset += int64(cp)
 		} else {
 			// If cp < len(curr), it means we've run out of output space.
 			r.rOffset += cp
+			r.gOffset += int64(cp)
 			return bytesRead, nil
 		}
 	}
@@ -321,6 +388,87 @@ func (r *MemViewReader) Read(out []byte) (int, error) {
 	// We've read something, so don't return EOF in case more data gets passed to
 	// this MemView.
 	return bytesRead, nil
+}
+
+// Implements ReadSeeker.Seek.
+func (r *MemViewReader) Seek(offset int64, whence int) (absoluteOffset int64, err error) {
+	// Save the reader's state. If we fail, restore that state.
+	{
+		rIndex, rOffset, gOffset := r.rIndex, r.rOffset, r.gOffset
+		defer func() {
+			if err != nil {
+				r.rIndex, r.rOffset, r.gOffset = rIndex, rOffset, gOffset
+			}
+		}()
+	}
+
+	switch whence {
+	case io.SeekStart:
+		// Convert to SeekCurrent.
+		r.rIndex, r.rOffset, r.gOffset = 0, 0, 0 // set to the beginning
+		return r.Seek(offset, io.SeekCurrent)
+
+	case io.SeekEnd:
+		// Convert to SeekCurrent.
+		r.rIndex, r.rOffset, r.gOffset = len(r.mv.buf), 0, r.mv.length // set to the end
+		return r.Seek(offset, io.SeekCurrent)
+
+	case io.SeekCurrent:
+		for {
+			if offset == 0 {
+				return r.gOffset, nil
+			}
+
+			// See if we can stay within the current block (if we haven't moved beyond
+			// the last block).
+			if r.rIndex < len(r.mv.buf) {
+				newROffset := int64(r.rOffset) + offset
+				if 0 <= newROffset && newROffset < int64(len(r.mv.buf[r.rIndex])) {
+					r.rOffset += int(offset)
+					r.gOffset += offset
+					return r.gOffset, nil
+				}
+			}
+
+			if offset < 0 {
+				// Seeking backwards. Go to the end of the previous block.
+				offset += int64(r.rOffset)
+				r.gOffset -= int64(r.rOffset)
+				r.rIndex--
+				if r.rIndex < 0 {
+					return 0, errors.New("MemViewReader.Seek: negative position")
+				}
+				r.rOffset = len(r.mv.buf[r.rIndex])
+			} else if r.rIndex < len(r.mv.buf) {
+				// Seeking forwards. Go to the beginning of the next block.
+				curBuf := r.mv.buf[r.rIndex]
+				numSkipped := len(curBuf) - r.rOffset
+				offset -= int64(numSkipped)
+				r.gOffset += int64(numSkipped)
+				r.rIndex++
+				r.rOffset = 0
+			} else {
+				// Seeking forwards, but we've moved past the last block.
+				return r.gOffset, nil
+			}
+		}
+
+	default:
+		return 0, errors.New("MemViewReader.Seek: invalid whence")
+	}
+}
+
+// Returns a copy of this MemViewReader, except the underlying MemView is a
+// subview from the current position to the given relative offset. Returns an
+// error if the offset is negative or is past the end of the current MemView.
+func (r *MemViewReader) Truncate(offset int64) (*MemViewReader, error) {
+	endPos := r.gOffset + offset
+	if offset < 0 || r.gOffset+offset > r.mv.length {
+		return nil, errors.Errorf("MemViewReader.Truncate: invalid offset")
+	}
+
+	subView := r.mv.SubView(r.gOffset, endPos)
+	return subView.CreateReader(), nil
 }
 
 // Make MemView more efficient as a source in io.Copy.

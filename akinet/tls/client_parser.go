@@ -2,6 +2,7 @@ package tls
 
 import (
 	"errors"
+	"io"
 
 	"github.com/akitasoftware/akita-libs/akid"
 	"github.com/akitasoftware/akita-libs/akinet"
@@ -63,86 +64,106 @@ func (parser *tlsClientHelloParser) parse(input memview.MemView, isEnd bool) (re
 		return nil, 0, nil
 	}
 
-	// Get a Memview of the handshake record.
+	// Get a Memview of the handshake record and a corresponding reader.
 	buf := parser.allInput.SubView(tlsRecordHeaderLength_bytes, handshakeMsgEndPos)
+	reader := buf.CreateReader()
 
 	// Seek past some headers.
-	buf, err = seek(buf, handshakeHeaderLength_bytes+clientVersionLength_bytes+clientRandomLength_bytes)
+	_, err = reader.Seek(handshakeHeaderLength_bytes+clientVersionLength_bytes+clientRandomLength_bytes, io.SeekCurrent)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Now at the session ID, which is a variable-length vector. The first byte
 	// indicates the vector's length in bytes.
-	sessionIdLen_bytes := buf.GetByte(0)
-	buf, err = seek(buf, int64(sessionIdLen_bytes)+1)
+	sessionIdLen_bytes, err := reader.ReadByte()
+	if err != nil {
+		return nil, 0, err
+	}
+	_, err = reader.Seek(int64(sessionIdLen_bytes), io.SeekCurrent)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Now at the cipher suites. The first two bytes gives the length of this
 	// header in bytes.
-	cipherSuitesLen_bytes := buf.GetUint16(0)
-	buf, err = seek(buf, int64(cipherSuitesLen_bytes)+2)
+	cipherSuitesLen_bytes, err := reader.ReadUint16()
+	if err != nil {
+		return nil, 0, err
+	}
+	_, err = reader.Seek(int64(cipherSuitesLen_bytes), io.SeekCurrent)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Now at the compression methods. The first byte gives the length of this
 	// header in bytes.
-	compressionMethodsLen_bytes := buf.GetByte(0)
-	buf, err = seek(buf, int64(compressionMethodsLen_bytes)+1)
+	compressionMethodsLen_bytes, err := reader.ReadByte()
+	if err != nil {
+		return nil, 0, err
+	}
+	_, err = reader.Seek(int64(compressionMethodsLen_bytes), io.SeekCurrent)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Now at the extensions. The first two bytes gives the length of the
 	// extensions in bytes.
-	extensionsLength_bytes := buf.GetUint16(0)
-	buf, err = seek(buf, 2)
+	extensionsLength_bytes, err := reader.ReadUint16()
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Isolate the section that contains the TLS extensions.
-	if buf.Len() < int64(extensionsLength_bytes) {
+	reader, err = reader.Truncate(int64(extensionsLength_bytes))
+	if err != nil {
 		return nil, 0, errors.New("malformed TLS message")
 	}
-	buf = buf.SubView(0, int64(extensionsLength_bytes))
 
 	dnsHostname := (*string)(nil)
 	protocols := []string{}
 
-	for buf.Len() > 0 {
+	for {
 		// The first two bytes of the extension give the extension type.
-		extensionType := tlsExtensionID(buf.GetUint16(0))
-		buf, err = seek(buf, 2)
-		if err != nil {
-			return nil, 0, err
+		var extensionType tlsExtensionID
+		{
+			val, err := reader.ReadUint16()
+			if err == io.EOF {
+				// Out of extensions.
+				break
+			} else if err != nil {
+				return nil, 0, err
+			}
+			extensionType = tlsExtensionID(val)
 		}
 
 		// The following two bytes give the extension's content length in bytes.
-		extensionContentLength_bytes := buf.GetUint16(0)
-		buf, err = seek(buf, 2)
+		extensionContentLength_bytes, err := reader.ReadUint16()
 		if err != nil {
 			return nil, 0, err
 		}
 
-		extensionContent := buf.SubView(0, int64(extensionContentLength_bytes))
-		buf, err = seek(buf, int64(extensionContentLength_bytes))
+		// Isolate the extension in its own reader.
+		extensionReader, err := reader.Truncate(int64(extensionContentLength_bytes))
+		if err != nil {
+			return nil, 0, err
+		}
+
+		// Seek the main reader past the extension.
+		_, err = reader.Seek(int64(extensionContentLength_bytes), io.SeekCurrent)
 		if err != nil {
 			return nil, 0, err
 		}
 
 		switch extensionType {
 		case serverNameTLSExtensionID:
-			serverName, err := parser.parseServerNameExtension(extensionContent)
+			serverName, err := parser.parseServerNameExtension(extensionReader)
 			if err == nil {
 				dnsHostname = &serverName
 			}
 
 		case alpnTLSExtensionID:
-			protocols = parser.parseALPNExtension(extensionContent)
+			protocols = parser.parseALPNExtension(extensionReader)
 		}
 	}
 
@@ -156,43 +177,56 @@ func (parser *tlsClientHelloParser) parse(input memview.MemView, isEnd bool) (re
 }
 
 // Extracts the DNS hostname from a buffer containing a TLS SNI extension.
-func (*tlsClientHelloParser) parseServerNameExtension(buf memview.MemView) (hostname string, err error) {
+func (*tlsClientHelloParser) parseServerNameExtension(reader *memview.MemViewReader) (hostname string, err error) {
 	// The SNI extension is a list of server names, each of a different type.
 	// Currently, the only supported type is DNS (type 0x00) according to RFC
 	// 6066.
-	for buf.Len() > 0 {
+	for {
 		// First two bytes gives the length of the list entry.
-		entryLen_bytes := buf.GetUint16(0)
-		buf, err = seek(buf, 2)
+		entryLen_bytes, err := reader.ReadUint16()
+		if err == io.EOF {
+			// Out of entries.
+			break
+		} else if err != nil {
+			return "", err
+		}
+
+		// Isolate the entry in its own reader.
+		entryReader, err := reader.Truncate(int64(entryLen_bytes))
 		if err != nil {
 			return "", err
 		}
 
-		// Next byte is the entry type.
-		entryType := sniType(buf.GetByte(0))
-		buf, err = seek(buf, 1)
+		// Seek past the entry in the main reader.
+		_, err = reader.Seek(int64(entryLen_bytes), io.SeekCurrent)
 		if err != nil {
 			return "", err
+		}
+
+		// First byte in the entry is the entry type.
+		var entryType sniType
+		{
+			val, err := entryReader.ReadByte()
+			if err != nil {
+				return "", err
+			}
+			entryType = sniType(val)
 		}
 
 		switch entryType {
 		case dnsHostnameSNIType:
 			// The next two bytes gives the length of the hostname in bytes.
-			hostnameLen_bytes := buf.GetUint16(0)
-			buf, err = seek(buf, 2)
+			hostnameLen_bytes, err := entryReader.ReadUint16()
 			if err != nil {
 				return "", err
 			}
 
-			if buf.Len() < int64(hostnameLen_bytes) {
+			hostname := make([]byte, hostnameLen_bytes)
+			read, err := entryReader.Read(hostname)
+			if read != int(hostnameLen_bytes) || err != nil {
 				return "", errors.New("malformed SNI extension entry")
 			}
-			return buf.SubView(0, int64(hostnameLen_bytes)).String(), nil
-		}
-
-		buf, err = seek(buf, int64(entryLen_bytes)-1)
-		if err != nil {
-			return "", err
+			return string(hostname), nil
 		}
 	}
 
@@ -200,42 +234,39 @@ func (*tlsClientHelloParser) parseServerNameExtension(buf memview.MemView) (host
 }
 
 // Extracts the list of protocols from a buffer containing a TLS ALPN extension.
-func (*tlsClientHelloParser) parseALPNExtension(buf memview.MemView) []string {
+func (*tlsClientHelloParser) parseALPNExtension(reader *memview.MemViewReader) []string {
 	result := []string{}
 	var err error
 
 	// The ALPN extension is a list of strings indicating the protocols supported
 	// by the client. The first two bytes gives the length of the list in bytes.
-	listLen_bytes := buf.GetUint16(0)
-	buf, err = seek(buf, 2)
+	listLen_bytes, err := reader.ReadUint16()
 	if err != nil {
 		return result
 	}
 
 	// Isolate the section that contains just the list.
-	if buf.Len() < int64(listLen_bytes) {
+	reader, err = reader.Truncate(int64(listLen_bytes))
+	if err != nil {
 		return result
 	}
-	buf = buf.SubView(0, int64(listLen_bytes))
 
-	for buf.Len() > 0 {
+	for {
 		// The first byte of each list element gives the length of the string in
 		// bytes.
-		entryLen_bytes := buf.GetByte(0)
-		buf, err = seek(buf, 1)
+		entryLen_bytes, err := reader.ReadByte()
 		if err != nil {
+			// Out of elements.
+			break
+		}
+
+		protocol := make([]byte, entryLen_bytes)
+		read, err := reader.Read(protocol)
+		if read != int(entryLen_bytes) || err != nil {
 			return result
 		}
 
-		if buf.Len() < int64(entryLen_bytes) {
-			return result
-		}
-
-		result = append(result, buf.SubView(0, int64(entryLen_bytes)).String())
-		buf, err = seek(buf, int64(entryLen_bytes))
-		if err != nil {
-			return result
-		}
+		result = append(result, string(protocol))
 	}
 
 	return result
