@@ -21,6 +21,7 @@ const (
 	OutboundRequestTag = "obr"
 	ProjectTag         = "prj"
 	RequestTag         = "req"
+	RuleTag            = "rul"
 	ScheduleTag        = "sch"
 	ServiceClusterTag  = "scl"
 	ServiceTag         = "svc"
@@ -45,6 +46,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	OutboundRequestTag: func(ID uuid.UUID) ID { return NewOutboundRequestID(ID) },
 	ProjectTag:         func(ID uuid.UUID) ID { return NewProjectID(ID) },
 	RequestTag:         func(ID uuid.UUID) ID { return NewRequestID(ID) },
+	RuleTag:            func(ID uuid.UUID) ID { return NewRuleID(ID) },
 	ScheduleTag:        func(ID uuid.UUID) ID { return NewScheduleID(ID) },
 	ServiceClusterTag:  func(ID uuid.UUID) ID { return NewServiceClusterID(ID) },
 	ServiceTag:         func(ID uuid.UUID) ID { return NewServiceID(ID) },
@@ -540,5 +542,30 @@ func (id WitnessID) MarshalText() ([]byte, error) {
 }
 
 func (id *WitnessID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// RuleIDs
+type RuleID struct {
+	baseID
+}
+
+func (RuleID) GetType() string {
+	return RuleTag
+}
+
+func NewRuleID(ID uuid.UUID) RuleID {
+	return RuleID{baseID(ID)}
+}
+
+func GenerateRuleID() RuleID {
+	return NewRuleID(uuid.New())
+}
+
+func (id RuleID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *RuleID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
