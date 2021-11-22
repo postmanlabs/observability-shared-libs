@@ -598,7 +598,7 @@ func extendContext(cin Context, node interface{}) {
 					}
 
 					switch astGrandparent := astGrandparent.(type) {
-					case pb.OneOf:
+					case *pb.OneOf:
 						// Visiting a child of a OneOf. The name will be a meaningless hash
 						// of the Data being visited. Instead, use a OneOfVariant to
 						// represent the field path. To find the index of the OneOfVariant,
