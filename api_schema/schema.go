@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/akitasoftware/akita-libs/akid"
+	"github.com/akitasoftware/akita-libs/akinet"
 	"github.com/akitasoftware/akita-libs/spec_summary"
 	"github.com/akitasoftware/akita-libs/tags"
 )
@@ -13,8 +14,7 @@ import (
 type NetworkDirection string
 
 const (
-	Inbound  NetworkDirection = "INBOUND"
-	Outbound NetworkDirection = "OUTBOUND"
+	Inbound NetworkDirection = "INBOUND"
 )
 
 type APISpecState string
@@ -203,9 +203,11 @@ type ListSessionsResponse struct {
 	Sessions []*ListedLearnSession `json:"sessions"`
 }
 
-type UploadWitnessesRequest struct {
-	ClientID akid.ClientID    `json:"client_id"`
-	Reports  []*WitnessReport `json:"reports"`
+type UploadReportsRequest struct {
+	ClientID       akid.ClientID          `json:"client_id"`
+	Witnesses      []*WitnessReport       `json:"witnesses"`
+	TCPConnections []*TCPConnectionReport `json:"tcp_connections"`
+	TLSHandshakes  []*TLSHandshakeReport  `json:"tls_handshakes"`
 }
 
 type WitnessReport struct {
@@ -398,7 +400,8 @@ type TimelineResponse struct {
 	NextStartTime *time.Time `json:"next_start_time,omitempty"`
 }
 
-type GraphEdge struct {
+// An HTTP request and response between two nodes in a graph.
+type HTTPGraphEdge struct {
 	// Describe the source and destination vertices by the attributes
 	// they share in common: either just Host for a service-level vertex,
 	// or Host + Method + PathTemplate for a end-point level vertex, although
@@ -410,10 +413,51 @@ type GraphEdge struct {
 	Values map[TimelineValue]float32 `json:"values"`
 }
 
+// Represents a TCP connection between two nodes in a graph.
+type TCPGraphEdge struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+
+	// If true, the source is known to have initiated the connection. Otherwise,
+	// the "source" and "target" designations are chosen so that `source` <=
+	// `target`. One way to render this is to use a directed edge if
+	// "InitiatorKnown" is true, and an undirected edge if false.
+	InitiatorKnown bool `json:"initiator_known"`
+
+	// Aggregate values attached to the edge, e.g., "count"
+	Values map[TimelineValue]float32 `json:"values"`
+}
+
+// Represents a TLS connection between two nodes in a graph.
+type TLSGraphEdge struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+
+	TLSVersion                    akinet.TLSVersion `json:"tls_version"`
+	NegotiatedApplicationProtocol *string           `json:"negotiated_application_protocol"`
+
+	// Aggregate values attached to the edge, e.g., "count"
+	Values map[TimelineValue]float32 `json:"values"`
+}
+
 type GraphResponse struct {
-	// Edges of the graph
-	Edges []GraphEdge `json:"edges"`
+	// Graph edges representing HTTP requests and responses.
+	HTTPEdges []HTTPGraphEdge `json:"edges"`
+
+	// Graph edges representing TCP connections.
+	TCPEdges []TCPGraphEdge `json:"tcp_edges"`
+
+	// Graph edges representing TLS connections.
+	TLSEdges []TLSGraphEdge `json:"tls_edges"`
 
 	// TODO: vertex list? vertex or edge count?
 	// TODO: pagination
+}
+
+func (g *GraphResponse) NumEdges() int {
+	return len(g.HTTPEdges) + len(g.TCPEdges)
+}
+
+func (g *GraphResponse) IsEmpty() bool {
+	return g.NumEdges() == 0
 }
