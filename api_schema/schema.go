@@ -39,7 +39,7 @@ type APISpecVersion struct {
 
 	Name         string         `pg:"name" json:"name"`
 	APISpecID    akid.APISpecID `pg:"api_spec_id" json:"api_spec_id"`
-	ServiceID    akid.ServiceID `pg:"service_id" json:"service_id"`
+	ServiceID    akid.ServiceID `pg:"service_id,type:uuid" json:"service_id"`
 	CreationTime time.Time      `pg:"creation_time" json:"creation_time"`
 }
 
