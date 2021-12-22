@@ -8,6 +8,7 @@ import (
 	"github.com/akitasoftware/akita-libs/akinet"
 	"github.com/akitasoftware/akita-libs/spec_summary"
 	"github.com/akitasoftware/akita-libs/tags"
+	"github.com/akitasoftware/akita-libs/time_span"
 )
 
 // NetworkDirection is always relative to subject service.
@@ -185,6 +186,11 @@ type CreateSpecRequest struct {
 
 	// Optional: user-specified tags.
 	Tags map[tags.Key]string `json:"tags"`
+}
+
+type CreateTimeSpanSpecRequest struct {
+	Deployment string                     `json:"deployment"`
+	TimeSpan   time_span.HalfOpenInterval `json:"time_span"`
 }
 
 type UploadSpecRequest struct {

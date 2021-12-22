@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 )
 
 // Samples up to SampleCount errors.
@@ -37,4 +38,42 @@ func (es *Errors) Add(e error) {
 	} else {
 		es.Samples = append(es.Samples, e)
 	}
+}
+
+// A thread-safe version of Errors.
+type ConcurrentErrors interface {
+	Add(error)
+	GetTotalCount() int
+	Error() string
+}
+
+type concurrentErrors struct {
+	err   Errors
+	mutex sync.Mutex
+}
+
+var _ ConcurrentErrors = (*concurrentErrors)(nil)
+
+func NewConcurrentErrors(sampleCount int) ConcurrentErrors {
+	return &concurrentErrors{
+		err: Errors{SampleCount: sampleCount},
+	}
+}
+
+func (errs *concurrentErrors) Add(err error) {
+	errs.mutex.Lock()
+	defer errs.mutex.Unlock()
+	errs.err.Add(err)
+}
+
+func (errs *concurrentErrors) GetTotalCount() int {
+	errs.mutex.Lock()
+	defer errs.mutex.Unlock()
+	return errs.err.TotalCount
+}
+
+func (errs *concurrentErrors) Error() string {
+	errs.mutex.Lock()
+	defer errs.mutex.Unlock()
+	return errs.err.Error()
 }
