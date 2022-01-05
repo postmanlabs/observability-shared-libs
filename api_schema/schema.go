@@ -27,6 +27,14 @@ const (
 	APISpecError       APISpecState = "ERROR"
 )
 
+type LearnMode string
+
+const (
+	LearnedLearnMode          LearnMode = "LEARNED"
+	LearnedWithEditsLearnMode LearnMode = "LEARNED_WITH_EDITS"
+	MergedLearnMode           LearnMode = "MERGED"
+)
+
 // References an API spec by ID or version. Only one field may be set.
 type APISpecReference struct {
 	ID      *akid.APISpecID `json:"id,omitempty"`
@@ -282,7 +290,7 @@ type SpecInfo struct {
 	Name string `json:"name,omitempty"`
 
 	// Whether the spec was LEARNED or LEARNED_WITH_EDITS.
-	CreationMode string `json:"creation_mode"`
+	CreationMode LearnMode `json:"creation_mode"`
 
 	// If the spec was created from a learn session, the session's ID is included.
 	// Deprecated: use learn_session_ids instead.
