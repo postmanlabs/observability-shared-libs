@@ -130,6 +130,25 @@ func makeOptional(d *pb.Data) {
 
 // Assumes that dst.Meta == src.Meta.
 func MeldData(dst, src *pb.Data) (retErr error) {
+	melder := &melder{mergeTracking: true}
+	return melder.meldData(dst, src)
+}
+
+// Assumes that dst.Meta == src.Meta.
+// Melds src into dst.  Leaves tracking data in dst untouched.
+func MeldDataIgnoreTracking(dst, src *pb.Data) (retErr error) {
+	melder := &melder{mergeTracking: false}
+	return melder.meldData(dst, src)
+}
+
+type melder struct {
+	// If true, sums tracking data on meld.  Otherwise leaves
+	// tracking data unmodified in dst.
+	mergeTracking bool
+}
+
+// Assumes that dst.Meta == src.Meta.
+func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 	// Set to true if dst and src are recorded as a conflict.
 	hasConflict := false
 	defer func() {
@@ -162,7 +181,7 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		case *pb.Optional_Data:
 			// Meld dst with the non-optional version of src first, then mark the
 			// result as optional.
-			if err := MeldData(dst, opt.Data); err != nil {
+			if err := m.meldData(dst, opt.Data); err != nil {
 				return err
 			}
 			makeOptional(dst)
@@ -178,14 +197,14 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 	case *pb.Data_Struct:
 		// Special handling for struct to add unknown fields.
 		if srcStruct, ok := src.Value.(*pb.Data_Struct); ok {
-			return meldStruct(v.Struct, srcStruct.Struct)
+			return m.meldStruct(v.Struct, srcStruct.Struct)
 		} else {
 			hasConflict = true
 			return recordConflict(dst, src)
 		}
 	case *pb.Data_List:
 		if srcList, ok := src.Value.(*pb.Data_List); ok {
-			return meldList(v.List, srcList.List)
+			return m.meldList(v.List, srcList.List)
 		} else {
 			hasConflict = true
 			return recordConflict(dst, src)
@@ -194,7 +213,7 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		switch opt := v.Optional.Value.(type) {
 		case *pb.Optional_Data:
 			// Meld src with the non-optional version of dst.
-			return MeldData(opt.Data, src)
+			return m.meldData(opt.Data, src)
 		case *pb.Optional_None:
 			// If dst is a none, replace dst with an optional version of src.
 			if isOptional(src) {
@@ -229,11 +248,11 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 			switch option.Value.(type) {
 			case *pb.Data_Struct:
 				if srcIsStruct {
-					return meldAndRehashOption(v.Oneof, oldHash, option, srcNoMeta)
+					return m.meldAndRehashOption(v.Oneof, oldHash, option, srcNoMeta)
 				}
 			case *pb.Data_List:
 				if srcIsList {
-					return meldAndRehashOption(v.Oneof, oldHash, option, srcNoMeta)
+					return m.meldAndRehashOption(v.Oneof, oldHash, option, srcNoMeta)
 				}
 			}
 		}
@@ -258,8 +277,8 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 // Meld a component of a OneOf that has been identified
 // as a type-match (struct with struct or list with list.)
 // This requires re-inserting it because the hash has been changed
-func meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
-	err := MeldData(option, srcNoMeta)
+func (m *melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
+	err := m.meldData(option, srcNoMeta)
 	if err != nil {
 		return err
 	}
@@ -408,10 +427,10 @@ func assignDataFormats(d *pb.Data, formats map[string]bool) {
 	}
 }
 
-func meldStruct(dst, src *pb.Struct) error {
+func (m *melder) meldStruct(dst, src *pb.Struct) error {
 	if isMap(dst) {
 		if isMap(src) {
-			return meldMap(dst, src)
+			return m.meldMap(dst, src)
 		}
 
 		// dst is a map, but src is not. Swap the two to reuse the logic for
@@ -421,8 +440,8 @@ func meldStruct(dst, src *pb.Struct) error {
 	if isMap(src) {
 		// Melding a map into a struct. Convert dst into a map and meld the two
 		// maps.
-		structToMap(dst)
-		return meldMap(dst, src)
+		m.structToMap(dst)
+		return m.meldMap(dst, src)
 	}
 
 	// If a field appears in both structs, it is assumed to be required.
@@ -443,7 +462,7 @@ func meldStruct(dst, src *pb.Struct) error {
 		if dstData, ok := dst.Fields[k]; ok {
 			// Found in both, MeldData handles if either is already
 			// optional.
-			if err := MeldData(dstData, srcData); err != nil {
+			if err := m.meldData(dstData, srcData); err != nil {
 				return errors.Wrapf(err, "failed to meld struct key %s", k)
 			}
 		} else {
@@ -455,7 +474,7 @@ func meldStruct(dst, src *pb.Struct) error {
 
 	// Apply a heuristic for deciding when to convert structs to maps.
 	if structShouldBeMap(dst) {
-		structToMap(dst)
+		m.structToMap(dst)
 	}
 
 	return nil
@@ -495,7 +514,7 @@ func structShouldBeMap(struc *pb.Struct) bool {
 }
 
 // Melds two maps together. The given pb.Structs are assumed to represent maps.
-func meldMap(dst, src *pb.Struct) error {
+func (m *melder) meldMap(dst, src *pb.Struct) error {
 	// Try to make the key and value in dst non-nil.
 	if dst.MapType.Key == nil {
 		src.MapType.Key, dst.MapType.Key = dst.MapType.Key, src.MapType.Key
@@ -506,14 +525,14 @@ func meldMap(dst, src *pb.Struct) error {
 
 	// Meld keys.
 	if src.MapType.Key != nil {
-		if err := MeldData(dst.MapType.Key, src.MapType.Key); err != nil {
+		if err := m.meldData(dst.MapType.Key, src.MapType.Key); err != nil {
 			return err
 		}
 	}
 
 	// Meld values.
 	if src.MapType.Value != nil {
-		if err := MeldData(dst.MapType.Value, src.MapType.Value); err != nil {
+		if err := m.meldData(dst.MapType.Value, src.MapType.Value); err != nil {
 			return err
 		}
 	}
@@ -522,7 +541,7 @@ func meldMap(dst, src *pb.Struct) error {
 }
 
 // Converts in place a pb.Struct (assumed to represent a struct) into a map.
-func structToMap(struc *pb.Struct) {
+func (m *melder) structToMap(struc *pb.Struct) {
 	// The map's value Data is obtained by melding all field types together into
 	// a single Data, while stripping away any optionality.
 	var mapKey *pb.Data
@@ -552,7 +571,7 @@ func structToMap(struc *pb.Struct) {
 			mapValue = curValue
 			//} else if curValue != nil {
 		} else if curValue != nil {
-			MeldData(mapValue, curValue)
+			m.meldData(mapValue, curValue)
 		}
 	}
 
@@ -573,7 +592,7 @@ func stripOptional(data *pb.Data) *pb.Data {
 	return optional.GetData()
 }
 
-func meldList(dst, src *pb.List) error {
+func (m *melder) meldList(dst, src *pb.List) error {
 	srcOffset := 0
 	if len(dst.Elems) == 0 {
 		if len(src.Elems) == 0 {
@@ -583,13 +602,13 @@ func meldList(dst, src *pb.List) error {
 		srcOffset = 1
 	} else if len(dst.Elems) > 1 {
 		for i := 1; i < len(dst.Elems); i++ {
-			MeldData(dst.Elems[0], dst.Elems[i])
+			m.meldData(dst.Elems[0], dst.Elems[i])
 		}
 		dst.Elems = dst.Elems[0:1]
 	}
 
 	for i, e := range src.Elems[srcOffset:] {
-		if err := MeldData(dst.Elems[0], e); err != nil {
+		if err := m.meldData(dst.Elems[0], e); err != nil {
 			return errors.Wrapf(err, "failed to meld list index %d", i)
 		}
 	}
