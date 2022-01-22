@@ -116,6 +116,7 @@ func mergeExampleValues(dst, src *pb.Data) {
 	dst.ExampleValues = examples
 }
 
+// Makes given Data optional if it isn't already.
 func makeOptional(d *pb.Data) {
 	if !isOptional(d) {
 		d.Value = &pb.Data_Optional{
@@ -148,6 +149,8 @@ type melder struct {
 }
 
 // Assumes that dst.Meta == src.Meta.
+//
+// XXX: In some cases, this modifies src as well as dst :/
 func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 	// Set to true if dst and src are recorded as a conflict.
 	hasConflict := false
@@ -164,14 +167,17 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 	if srcOf, ok := src.Value.(*pb.Data_Oneof); ok {
 		if v, ok := dst.Value.(*pb.Data_Oneof); ok {
 			// If dst already encodes a conflict, merge the conflicts.
+			//
+			// XXX Actually merge the variants instead of lumping them together.
 			for k, d := range srcOf.Oneof.Options {
 				v.Oneof.Options[k] = d
 			}
 			return nil
 		}
 
-		// dst is just a regular value (which may happen to be a oneof). Swap src
-		// and dst and re-use the logic below.
+		// dst is not a oneof. Swap src and dst and re-use the logic below.
+		//
+		// XXX Modifies src. Would fixing this have undesired downstream effects?
 		dst.Value, src.Value = src.Value, dst.Value
 	}
 
@@ -192,6 +198,8 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			return nil
 		}
 	}
+
+	// At this point, src should be neither a one-of nor an optional.
 
 	switch v := dst.Value.(type) {
 	case *pb.Data_Struct:
@@ -242,6 +250,8 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 		// See if we can meld the src into one of the options. For example,
 		// melding struct into struct or list into list.
 		// When we do this, we need to change the hash
+		//
+		// XXX Also merge with existing primitive variants
 		_, srcIsStruct := srcNoMeta.Value.(*pb.Data_Struct)
 		_, srcIsList := srcNoMeta.Value.(*pb.Data_List)
 		for oldHash, option := range v.Oneof.Options {
