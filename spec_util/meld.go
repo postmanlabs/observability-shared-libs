@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
@@ -74,14 +74,6 @@ func meldTopLevelDataMap(dst, src map[string]*pb.Data) error {
 func isOptional(d *pb.Data) bool {
 	_, isOptional := d.Value.(*pb.Data_Optional)
 	return isOptional
-}
-
-func isNone(d *pb.Data) bool {
-	if opt, ok := d.Value.(*pb.Data_Optional); ok {
-		_, isNone := opt.Optional.Value.(*pb.Optional_None)
-		return isNone
-	}
-	return false
 }
 
 func mergeExampleValues(dst, src *pb.Data) {
@@ -313,21 +305,6 @@ func (m *melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb
 	return nil
 }
 
-func dataEqual(dst, src *pb.Data) bool {
-	srcExampleValues := src.ExampleValues
-	dstExampleValues := dst.ExampleValues
-	src.ExampleValues = nil
-	dst.ExampleValues = nil
-
-	defer func() {
-		// Reinstate original example values
-		src.ExampleValues = srcExampleValues
-		dst.ExampleValues = dstExampleValues
-	}()
-
-	return proto.Equal(dst, src)
-}
-
 // Two prims have compatible types if they have the same base type (in their
 // Value field) and the same data format kind, if any.
 func haveCompatibleTypes(dst, src *pb.Primitive) bool {
@@ -374,43 +351,13 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 
 		// Update dst to contain a conflict between dstNoMeta and srcNoMeta.
 		dst.Value = &pb.Data_Oneof{
-			&pb.OneOf{Options: options, PotentialConflict: true},
+			Oneof: &pb.OneOf{Options: options, PotentialConflict: true},
 		}
 		// Example values from dst are recorded inside the oneof as dstNoMeta.
 		dst.ExampleValues = nil
 	}
 
 	return nil
-}
-
-func getTypeHint(d *pb.Data) string {
-	switch x := d.Value.(type) {
-	case *pb.Data_Primitive:
-		return x.Primitive.TypeHint
-	}
-	return ""
-}
-
-func assignTypeHint(d *pb.Data, assignment string) {
-	switch x := d.Value.(type) {
-	case *pb.Data_Primitive:
-		x.Primitive.TypeHint = assignment
-	}
-}
-
-func getDataFormats(d *pb.Data) map[string]bool {
-	switch x := d.Value.(type) {
-	case *pb.Data_Primitive:
-		return x.Primitive.Formats
-	}
-	return make(map[string]bool, 0)
-}
-
-func assignDataFormats(d *pb.Data, formats map[string]bool) {
-	switch x := d.Value.(type) {
-	case *pb.Data_Primitive:
-		x.Primitive.Formats = formats
-	}
 }
 
 func (m *melder) meldStruct(dst, src *pb.Struct) error {
