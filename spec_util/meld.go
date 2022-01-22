@@ -610,6 +610,9 @@ func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
 		}
 	}
 
+	// Merge tracking data.
+	m.meldTracking(dst, src)
+
 	// Join base types.
 	baseJoin := joinBaseTypes(dst, src)
 	if baseJoin == nil {
@@ -717,4 +720,51 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb
 	// Add a new variant.
 	dst.Options[*srcHash] = srcVariant
 	return nil
+}
+
+func (m *melder) meldTracking(dst, src *pb.Primitive) {
+	if !m.mergeTracking {
+		return
+	}
+
+	// Update counts by data format.
+	if src.CountByDataFormat != nil {
+		if dst.CountByDataFormat == nil {
+			dst.CountByDataFormat = make(map[string]int64, len(src.CountByDataFormat))
+		}
+		for format, count := range src.CountByDataFormat {
+			dst.CountByDataFormat[format] += count
+		}
+	}
+
+	if src.Tracking != nil {
+		if dst.Tracking == nil {
+			dst.Tracking = &pb.AkitaWitnessTracking{}
+		}
+
+		// Update count.
+		dst.Tracking.Count += src.Tracking.Count
+
+		// Use earliest first-seen date.
+		if dst.Tracking.FirstSeen == nil {
+			dst.Tracking.FirstSeen = src.Tracking.FirstSeen
+		} else if src.Tracking.FirstSeen != nil {
+			srcFirstSeen := src.Tracking.FirstSeen.AsTime()
+			dstFirstSeen := dst.Tracking.FirstSeen.AsTime()
+			if srcFirstSeen.Before(dstFirstSeen) {
+				dst.Tracking.FirstSeen = src.Tracking.FirstSeen
+			}
+		}
+
+		// Use latest last-seen date.
+		if dst.Tracking.LastSeen == nil {
+			dst.Tracking.LastSeen = src.Tracking.LastSeen
+		} else if src.Tracking.LastSeen != nil {
+			srcLastSeen := src.Tracking.LastSeen.AsTime()
+			dstLastSeen := dst.Tracking.LastSeen.AsTime()
+			if srcLastSeen.After(dstLastSeen) {
+				dst.Tracking.LastSeen = src.Tracking.LastSeen
+			}
+		}
+	}
 }
