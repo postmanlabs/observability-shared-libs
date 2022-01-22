@@ -200,14 +200,14 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			return m.meldStruct(v.Struct, srcStruct.Struct)
 		} else {
 			hasConflict = true
-			return recordConflict(dst, src)
+			return m.recordConflict(dst, src)
 		}
 	case *pb.Data_List:
 		if srcList, ok := src.Value.(*pb.Data_List); ok {
 			return m.meldList(v.List, srcList.List)
 		} else {
 			hasConflict = true
-			return recordConflict(dst, src)
+			return m.recordConflict(dst, src)
 		}
 	case *pb.Data_Optional:
 		switch opt := v.Optional.Value.(type) {
@@ -229,7 +229,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			}
 			return nil
 		default:
-			return recordConflict(dst, src)
+			return m.recordConflict(dst, src)
 		}
 	case *pb.Data_Oneof:
 		hasConflict = true
@@ -270,7 +270,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 		return nil
 	default:
 		hasConflict = true
-		return recordConflict(dst, src)
+		return m.recordConflict(dst, src)
 	}
 }
 
@@ -308,50 +308,37 @@ func dataEqual(dst, src *pb.Data) bool {
 	return proto.Equal(dst, src)
 }
 
-func recordConflict(dst, src *pb.Data) error {
-	// Special case: If and only if one data has a type hint, assign it to the other
-	// data so that the difference does not trigger a conflict and the type hint is preserved.
-	{
-		srcTypeHint := getTypeHint(src)
-		dstTypeHint := getTypeHint(dst)
-		if srcTypeHint != dstTypeHint {
-			if dstTypeHint == "" {
-				assignTypeHint(dst, srcTypeHint)
-			} else if srcTypeHint == "" {
-				assignTypeHint(src, dstTypeHint)
-			}
-		}
+// Two prims have compatible types if they have the same base type (in their
+// Value field) and the same data format kind, if any.
+func haveCompatibleTypes(dst, src *pb.Primitive) bool {
+	if dst == nil || src == nil {
+		return false
 	}
 
-	// Special case: If there are otherwise no conflicts, then merge data
-	// formats.  However, if there are conflicts, then leave data formats
-	// unmerged in their respective objects.
-	srcDataFormats := getDataFormats(src)
-	dstDataFormats := getDataFormats(dst)
-	assignDataFormats(src, nil)
-	assignDataFormats(dst, nil)
+	cmpDst := &pb.Primitive{Value: dst.Value, FormatKind: dst.FormatKind}
+	cmpSrc := &pb.Primitive{Value: src.Value, FormatKind: src.FormatKind}
+	return proto.Equal(cmpDst, cmpSrc)
+}
 
-	// Special case: If there are otherwise no conflicts, then merge example
-	// values. However, if there are conflicts, then leave example values
-	// unmerged in their respective objects.
-	srcExampleValues := src.ExampleValues
-	dstExampleValues := dst.ExampleValues
-	// Temporarily assign nil to example values for comparison.
-	src.ExampleValues = nil
-	dst.ExampleValues = nil
+// Merges src into dst.  Introduces a OneOf when dst and src are different
+// types, e.g. string/int, list/object, list/int, or if they are the same
+// type but have different data format kinds.  (Different data formats of
+// the same kind are merged.)
+//
+// Assumes dst and src are different base types or are both primitives.
+func (m *melder) recordConflict(dst, src *pb.Data) error {
+	// If src and dst are Primitives, we meld them if they have the same type
+	// (in their Value field) and the same data format kind, if any.
+	// Otherwise, src and dst are in conflict, and we introduce a OneOf.
+	dstPrim := dst.GetPrimitive()
+	srcPrim := src.GetPrimitive()
+	arePrims := dstPrim != nil && srcPrim != nil
 
-	// Note: witnesses should not contain actual values and we've taken out data
-	// formats and example values above, so simple equality comparison works to
-	// determine whether 2 Data proto have conflict.
-	if !proto.Equal(dst, src) {
-		// Reinstate original data formats
-		assignDataFormats(src, srcDataFormats)
-		assignDataFormats(dst, dstDataFormats)
-
-		// Reinstate original example values
-		src.ExampleValues = srcExampleValues
-		dst.ExampleValues = dstExampleValues
-
+	if arePrims && haveCompatibleTypes(dstPrim, srcPrim) {
+		// No conflict.  Merge primitive metadata.
+		m.meldPrimitive(dstPrim, srcPrim)
+		mergeExampleValues(dst, src)
+	} else {
 		// New conflict detected. Create oneof to record the conflict.
 		// For HTTP specs, oneof options all have the same metadata, recorded in
 		// the Data.Meta field of the containing Data.
@@ -371,29 +358,8 @@ func recordConflict(dst, src *pb.Data) error {
 		}
 		// Example values from dst are recorded inside the oneof as dstNoMeta.
 		dst.ExampleValues = nil
-	} else {
-		// Merge data formats
-		mergedDataFormats := make(map[string]bool, len(srcDataFormats)+len(dstDataFormats))
-		for k := range srcDataFormats {
-			mergedDataFormats[k] = true
-		}
-		for k := range dstDataFormats {
-			mergedDataFormats[k] = true
-		}
-		if len(mergedDataFormats) > 0 {
-			assignDataFormats(dst, mergedDataFormats)
-		}
-
-		// Reinstate source data formats, in order to leave src unmodified
-		assignDataFormats(src, srcDataFormats)
-
-		// Reinstate source example values, in order to leave src unmodified
-		src.ExampleValues = srcExampleValues
-
-		// Merge example values.
-		dst.ExampleValues = dstExampleValues
-		mergeExampleValues(dst, src)
 	}
+
 	return nil
 }
 
@@ -613,4 +579,35 @@ func (m *melder) meldList(dst, src *pb.List) error {
 		}
 	}
 	return nil
+}
+
+// Assumes dst.value == src.value.
+// Meld data formats, tracking data, etc. from src to dst.
+// XXX(cns): In some cases, this modifies src as well as dst :/
+func (m *melder) meldPrimitive(dst, src *pb.Primitive) {
+	// Special case: If and only if one data has a type hint, assign it to the other
+	// data so that the difference does not trigger a conflict and the type hint is preserved.
+	// XXX(cns): This modifies src!  Not ideal, but I don't know if it's safe
+	// to remove this behavior.
+	{
+		if src.TypeHint != dst.TypeHint {
+			if dst.TypeHint == "" {
+				dst.TypeHint = src.TypeHint
+			} else if src.TypeHint == "" {
+				src.TypeHint = dst.TypeHint
+			}
+		}
+	}
+
+	// Merge data formats
+	mergedDataFormats := make(map[string]bool, len(src.Formats)+len(dst.Formats))
+	for k := range src.Formats {
+		mergedDataFormats[k] = true
+	}
+	for k := range dst.Formats {
+		mergedDataFormats[k] = true
+	}
+	if len(mergedDataFormats) > 0 {
+		dst.Formats = mergedDataFormats
+	}
 }
