@@ -149,6 +149,13 @@ type melder struct {
 	mergeTracking bool
 }
 
+// If the given src and dst have the following invariant on all OneOfs contained
+// within, then this is preserved.
+//
+//   - At most one variant in the OneOf is a struct.
+//   - At most one variant in the OneOf is a list.
+//   - All other variants in the OneOf is a primitive.
+//
 // Assumes that dst.Meta == src.Meta.
 //
 // XXX: In some cases, this modifies src as well as dst :/
