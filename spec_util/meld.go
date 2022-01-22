@@ -2,6 +2,7 @@ package spec_util
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 
 	"github.com/golang/protobuf/proto"
@@ -196,6 +197,8 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			// If src is a none, drop the none and mark the dst value as optional.
 			makeOptional(dst)
 			return nil
+		default:
+			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(srcOpt.Optional.Value).Name())
 		}
 	}
 
@@ -237,7 +240,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			}
 			return nil
 		default:
-			return m.recordConflict(dst, src)
+			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(v.Optional.Value).Name())
 		}
 	case *pb.Data_Oneof:
 		hasConflict = true
