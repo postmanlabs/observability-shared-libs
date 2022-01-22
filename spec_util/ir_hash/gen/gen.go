@@ -31,6 +31,8 @@ func main() {
 
 	gf.AddIgnoredField("HTTPMethodMeta", "ProcessingLatency")
 	gf.AddIgnoredField("Data", "ExampleValues")
+	gf.AddIgnoredField("Primitive", "CountByDataFormat")
+	gf.AddIgnoredField("Primitive", "Tracking")
 
 	// Newer protobuf compiler (1.39, v2 of go API) uses these instead of older XXX prefix (1.26, v1 of go API)
 	gf.AddIgnoredField("*", "state")
@@ -177,6 +179,7 @@ func main() {
 		"witness.proto",
 		"types.proto",
 		"spec.proto",
+        "tracking.proto",
 	)
 
 	fset := token.NewFileSet()
