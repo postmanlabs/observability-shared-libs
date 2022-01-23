@@ -114,6 +114,24 @@ var tests = []testData{
 		"testdata/meld/meld_oneof_with_primitive_expected.pb.txt",
 	},
 	{
+		"melding oneof with itself is idempotent",
+		[]string{
+			"testdata/meld/meld_oneof_with_oneof_1.pb.txt",
+			"testdata/meld/meld_oneof_with_oneof_1.pb.txt",
+		},
+		"testdata/meld/meld_oneof_with_oneof_1.pb.txt",
+	},
+	{
+		// meld(oneof(list<L1>, S1), oneof(list<L2>, S2))
+		//   => oneof(list<meld(L1, L2)>, meld(S1, S2))
+		"meld oneof with oneof",
+		[]string{
+			"testdata/meld/meld_oneof_with_oneof_1.pb.txt",
+			"testdata/meld/meld_oneof_with_oneof_2.pb.txt",
+		},
+		"testdata/meld/meld_oneof_with_oneof_expected.pb.txt",
+	},
+	{
 		"meld struct",
 		[]string{
 			"testdata/meld/meld_struct_1.pb.txt",
