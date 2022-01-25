@@ -264,8 +264,8 @@ func (m *melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb
 	return nil
 }
 
-// Two prims have compatible types if they have the same base type (in their
-// Value field) and the same data format kind, if any.
+// Two prims have compatible types if their base types join (in their
+// Value field) and they have the same data format kind, if any.
 func haveCompatibleTypes(dst, src *pb.Primitive) bool {
 	if dst == nil || src == nil {
 		return false
@@ -311,11 +311,17 @@ func joinBaseTypes(dst, src *pb.Primitive) *pb.Primitive {
 		switch src.Value.(type) {
 		case *pb.Primitive_Int64Value, *pb.Primitive_Uint32Value:
 			return &pb.Primitive{Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}}}
+		case *pb.Primitive_FloatValue:
+			return &pb.Primitive{Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}}}
+		case *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
 		}
 	case *pb.Primitive_Int64Value:
 		switch src.Value.(type) {
 		case *pb.Primitive_Int32Value, *pb.Primitive_Uint32Value:
 			return &pb.Primitive{Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}}}
+		case *pb.Primitive_FloatValue, *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
 		}
 	case *pb.Primitive_Uint32Value:
 		switch src.Value.(type) {
@@ -323,20 +329,28 @@ func joinBaseTypes(dst, src *pb.Primitive) *pb.Primitive {
 			return &pb.Primitive{Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}}}
 		case *pb.Primitive_Uint64Value:
 			return &pb.Primitive{Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}}}
+		case *pb.Primitive_FloatValue:
+			return &pb.Primitive{Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}}}
+		case *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
 		}
 	case *pb.Primitive_Uint64Value:
 		switch src.Value.(type) {
 		case *pb.Primitive_Uint32Value:
 			return &pb.Primitive{Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}}}
+		case *pb.Primitive_FloatValue, *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
 		}
 	case *pb.Primitive_FloatValue:
 		switch src.Value.(type) {
-		case *pb.Primitive_DoubleValue:
+		case *pb.Primitive_Int32Value, *pb.Primitive_Uint32Value:
+			return &pb.Primitive{Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}}}
+		case *pb.Primitive_Int64Value, *pb.Primitive_Uint64Value, *pb.Primitive_DoubleValue:
 			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
 		}
 	case *pb.Primitive_DoubleValue:
 		switch src.Value.(type) {
-		case *pb.Primitive_FloatValue:
+		case *pb.Primitive_Int32Value, *pb.Primitive_Uint32Value, *pb.Primitive_Int64Value, *pb.Primitive_Uint64Value, *pb.Primitive_FloatValue:
 			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
 		}
 	}
@@ -578,7 +592,7 @@ func (m *melder) meldList(dst, src *pb.List) error {
 	return nil
 }
 
-// Assumes dst.value == src.value.
+// Assumes haveCompatibleTypes(dst, src), returns an error otherwise.
 // Meld data formats, tracking data, etc. from src to dst.
 // XXX(cns): In some cases, this modifies src as well as dst :/
 func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
