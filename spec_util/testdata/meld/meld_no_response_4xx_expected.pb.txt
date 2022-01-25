@@ -1,5 +1,4 @@
 # api_spec.Witness proto
-
 method: {
   meta: {
     http: {
@@ -30,7 +29,7 @@ method: {
     }
   }
   responses: {
-    key: "ui5EpupUcWM="
+    key: "tZr-XY4VUbM="
     value: {
       struct: {
         fields: {
@@ -40,6 +39,7 @@ method: {
               string_value: {
                 value: "file_1"
               }
+              format_kind: "datetime"
               formats: {
                 key: "ISOYearMonthDay"
                 value: true

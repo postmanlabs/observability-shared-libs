@@ -9,15 +9,15 @@ method: {
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "FJkTUyXEoig="
     value: {
       primitive: {
         string_value: {}
+        format_kind: "phone_number"
         formats: {
           key: "Phone"
           value: true
         }
-        format_kind: "kind2"
       }
       meta: {
         http: {

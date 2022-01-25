@@ -264,16 +264,98 @@ func (m *melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb
 	return nil
 }
 
-// Two prims have compatible types if they have the same base type (in their
-// Value field) and the same data format kind, if any.
+// Two prims have compatible types if their base types join (in their
+// Value field) and they have the same data format kind, if any.
 func haveCompatibleTypes(dst, src *pb.Primitive) bool {
 	if dst == nil || src == nil {
 		return false
 	}
 
-	cmpDst := &pb.Primitive{Value: dst.Value, FormatKind: dst.FormatKind}
-	cmpSrc := &pb.Primitive{Value: src.Value, FormatKind: src.FormatKind}
-	return proto.Equal(cmpDst, cmpSrc)
+	// First, check that the base types can join.
+	baseJoin := joinBaseTypes(dst, src)
+	if baseJoin == nil {
+		return false
+	}
+
+	// Types are compatible if the base types can join and the format kinds
+	// are equal.
+	if dst.FormatKind == src.FormatKind {
+		return true
+	}
+
+	// Types are compatible if the base types can join and least one type does
+	// not have any data formats identified.
+	if dst.FormatKind == "" || src.FormatKind == "" {
+		return true
+	}
+
+	return false
+}
+
+// Returns a new Primitive with the Value set as the type-theoretic join of
+// dst.Value and src.Value.  For example, join(int32, uint32) = int64.
+// Returns nil if no such join exists, e.g. join(int64, uint64) = nil.
+func joinBaseTypes(dst, src *pb.Primitive) *pb.Primitive {
+	dstType := reflect.TypeOf(dst.Value)
+	srcType := reflect.TypeOf(src.Value)
+
+	if dstType == srcType {
+		return &pb.Primitive{Value: dst.Value}
+	}
+
+	// NOTE(cns): When the CLI builds witnesses from wire traffic, it parses integers
+	// as int64 whenever possible and only falls back to uint64 for values >= 2^63.
+	// However, we could see other behavior from uploaded specs.
+	switch dst.Value.(type) {
+	case *pb.Primitive_Int32Value:
+		switch src.Value.(type) {
+		case *pb.Primitive_Int64Value, *pb.Primitive_Uint32Value:
+			return &pb.Primitive{Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}}}
+		case *pb.Primitive_FloatValue:
+			return &pb.Primitive{Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}}}
+		case *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
+		}
+	case *pb.Primitive_Int64Value:
+		switch src.Value.(type) {
+		case *pb.Primitive_Int32Value, *pb.Primitive_Uint32Value:
+			return &pb.Primitive{Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}}}
+		case *pb.Primitive_FloatValue, *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
+		}
+	case *pb.Primitive_Uint32Value:
+		switch src.Value.(type) {
+		case *pb.Primitive_Int32Value:
+			return &pb.Primitive{Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}}}
+		case *pb.Primitive_Uint64Value:
+			return &pb.Primitive{Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}}}
+		case *pb.Primitive_FloatValue:
+			return &pb.Primitive{Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}}}
+		case *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
+		}
+	case *pb.Primitive_Uint64Value:
+		switch src.Value.(type) {
+		case *pb.Primitive_Uint32Value:
+			return &pb.Primitive{Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}}}
+		case *pb.Primitive_FloatValue, *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
+		}
+	case *pb.Primitive_FloatValue:
+		switch src.Value.(type) {
+		case *pb.Primitive_Int32Value, *pb.Primitive_Uint32Value:
+			return &pb.Primitive{Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}}}
+		case *pb.Primitive_Int64Value, *pb.Primitive_Uint64Value, *pb.Primitive_DoubleValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
+		}
+	case *pb.Primitive_DoubleValue:
+		switch src.Value.(type) {
+		case *pb.Primitive_Int32Value, *pb.Primitive_Uint32Value, *pb.Primitive_Int64Value, *pb.Primitive_Uint64Value, *pb.Primitive_FloatValue:
+			return &pb.Primitive{Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}}}
+		}
+	}
+
+	return nil
 }
 
 // Merges src into dst.  Introduces a OneOf when dst and src are different
@@ -292,7 +374,10 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 
 	if arePrims && haveCompatibleTypes(dstPrim, srcPrim) {
 		// No conflict.  Merge primitive metadata.
-		m.meldPrimitive(dstPrim, srcPrim)
+		err := m.meldPrimitive(dstPrim, srcPrim)
+		if err != nil {
+			return err
+		}
 		mergeExampleValues(dst, src)
 	} else {
 		// New conflict detected. Create oneof to record the conflict.
@@ -507,10 +592,10 @@ func (m *melder) meldList(dst, src *pb.List) error {
 	return nil
 }
 
-// Assumes dst.value == src.value.
+// Assumes haveCompatibleTypes(dst, src), returns an error otherwise.
 // Meld data formats, tracking data, etc. from src to dst.
 // XXX(cns): In some cases, this modifies src as well as dst :/
-func (m *melder) meldPrimitive(dst, src *pb.Primitive) {
+func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
 	// Special case: If and only if one data has a type hint, assign it to the other
 	// data so that the difference does not trigger a conflict and the type hint is preserved.
 	// XXX(cns): This modifies src!  Not ideal, but I don't know if it's safe
@@ -525,17 +610,37 @@ func (m *melder) meldPrimitive(dst, src *pb.Primitive) {
 		}
 	}
 
-	// Merge data formats
-	mergedDataFormats := make(map[string]bool, len(src.Formats)+len(dst.Formats))
-	for k := range src.Formats {
-		mergedDataFormats[k] = true
+	// Join base types.
+	baseJoin := joinBaseTypes(dst, src)
+	if baseJoin == nil {
+		return errors.Errorf("failed to join base types")
 	}
-	for k := range dst.Formats {
-		mergedDataFormats[k] = true
+	dst.Value = baseJoin.Value
+
+	// If either side has no data formats (i.e. is just a base type), then
+	// the resulting meld will similarly have no data formats.  This implements
+	// a type-theoretic join, as the base type without formats subsumes one
+	// restricted to specific formats.
+	if dst.FormatKind == "" || src.FormatKind == "" {
+		dst.FormatKind = ""
+		dst.Formats = nil
+	} else if dst.FormatKind == src.FormatKind {
+		// Merge data formats
+		mergedDataFormats := make(map[string]bool, len(src.Formats)+len(dst.Formats))
+		for k := range src.Formats {
+			mergedDataFormats[k] = true
+		}
+		for k := range dst.Formats {
+			mergedDataFormats[k] = true
+		}
+		if len(mergedDataFormats) > 0 {
+			dst.Formats = mergedDataFormats
+		}
+	} else {
+		return errors.Errorf("failed to meld primitives because format kinds are not equal")
 	}
-	if len(mergedDataFormats) > 0 {
-		dst.Formats = mergedDataFormats
-	}
+
+	return nil
 }
 
 func (m *melder) meldOneOf(dst, src *pb.OneOf) error {
@@ -597,9 +702,13 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb
 		}
 
 	case *pb.Data_Primitive:
-		// Fall through.
-		//
-		// XXX TODO Merge with existing primitive variants.
+		// If the destination has a primitive variant that has a compatible type
+		// with the source variant, meld them.  Otherwise, fall through.
+		for oldDstHash, dstVariant := range dst.Options {
+			if _, dstIsPrim := dstVariant.Value.(*pb.Data_Primitive); dstIsPrim && haveCompatibleTypes(dstVariant.GetPrimitive(), srcVariant.GetPrimitive()) {
+				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
+			}
+		}
 
 	default:
 		return fmt.Errorf("unknown one-of variant type: %s", reflect.TypeOf(srcVariant.Value).Name())

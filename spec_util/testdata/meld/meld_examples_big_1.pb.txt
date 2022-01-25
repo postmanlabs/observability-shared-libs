@@ -38,7 +38,7 @@ method: {
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "FJkTUyXEoig="
     value: {
       struct: {
         fields: {
@@ -48,6 +48,7 @@ method: {
               string_value: {
                 value: "file_1"
               }
+              format_kind: "datetime"
               formats: {
                 key: "ISOYearMonth"
                 value: true

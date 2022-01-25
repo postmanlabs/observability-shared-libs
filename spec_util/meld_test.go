@@ -5,8 +5,10 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 
+	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/test"
 )
 
@@ -23,7 +25,7 @@ var tests = []testData{
 			"testdata/meld/meld_no_data_formats.pb.txt",
 			"testdata/meld/meld_data_formats_1.pb.txt",
 		},
-		"testdata/meld/meld_data_formats_1.pb.txt",
+		"testdata/meld/meld_no_data_formats.pb.txt",
 	},
 	{
 		"format, format",
@@ -265,6 +267,307 @@ func TestMeldWithFormats(t *testing.T) {
 				t.Errorf("[%s] left merged to right\n%v", testData.name, diff)
 				continue
 			}
+		}
+	}
+}
+
+func wrapPrim(p *pb.Primitive) *pb.Data {
+	return &pb.Data{Value: &pb.Data_Primitive{Primitive: p}}
+}
+
+func wrapOneOf(o *pb.OneOf) *pb.Data {
+	return &pb.Data{Value: &pb.Data_Oneof{Oneof: o}}
+}
+
+var (
+	cmpWitnessOptions = []cmp.Option{
+		cmp.Comparer(proto.Equal),
+		cmpopts.SortSlices(witnessLess),
+		cmpopts.EquateEmpty(),
+	}
+)
+
+func witnessLess(w1, w2 *pb.Witness) bool {
+	return proto.MarshalTextString(w1) < proto.MarshalTextString(w2)
+}
+
+func TestMeldPrimitives(t *testing.T) {
+	testCases := []struct {
+		name     string
+		left     *pb.Primitive
+		right    *pb.Primitive
+		expected *pb.Data
+	}{
+		{
+			name: "merge is idempotent - int32/int32",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+			}),
+		},
+		{
+			name: "merge is idempotent - timestamp/timestamp",
+			left: &pb.Primitive{
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{
+					"DateTimeSecondsSinceEpoch": true,
+				},
+			},
+			right: &pb.Primitive{
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{
+					"DateTimeSecondsSinceEpoch": true,
+				},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{
+					"DateTimeSecondsSinceEpoch": true,
+				},
+			}),
+		},
+		{
+			name: "merge unions data formats of the same kind",
+			left: &pb.Primitive{
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{
+					"DateTimeSecondsSinceEpoch": true,
+				},
+			},
+			right: &pb.Primitive{
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{
+					"DateTimeNanosecondsSinceEpoch": true,
+				},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{
+					"DateTimeSecondsSinceEpoch":     true,
+					"DateTimeNanosecondsSinceEpoch": true,
+				},
+			}),
+		},
+		{
+			name: "merge operation joins up the type lattice - int64/int64 + formats",
+			left: &pb.Primitive{
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{
+					"timestamp": true,
+				},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			}),
+		},
+		{
+			name: "merge operation joins up the type lattice - int64 + formats/int64",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			},
+			right: &pb.Primitive{
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{
+					"timestamp": true,
+				},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			}),
+		},
+		{
+			name: "merge operation joins up the type lattice - int32/int64",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			}),
+		},
+		{
+			name: "merge operation joins up the type lattice - uint32/int32",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			}),
+		},
+		{
+			name: "merge operation joins up the type lattice - uint32/float",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}},
+			}),
+		},
+		{
+			name: "merge operation joins up the type lattice - float/uint32",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_FloatValue{FloatValue: &pb.Float{}},
+			}),
+		},
+		{
+			name: "merge operation joins up the type lattice - uin64/double",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_DoubleValue{DoubleValue: &pb.Double{}},
+			}),
+		},
+		{
+			name: "merge operation conflicts on unjoinable types - int64/uint64",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			},
+			expected: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+		},
+		{
+			name: "merging oneof with primitive - merge primitive into existing variant",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			},
+			expected: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+		},
+	}
+
+	for _, tc := range testCases {
+		leftDst := wrapPrim(proto.Clone(tc.left).(*pb.Primitive))
+		err := MeldData(leftDst, wrapPrim(tc.right))
+		assert.NoError(t, err, "[%s] failed to meld", tc.name)
+
+		if diff := cmp.Diff(tc.expected, leftDst, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] (right to left) found diff:\n %v", tc.name, diff)
+		}
+
+		rightDst := wrapPrim(proto.Clone(tc.right).(*pb.Primitive))
+		err = MeldData(rightDst, wrapPrim(tc.left))
+		assert.NoError(t, err, "[%s] failed to meld", tc.name)
+
+		if diff := cmp.Diff(tc.expected, rightDst, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] (left to right) found diff:\n %v", tc.name, diff)
+		}
+	}
+}
+
+func TestMeldData(t *testing.T) {
+	testCases := []struct {
+		name     string
+		left     *pb.Data
+		right    *pb.Data
+		expected *pb.Data
+	}{
+		{
+			name: "merging oneof with primitive",
+			left: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+			right: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{"timestamp": true},
+			}),
+			expected: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+		},
+	}
+
+	for _, tc := range testCases {
+		leftDst := proto.Clone(tc.left).(*pb.Data)
+		right := proto.Clone(tc.right).(*pb.Data)
+		err := MeldData(leftDst, right)
+		assert.NoError(t, err, "[%s] failed to meld", tc.name)
+
+		if diff := cmp.Diff(tc.expected, leftDst, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] (right to left) found diff:\n %v", tc.name, diff)
+		}
+
+		rightDst := proto.Clone(tc.right).(*pb.Data)
+		left := proto.Clone(tc.left).(*pb.Data)
+		err = MeldData(rightDst, left)
+		assert.NoError(t, err, "[%s] failed to meld", tc.name)
+
+		if diff := cmp.Diff(tc.expected, rightDst, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] (left to right) found diff:\n %v", tc.name, diff)
 		}
 	}
 }

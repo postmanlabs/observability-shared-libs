@@ -36,6 +36,7 @@ method: {
               string_value: {
                 value: "file_1"
               }
+              format_kind: "datetime"
               formats: {
                 key: "ISOYearMonthDay"
                 value: true

@@ -9,24 +9,11 @@ method: {
     }
   }
   responses: {
-    key: "sTH-Tl_dPYw="
+    key: "JOj-ikB_ux4="
     value: {
       oneof: {
         options: {
-          key: "VVgfwIsWxHs="
-          value: {
-            primitive: {
-              string_value: {}
-              formats: {
-                key:"ISOYearMonth"
-                value:true
-              }
-              format_kind: "kind1"
-            }
-          }
-        }
-        options: {
-          key: "aZ5HLJXlqk4="
+          key: "0cgpNm_cci8="
           value: {
             primitive: {
               string_value: {}
@@ -34,7 +21,20 @@ method: {
                 key:"Phone"
                 value:true
               }
-              format_kind: "kind2"
+              format_kind: "phone_number"
+            }
+          }
+        }
+        options: {
+          key: "BTe91947u7k="
+          value: {
+            primitive: {
+              string_value: {}
+              formats: {
+                key:"ISOYearMonth"
+                value:true
+              }
+              format_kind: "datetime"
             }
           }
         }

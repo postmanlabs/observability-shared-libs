@@ -34,7 +34,7 @@ method: {
     }
   }
   responses: {
-    key: "oFUqCcv3wkM="
+    key: "kU5J_jopwLg="
     value: {
       struct: {
         fields: {
@@ -48,6 +48,7 @@ method: {
                 key: "ISOYearMonthDay"
                 value: true
               }
+              format_kind: "datetime"
             }
           }
         }
@@ -63,7 +64,7 @@ method: {
     }
   }
   responses: {
-    key: "ui5EpupUcWM="
+    key: "tZr-XY4VUbM="
     value: {
       struct: {
         fields: {
@@ -73,6 +74,7 @@ method: {
               string_value: {
                 value: "file_1"
               }
+              format_kind: "datetime"
               formats: {
                 key: "ISOYearMonthDay"
                 value: true
