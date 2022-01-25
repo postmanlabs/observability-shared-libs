@@ -291,7 +291,7 @@ func witnessLess(w1, w2 *pb.Witness) bool {
 	return proto.MarshalTextString(w1) < proto.MarshalTextString(w2)
 }
 
-func TestMeldDataFormats(t *testing.T) {
+func TestMeldPrimitives(t *testing.T) {
 	testCases := []struct {
 		name     string
 		left     *pb.Primitive
@@ -471,11 +471,113 @@ func TestMeldDataFormats(t *testing.T) {
 				PotentialConflict: true,
 			}),
 		},
+		{
+			name: "merging oneof with primitive - merge primitive into existing variant",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+			},
+			expected: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+		},
 	}
 
 	for _, tc := range testCases {
 		left := wrapPrim(tc.left)
 		right := wrapPrim(tc.right)
+		err := MeldData(left, right)
+		assert.NoError(t, err, "[%s] failed to meld", tc.name)
+
+		if diff := cmp.Diff(tc.expected, left, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] found diff:\n %v", tc.name, diff)
+		}
+
+	}
+}
+
+func TestMeldData(t *testing.T) {
+	testCases := []struct {
+		name     string
+		left     *pb.Data
+		right    *pb.Data
+		expected *pb.Data
+	}{
+		{
+			name: "merging oneof with primitive - merge primitive into existing variant",
+			left: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+			right: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{"timestamp": true},
+			}),
+			expected: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+		},
+		{
+			name: "merging oneof with primitive - merge oneof into primitive",
+			left: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				FormatKind: "datetime",
+				Formats: map[string]bool{"timestamp": true},
+			}),
+			right: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+			expected: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+					}),
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+		},
+	}
+
+	for _, tc := range testCases {
+		left := tc.left
+		right := tc.right
 		err := MeldData(left, right)
 		assert.NoError(t, err, "[%s] failed to meld", tc.name)
 

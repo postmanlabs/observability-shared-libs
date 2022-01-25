@@ -702,9 +702,13 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb
 		}
 
 	case *pb.Data_Primitive:
-		// Fall through.
-		//
-		// XXX TODO Merge with existing primitive variants.
+		// If the destination has a primitive variant that has a compatible type
+		// with the source variant, meld them.  Otherwise, fall through.
+		for oldDstHash, dstVariant := range dst.Options {
+			if _, dstIsPrim := dstVariant.Value.(*pb.Data_Primitive); dstIsPrim && haveCompatibleTypes(dstVariant.GetPrimitive(), srcVariant.GetPrimitive()) {
+				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
+			}
+		}
 
 	default:
 		return fmt.Errorf("unknown one-of variant type: %s", reflect.TypeOf(srcVariant.Value).Name())
