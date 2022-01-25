@@ -2,7 +2,7 @@
 
 method: {
   responses: {
-    key:"6JrDs8poHbU="
+    key:"5lXZpTmMTA4="
     value: {
       struct: {
         fields: {
@@ -10,12 +10,13 @@ method: {
           value: {
             oneof: {
               options: {
-                key:"H--6VaA31gw="
+                key:"mLWEQVrb4q0="
                 value: {
                   primitive: {
                     string_value: {
                       value:"2020-01"
                     }
+                    format_kind: "datetime"
                     formats: {
                       key:"ISOYearMonth"
                       value:true
@@ -24,12 +25,13 @@ method: {
                 }
               }
               options: {
-                key:"PGYGe9fHTG4="
+                key:"qA_gQjz1FIY="
                 value: {
                   primitive: {
                     int32_value: {
                       value:20200101
                     }
+                    format_kind: "datetime"
                     formats: {
                       key:"ISOYearMonthDay"
                       value:true

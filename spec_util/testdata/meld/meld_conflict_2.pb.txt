@@ -9,7 +9,7 @@ method: {
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "FJkTUyXEoig="
     value: {
       struct: {
         fields: {
@@ -19,6 +19,7 @@ method: {
               int32_value: {
                 value: 20200101
               }
+              format_kind: "datetime"
               formats: {
                 key: "ISOYearMonthDay"
                 value: true
