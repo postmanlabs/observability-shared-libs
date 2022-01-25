@@ -279,9 +279,7 @@ func haveCompatibleTypes(dst, src *pb.Primitive) bool {
 
 	// Types are compatible if the base types can join and the format kinds
 	// are equal.
-	cmpDst := &pb.Primitive{Value: baseJoin.Value, FormatKind: dst.FormatKind}
-	cmpSrc := &pb.Primitive{Value: baseJoin.Value, FormatKind: src.FormatKind}
-	if proto.Equal(cmpDst, cmpSrc) {
+	if dst.FormatKind == src.FormatKind {
 		return true
 	}
 
@@ -305,6 +303,9 @@ func joinBaseTypes(dst, src *pb.Primitive) *pb.Primitive {
 		return &pb.Primitive{Value: dst.Value}
 	}
 
+	// NOTE(cns): When the CLI builds witnesses from wire traffic, it parses integers
+	// as int64 whenever possible and only falls back to uint64 for values >= 2^63.
+	// However, we could see other behavior from uploaded specs.
 	switch dst.Value.(type) {
 	case *pb.Primitive_Int32Value:
 		switch src.Value.(type) {
