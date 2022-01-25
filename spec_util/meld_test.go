@@ -494,15 +494,21 @@ func TestMeldPrimitives(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		left := wrapPrim(tc.left)
-		right := wrapPrim(tc.right)
-		err := MeldData(left, right)
+		leftDst := wrapPrim(proto.Clone(tc.left).(*pb.Primitive))
+		err := MeldData(leftDst, wrapPrim(tc.right))
 		assert.NoError(t, err, "[%s] failed to meld", tc.name)
 
-		if diff := cmp.Diff(tc.expected, left, cmpWitnessOptions...); diff != "" {
-			t.Errorf("[%s] found diff:\n %v", tc.name, diff)
+		if diff := cmp.Diff(tc.expected, leftDst, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] (right to left) found diff:\n %v", tc.name, diff)
 		}
 
+		rightDst := wrapPrim(proto.Clone(tc.right).(*pb.Primitive))
+		err = MeldData(rightDst, wrapPrim(tc.left))
+		assert.NoError(t, err, "[%s] failed to meld", tc.name)
+
+		if diff := cmp.Diff(tc.expected, rightDst, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] (left to right) found diff:\n %v", tc.name, diff)
+		}
 	}
 }
 
@@ -514,7 +520,7 @@ func TestMeldData(t *testing.T) {
 		expected *pb.Data
 	}{
 		{
-			name: "merging oneof with primitive - merge primitive into existing variant",
+			name: "merging oneof with primitive",
 			left: wrapOneOf(&pb.OneOf{
 				Options: map[string]*pb.Data{
 					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
@@ -543,47 +549,25 @@ func TestMeldData(t *testing.T) {
 				PotentialConflict: true,
 			}),
 		},
-		{
-			name: "merging oneof with primitive - merge oneof into primitive",
-			left: wrapPrim(&pb.Primitive{
-				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
-				FormatKind: "datetime",
-				Formats: map[string]bool{"timestamp": true},
-			}),
-			right: wrapOneOf(&pb.OneOf{
-				Options: map[string]*pb.Data{
-					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
-						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
-					}),
-					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
-						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
-					}),
-				},
-				PotentialConflict: true,
-			}),
-			expected: wrapOneOf(&pb.OneOf{
-				Options: map[string]*pb.Data{
-					"d616v2O0iE8=": wrapPrim(&pb.Primitive{
-						Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
-					}),
-					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
-						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
-					}),
-				},
-				PotentialConflict: true,
-			}),
-		},
 	}
 
 	for _, tc := range testCases {
-		left := tc.left
-		right := tc.right
-		err := MeldData(left, right)
+		leftDst := proto.Clone(tc.left).(*pb.Data)
+		right := proto.Clone(tc.right).(*pb.Data)
+		err := MeldData(leftDst, right)
 		assert.NoError(t, err, "[%s] failed to meld", tc.name)
 
-		if diff := cmp.Diff(tc.expected, left, cmpWitnessOptions...); diff != "" {
-			t.Errorf("[%s] found diff:\n %v", tc.name, diff)
+		if diff := cmp.Diff(tc.expected, leftDst, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] (right to left) found diff:\n %v", tc.name, diff)
 		}
 
+		rightDst := proto.Clone(tc.right).(*pb.Data)
+		left := proto.Clone(tc.left).(*pb.Data)
+		err = MeldData(rightDst, left)
+		assert.NoError(t, err, "[%s] failed to meld", tc.name)
+
+		if diff := cmp.Diff(tc.expected, rightDst, cmpWitnessOptions...); diff != "" {
+			t.Errorf("[%s] (left to right) found diff:\n %v", tc.name, diff)
+		}
 	}
 }
