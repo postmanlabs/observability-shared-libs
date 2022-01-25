@@ -9,15 +9,15 @@ method: {
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "FJkTUyXEoig="
     value: {
       primitive: {
         string_value: {}
+        format_kind: "datetime"
         formats: {
           key: "ISOYearMonth"
           value: true
         }
-        format_kind: "kind1"
       }
       meta: {
         http: {

@@ -2,7 +2,7 @@
 
 method: {
   responses: {
-    key:"xsMpke-69_I="
+    key:"6rjyoa2GEQI="
     value: {
       struct: {
         fields: {
@@ -10,7 +10,7 @@ method: {
           value: {
             oneof: {
               options: {
-                key: "VNe7F7DBhNg="
+                key: "UNaEMDveHLk="
                 value: {
                   struct: {
                     fields: {
@@ -18,6 +18,7 @@ method: {
                       value: {
                         primitive: {
                           string_value: {}
+                          format_kind: "datetime"
                           formats: {
                             key: "ISOYearMonth"
                             value: true

@@ -34,7 +34,7 @@ method: {
     }
   }
   responses: {
-    key: "KOv-1LTHEKs="
+    key: "VHGmevV8BLM="
     value: {
       struct: {
         fields: {
@@ -44,6 +44,7 @@ method: {
               string_value: {
                 value: "file_1"
               }
+              format_kind: "datetime"
               formats: {
                 key: "ISOYearMonth"
                 value: true

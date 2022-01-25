@@ -9,7 +9,7 @@ method: {
     }
   }
   responses: {
-    key: "naAThnYPT5A="
+    key: "FJkTUyXEoig="
     value: {
       struct: {
         fields: {
@@ -19,6 +19,7 @@ method: {
               string_value: {
                 value: "2020-01"
               }
+              format_kind: "datetime"
               formats: {
                 key: "ISOYearMonth"
                 value: true

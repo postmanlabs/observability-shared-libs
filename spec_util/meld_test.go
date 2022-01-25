@@ -23,7 +23,7 @@ var tests = []testData{
 			"testdata/meld/meld_no_data_formats.pb.txt",
 			"testdata/meld/meld_data_formats_1.pb.txt",
 		},
-		"testdata/meld/meld_data_formats_1.pb.txt",
+		"testdata/meld/meld_no_data_formats.pb.txt",
 	},
 	{
 		"format, format",
