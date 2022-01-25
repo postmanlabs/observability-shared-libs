@@ -130,7 +130,9 @@ func TestFilterByValueType(t *testing.T) {
 
 type responsePathVisitor struct {
 	DefaultSpecVisitorImpl
-	actualPaths []string
+	PathOfInterest   string
+	actualPaths      []string
+	actualFieldPaths []string
 }
 
 var _ DefaultSpecVisitor = (*responsePathVisitor)(nil)
@@ -138,52 +140,112 @@ var _ DefaultSpecVisitor = (*responsePathVisitor)(nil)
 func (v *responsePathVisitor) EnterPrimitive(self interface{}, c SpecVisitorContext, p *pb.Primitive) Cont {
 	// The path is specifically picked to contain response values with nested Data
 	// objects.
-	if c.IsResponse() && c.GetRestPath()[2] == "/api/0/projects/{organization_slug}/{project_slug}/users/" {
+	if c.IsResponse() && c.GetRestPath()[2] == v.PathOfInterest {
 		pathWithType := append(c.GetResponsePath(), GetPrimitiveType(p).String())
 		v.actualPaths = append(v.actualPaths, strings.Join(pathWithType, "."))
+
+		fieldPath := c.GetFieldPath()
+		fieldPathAsString := make([]string, len(fieldPath))
+		for i, p := range fieldPath {
+			fieldPathAsString[i] = p.String()
+		}
+		v.actualFieldPaths = append(v.actualFieldPaths, strings.Join(fieldPathAsString, "."))
 	}
 	return Continue
 }
 
 func TestGetDataPath(t *testing.T) {
 	// Maps test files to expected paths.
-	tests := map[string][]string{
-		"../testdata/sentry_ir_spec.pb.txt": {
-			"Response.200.Body.JSON.0.avatarUrl.Data.api_spec.String",
-			"Response.200.Body.JSON.0.dateCreated.Data.api_spec.String",
-			"Response.200.Body.JSON.0.email.Data.api_spec.String",
-			"Response.200.Body.JSON.0.hash.Data.api_spec.String",
-			"Response.200.Body.JSON.0.id.Data.api_spec.String",
-			"Response.200.Body.JSON.0.identifier.Data.api_spec.String",
-			"Response.200.Body.JSON.0.ipAddress.Data.api_spec.String",
-			"Response.200.Body.JSON.0.name.Data.api_spec.String",
-			"Response.200.Body.JSON.0.tagValue.Data.api_spec.String",
-			"Response.200.Body.JSON.0.username.Data.api_spec.String",
+	tests := []struct {
+		TestFile      string
+		Endpoint      string
+		ExpectedPaths []string
+	}{
+		{"../testdata/sentry_ir_spec.pb.txt",
+			"/api/0/projects/{organization_slug}/{project_slug}/users/",
+			[]string{
+				"Response.200.Body.JSON.0.avatarUrl.Data.api_spec.String",
+				"Response.200.Body.JSON.0.dateCreated.Data.api_spec.String",
+				"Response.200.Body.JSON.0.email.Data.api_spec.String",
+				"Response.200.Body.JSON.0.hash.Data.api_spec.String",
+				"Response.200.Body.JSON.0.id.Data.api_spec.String",
+				"Response.200.Body.JSON.0.identifier.Data.api_spec.String",
+				"Response.200.Body.JSON.0.ipAddress.Data.api_spec.String",
+				"Response.200.Body.JSON.0.name.Data.api_spec.String",
+				"Response.200.Body.JSON.0.tagValue.Data.api_spec.String",
+				"Response.200.Body.JSON.0.username.Data.api_spec.String",
+			},
 		},
-		"../testdata/sentry_ir_map_spec.pb.txt": {
-			"Response.200.Body.JSON.0.Key.api_spec.String",
-			"Response.200.Body.JSON.0.Value.Data.api_spec.String",
-			"Response.200.Body.JSON.1.avatarUrl.Data.api_spec.String",
-			"Response.200.Body.JSON.1.dateCreated.Data.api_spec.String",
-			"Response.200.Body.JSON.1.email.Data.api_spec.String",
-			"Response.200.Body.JSON.1.hash.Data.api_spec.String",
-			"Response.200.Body.JSON.1.id.Data.api_spec.String",
-			"Response.200.Body.JSON.1.identifier.Data.api_spec.String",
-			"Response.200.Body.JSON.1.ipAddress.Data.api_spec.String",
-			"Response.200.Body.JSON.1.name.Data.api_spec.String",
-			"Response.200.Body.JSON.1.tagValue.Data.api_spec.String",
-			"Response.200.Body.JSON.1.username.Data.api_spec.String",
+		{"../testdata/sentry_ir_map_spec.pb.txt",
+			"/api/0/projects/{organization_slug}/{project_slug}/users/",
+			[]string{
+				"Response.200.Body.JSON.0.Key.api_spec.String",
+				"Response.200.Body.JSON.0.Value.Data.api_spec.String",
+				"Response.200.Body.JSON.1.avatarUrl.Data.api_spec.String",
+				"Response.200.Body.JSON.1.dateCreated.Data.api_spec.String",
+				"Response.200.Body.JSON.1.email.Data.api_spec.String",
+				"Response.200.Body.JSON.1.hash.Data.api_spec.String",
+				"Response.200.Body.JSON.1.id.Data.api_spec.String",
+				"Response.200.Body.JSON.1.identifier.Data.api_spec.String",
+				"Response.200.Body.JSON.1.ipAddress.Data.api_spec.String",
+				"Response.200.Body.JSON.1.name.Data.api_spec.String",
+				"Response.200.Body.JSON.1.tagValue.Data.api_spec.String",
+				"Response.200.Body.JSON.1.username.Data.api_spec.String",
+			},
+		},
+		{"../testdata/contains_oneof.pb.txt",
+			"/api/example",
+			[]string{
+				// The RestPath does not pretty print the options; it includes the hash values
+				"Response.200.Body.JSON.result.0ChzXURDSRY=.api_spec.String",
+				"Response.200.Body.JSON.result.va5tP-fnZF8=.api_spec.Int64",
+				"Response.200.Header.X-Request-Id.api_spec.String",
+			},
 		},
 	}
 
-	for testFile, expectedPaths := range tests {
-		spec := test.LoadAPISpecFromFileOrDie(testFile)
+	for _, tc := range tests {
+		spec := test.LoadAPISpecFromFileOrDie(tc.TestFile)
 
-		var visitor responsePathVisitor
+		visitor := responsePathVisitor{
+			// Pick out just one matching method in the file
+			PathOfInterest: tc.Endpoint,
+		}
 		Apply(&visitor, spec)
-		sort.Strings(expectedPaths)
+		sort.Strings(tc.ExpectedPaths)
 		sort.Strings(visitor.actualPaths)
-		assert.Equal(t, expectedPaths, visitor.actualPaths)
+		assert.Equal(t, tc.ExpectedPaths, visitor.actualPaths)
+	}
+}
+
+func TestGetFieldPath(t *testing.T) {
+	// Maps test files to expected paths.
+	tests := []struct {
+		TestFile      string
+		Endpoint      string
+		ExpectedPaths []string
+	}{
+		{"../testdata/contains_oneof.pb.txt",
+			"/api/example",
+			[]string{
+				"result.(format 1 of 2)",
+				"result.(format 2 of 2)",
+				"X-Request-Id",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		spec := test.LoadAPISpecFromFileOrDie(tc.TestFile)
+
+		visitor := responsePathVisitor{
+			// Pick out just one matching method in the file
+			PathOfInterest: tc.Endpoint,
+		}
+		Apply(&visitor, spec)
+		sort.Strings(tc.ExpectedPaths)
+		sort.Strings(visitor.actualFieldPaths)
+		assert.Equal(t, tc.ExpectedPaths, visitor.actualFieldPaths)
 	}
 }
 

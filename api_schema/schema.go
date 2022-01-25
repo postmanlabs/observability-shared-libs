@@ -5,16 +5,17 @@ import (
 	"time"
 
 	"github.com/akitasoftware/akita-libs/akid"
+	"github.com/akitasoftware/akita-libs/akinet"
 	"github.com/akitasoftware/akita-libs/spec_summary"
 	"github.com/akitasoftware/akita-libs/tags"
+	"github.com/akitasoftware/akita-libs/time_span"
 )
 
 // NetworkDirection is always relative to subject service.
 type NetworkDirection string
 
 const (
-	Inbound  NetworkDirection = "INBOUND"
-	Outbound NetworkDirection = "OUTBOUND"
+	Inbound NetworkDirection = "INBOUND"
 )
 
 type APISpecState string
@@ -24,6 +25,14 @@ const (
 	APISpecComputing   APISpecState = "COMPUTING"
 	APISpecDone        APISpecState = "DONE"
 	APISpecError       APISpecState = "ERROR"
+)
+
+type LearnMode string
+
+const (
+	LearnedLearnMode          LearnMode = "LEARNED"
+	LearnedWithEditsLearnMode LearnMode = "LEARNED_WITH_EDITS"
+	MergedLearnMode           LearnMode = "MERGED"
 )
 
 // References an API spec by ID or version. Only one field may be set.
@@ -39,7 +48,7 @@ type APISpecVersion struct {
 
 	Name         string         `pg:"name" json:"name"`
 	APISpecID    akid.APISpecID `pg:"api_spec_id" json:"api_spec_id"`
-	ServiceID    akid.ServiceID `pg:"service_id" json:"service_id"`
+	ServiceID    akid.ServiceID `pg:"service_id,type:uuid" json:"service_id"`
 	CreationTime time.Time      `pg:"creation_time" json:"creation_time"`
 }
 
@@ -187,6 +196,11 @@ type CreateSpecRequest struct {
 	Tags map[tags.Key]string `json:"tags"`
 }
 
+type CreateTimeSpanSpecRequest struct {
+	Deployment string                     `json:"deployment"`
+	TimeSpan   time_span.HalfOpenInterval `json:"time_span"`
+}
+
 type UploadSpecRequest struct {
 	Name string              `json:"name"`
 	Tags map[tags.Key]string `json:"tags,omitempty"`
@@ -203,9 +217,11 @@ type ListSessionsResponse struct {
 	Sessions []*ListedLearnSession `json:"sessions"`
 }
 
-type UploadWitnessesRequest struct {
-	ClientID akid.ClientID    `json:"client_id"`
-	Reports  []*WitnessReport `json:"reports"`
+type UploadReportsRequest struct {
+	ClientID       akid.ClientID          `json:"client_id"`
+	Witnesses      []*WitnessReport       `json:"witnesses"`
+	TCPConnections []*TCPConnectionReport `json:"tcp_connections"`
+	TLSHandshakes  []*TLSHandshakeReport  `json:"tls_handshakes"`
 }
 
 type WitnessReport struct {
@@ -274,7 +290,7 @@ type SpecInfo struct {
 	Name string `json:"name,omitempty"`
 
 	// Whether the spec was LEARNED or LEARNED_WITH_EDITS.
-	CreationMode string `json:"creation_mode"`
+	CreationMode LearnMode `json:"creation_mode"`
 
 	// If the spec was created from a learn session, the session's ID is included.
 	// Deprecated: use learn_session_ids instead.
@@ -398,7 +414,8 @@ type TimelineResponse struct {
 	NextStartTime *time.Time `json:"next_start_time,omitempty"`
 }
 
-type GraphEdge struct {
+// An HTTP request and response between two nodes in a graph.
+type HTTPGraphEdge struct {
 	// Describe the source and destination vertices by the attributes
 	// they share in common: either just Host for a service-level vertex,
 	// or Host + Method + PathTemplate for a end-point level vertex, although
@@ -410,10 +427,51 @@ type GraphEdge struct {
 	Values map[TimelineValue]float32 `json:"values"`
 }
 
+// Represents a TCP connection between two nodes in a graph.
+type TCPGraphEdge struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+
+	// If true, the source is known to have initiated the connection. Otherwise,
+	// the "source" and "target" designations are chosen so that `source` <=
+	// `target`. One way to render this is to use a directed edge if
+	// "InitiatorKnown" is true, and an undirected edge if false.
+	InitiatorKnown bool `json:"initiator_known"`
+
+	// Aggregate values attached to the edge, e.g., "count"
+	Values map[TimelineValue]float32 `json:"values"`
+}
+
+// Represents a TLS connection between two nodes in a graph.
+type TLSGraphEdge struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+
+	TLSVersion                    akinet.TLSVersion `json:"tls_version"`
+	NegotiatedApplicationProtocol *string           `json:"negotiated_application_protocol"`
+
+	// Aggregate values attached to the edge, e.g., "count"
+	Values map[TimelineValue]float32 `json:"values"`
+}
+
 type GraphResponse struct {
-	// Edges of the graph
-	Edges []GraphEdge `json:"edges"`
+	// Graph edges representing HTTP requests and responses.
+	HTTPEdges []HTTPGraphEdge `json:"edges"`
+
+	// Graph edges representing TCP connections.
+	TCPEdges []TCPGraphEdge `json:"tcp_edges"`
+
+	// Graph edges representing TLS connections.
+	TLSEdges []TLSGraphEdge `json:"tls_edges"`
 
 	// TODO: vertex list? vertex or edge count?
 	// TODO: pagination
+}
+
+func (g *GraphResponse) NumEdges() int {
+	return len(g.HTTPEdges) + len(g.TCPEdges)
+}
+
+func (g *GraphResponse) IsEmpty() bool {
+	return g.NumEdges() == 0
 }

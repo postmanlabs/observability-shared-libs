@@ -2,10 +2,11 @@ package spec_util
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
@@ -75,14 +76,6 @@ func isOptional(d *pb.Data) bool {
 	return isOptional
 }
 
-func isNone(d *pb.Data) bool {
-	if opt, ok := d.Value.(*pb.Data_Optional); ok {
-		_, isNone := opt.Optional.Value.(*pb.Optional_None)
-		return isNone
-	}
-	return false
-}
-
 func mergeExampleValues(dst, src *pb.Data) {
 	examples := make(map[string]*pb.ExampleValue, 2)
 
@@ -116,6 +109,7 @@ func mergeExampleValues(dst, src *pb.Data) {
 	dst.ExampleValues = examples
 }
 
+// Makes given Data optional if it isn't already.
 func makeOptional(d *pb.Data) {
 	if !isOptional(d) {
 		d.Value = &pb.Data_Optional{
@@ -130,6 +124,34 @@ func makeOptional(d *pb.Data) {
 
 // Assumes that dst.Meta == src.Meta.
 func MeldData(dst, src *pb.Data) (retErr error) {
+	melder := &melder{mergeTracking: true}
+	return melder.meldData(dst, src)
+}
+
+// Assumes that dst.Meta == src.Meta.
+// Melds src into dst.  Leaves tracking data in dst untouched.
+func MeldDataIgnoreTracking(dst, src *pb.Data) (retErr error) {
+	melder := &melder{mergeTracking: false}
+	return melder.meldData(dst, src)
+}
+
+type melder struct {
+	// If true, sums tracking data on meld.  Otherwise leaves
+	// tracking data unmodified in dst.
+	mergeTracking bool
+}
+
+// If the given src and dst have the following invariant on all OneOfs contained
+// within, then this is preserved.
+//
+//   - At most one variant in the OneOf is a struct.
+//   - At most one variant in the OneOf is a list.
+//   - All other variants in the OneOf is a primitive.
+//
+// Assumes that dst.Meta == src.Meta.
+//
+// XXX: In some cases, this modifies src as well as dst :/
+func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 	// Set to true if dst and src are recorded as a conflict.
 	hasConflict := false
 	defer func() {
@@ -144,15 +166,13 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 	// element from a list originally containing elements with conflicting types.
 	if srcOf, ok := src.Value.(*pb.Data_Oneof); ok {
 		if v, ok := dst.Value.(*pb.Data_Oneof); ok {
-			// If dst already encodes a conflict, merge the conflicts.
-			for k, d := range srcOf.Oneof.Options {
-				v.Oneof.Options[k] = d
-			}
-			return nil
+			// dst already encodes a conflict. Merge the conflicts.
+			return m.meldOneOf(v.Oneof, srcOf.Oneof)
 		}
 
-		// dst is just a regular value (which may happen to be a oneof). Swap src
-		// and dst and re-use the logic below.
+		// dst is not a oneof. Swap src and dst and re-use the logic below.
+		//
+		// XXX Modifies src. Would fixing this have undesired downstream effects?
 		dst.Value, src.Value = src.Value, dst.Value
 	}
 
@@ -162,7 +182,7 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 		case *pb.Optional_Data:
 			// Meld dst with the non-optional version of src first, then mark the
 			// result as optional.
-			if err := MeldData(dst, opt.Data); err != nil {
+			if err := m.meldData(dst, opt.Data); err != nil {
 				return err
 			}
 			makeOptional(dst)
@@ -171,30 +191,34 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 			// If src is a none, drop the none and mark the dst value as optional.
 			makeOptional(dst)
 			return nil
+		default:
+			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(srcOpt.Optional.Value).Name())
 		}
 	}
+
+	// At this point, src should be neither a one-of nor an optional.
 
 	switch v := dst.Value.(type) {
 	case *pb.Data_Struct:
 		// Special handling for struct to add unknown fields.
 		if srcStruct, ok := src.Value.(*pb.Data_Struct); ok {
-			return meldStruct(v.Struct, srcStruct.Struct)
+			return m.meldStruct(v.Struct, srcStruct.Struct)
 		} else {
 			hasConflict = true
-			return recordConflict(dst, src)
+			return m.recordConflict(dst, src)
 		}
 	case *pb.Data_List:
 		if srcList, ok := src.Value.(*pb.Data_List); ok {
-			return meldList(v.List, srcList.List)
+			return m.meldList(v.List, srcList.List)
 		} else {
 			hasConflict = true
-			return recordConflict(dst, src)
+			return m.recordConflict(dst, src)
 		}
 	case *pb.Data_Optional:
 		switch opt := v.Optional.Value.(type) {
 		case *pb.Optional_Data:
 			// Meld src with the non-optional version of dst.
-			return MeldData(opt.Data, src)
+			return m.meldData(opt.Data, src)
 		case *pb.Optional_None:
 			// If dst is a none, replace dst with an optional version of src.
 			if isOptional(src) {
@@ -210,56 +234,22 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 			}
 			return nil
 		default:
-			return recordConflict(dst, src)
+			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(v.Optional.Value).Name())
 		}
 	case *pb.Data_Oneof:
 		hasConflict = true
-		// Add src as a new option after clearing its meta field since for
-		// HTTP specs, oneof options all have the same metadata, recorded in the
-		// Data.Meta field of the containing Data.
-		srcNoMeta := proto.Clone(src).(*pb.Data)
-		srcNoMeta.Meta = nil
-
-		// See if we can meld the src into one of the options. For example,
-		// melding struct into struct or list into list.
-		// When we do this, we need to change the hash
-		_, srcIsStruct := srcNoMeta.Value.(*pb.Data_Struct)
-		_, srcIsList := srcNoMeta.Value.(*pb.Data_List)
-		for oldHash, option := range v.Oneof.Options {
-			switch option.Value.(type) {
-			case *pb.Data_Struct:
-				if srcIsStruct {
-					return meldAndRehashOption(v.Oneof, oldHash, option, srcNoMeta)
-				}
-			case *pb.Data_List:
-				if srcIsList {
-					return meldAndRehashOption(v.Oneof, oldHash, option, srcNoMeta)
-				}
-			}
-		}
-
-		// Create a new conflict option.
-		h := ir_hash.HashDataToString(srcNoMeta)
-		if existing, ok := v.Oneof.Options[h]; ok {
-			// There might be an existing option with the same hash because we
-			// ignore example values in the hash. If this is the case, merge
-			// examples.
-			mergeExampleValues(existing, src)
-		} else {
-			v.Oneof.Options[h] = srcNoMeta
-		}
-		return nil
+		return m.meldOneOfVariant(v.Oneof, nil, src)
 	default:
 		hasConflict = true
-		return recordConflict(dst, src)
+		return m.recordConflict(dst, src)
 	}
 }
 
 // Meld a component of a OneOf that has been identified
 // as a type-match (struct with struct or list with list.)
 // This requires re-inserting it because the hash has been changed
-func meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
-	err := MeldData(option, srcNoMeta)
+func (m *melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
+	err := m.meldData(option, srcNoMeta)
 	if err != nil {
 		return err
 	}
@@ -274,65 +264,37 @@ func meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNo
 	return nil
 }
 
-func dataEqual(dst, src *pb.Data) bool {
-	srcExampleValues := src.ExampleValues
-	dstExampleValues := dst.ExampleValues
-	src.ExampleValues = nil
-	dst.ExampleValues = nil
-
-	defer func() {
-		// Reinstate original example values
-		src.ExampleValues = srcExampleValues
-		dst.ExampleValues = dstExampleValues
-	}()
-
-	return proto.Equal(dst, src)
-}
-
-func recordConflict(dst, src *pb.Data) error {
-	// Special case: If and only if one data has a type hint, assign it to the other
-	// data so that the difference does not trigger a conflict and the type hint is preserved.
-	{
-		srcTypeHint := getTypeHint(src)
-		dstTypeHint := getTypeHint(dst)
-		if srcTypeHint != dstTypeHint {
-			if dstTypeHint == "" {
-				assignTypeHint(dst, srcTypeHint)
-			} else if srcTypeHint == "" {
-				assignTypeHint(src, dstTypeHint)
-			}
-		}
+// Two prims have compatible types if they have the same base type (in their
+// Value field) and the same data format kind, if any.
+func haveCompatibleTypes(dst, src *pb.Primitive) bool {
+	if dst == nil || src == nil {
+		return false
 	}
 
-	// Special case: If there are otherwise no conflicts, then merge data
-	// formats.  However, if there are conflicts, then leave data formats
-	// unmerged in their respective objects.
-	srcDataFormats := getDataFormats(src)
-	dstDataFormats := getDataFormats(dst)
-	assignDataFormats(src, nil)
-	assignDataFormats(dst, nil)
+	cmpDst := &pb.Primitive{Value: dst.Value, FormatKind: dst.FormatKind}
+	cmpSrc := &pb.Primitive{Value: src.Value, FormatKind: src.FormatKind}
+	return proto.Equal(cmpDst, cmpSrc)
+}
 
-	// Special case: If there are otherwise no conflicts, then merge example
-	// values. However, if there are conflicts, then leave example values
-	// unmerged in their respective objects.
-	srcExampleValues := src.ExampleValues
-	dstExampleValues := dst.ExampleValues
-	// Temporarily assign nil to example values for comparison.
-	src.ExampleValues = nil
-	dst.ExampleValues = nil
+// Merges src into dst.  Introduces a OneOf when dst and src are different
+// types, e.g. string/int, list/object, list/int, or if they are the same
+// type but have different data format kinds.  (Different data formats of
+// the same kind are merged.)
+//
+// Assumes dst and src are different base types or are both primitives.
+func (m *melder) recordConflict(dst, src *pb.Data) error {
+	// If src and dst are Primitives, we meld them if they have the same type
+	// (in their Value field) and the same data format kind, if any.
+	// Otherwise, src and dst are in conflict, and we introduce a OneOf.
+	dstPrim := dst.GetPrimitive()
+	srcPrim := src.GetPrimitive()
+	arePrims := dstPrim != nil && srcPrim != nil
 
-	// Note: witnesses should not contain actual values and we've taken out data
-	// formats and example values above, so simple equality comparison works to
-	// determine whether 2 Data proto have conflict.
-	if !proto.Equal(dst, src) {
-		// Reinstate original data formats
-		assignDataFormats(src, srcDataFormats)
-		assignDataFormats(dst, dstDataFormats)
-
-		// Reinstate original example values
-		src.ExampleValues = srcExampleValues
-		dst.ExampleValues = dstExampleValues
-
+	if arePrims && haveCompatibleTypes(dstPrim, srcPrim) {
+		// No conflict.  Merge primitive metadata.
+		m.meldPrimitive(dstPrim, srcPrim)
+		mergeExampleValues(dst, src)
+	} else {
 		// New conflict detected. Create oneof to record the conflict.
 		// For HTTP specs, oneof options all have the same metadata, recorded in
 		// the Data.Meta field of the containing Data.
@@ -348,70 +310,19 @@ func recordConflict(dst, src *pb.Data) error {
 
 		// Update dst to contain a conflict between dstNoMeta and srcNoMeta.
 		dst.Value = &pb.Data_Oneof{
-			&pb.OneOf{Options: options, PotentialConflict: true},
+			Oneof: &pb.OneOf{Options: options, PotentialConflict: true},
 		}
 		// Example values from dst are recorded inside the oneof as dstNoMeta.
 		dst.ExampleValues = nil
-	} else {
-		// Merge data formats
-		mergedDataFormats := make(map[string]bool, len(srcDataFormats)+len(dstDataFormats))
-		for k := range srcDataFormats {
-			mergedDataFormats[k] = true
-		}
-		for k := range dstDataFormats {
-			mergedDataFormats[k] = true
-		}
-		if len(mergedDataFormats) > 0 {
-			assignDataFormats(dst, mergedDataFormats)
-		}
-
-		// Reinstate source data formats, in order to leave src unmodified
-		assignDataFormats(src, srcDataFormats)
-
-		// Reinstate source example values, in order to leave src unmodified
-		src.ExampleValues = srcExampleValues
-
-		// Merge example values.
-		dst.ExampleValues = dstExampleValues
-		mergeExampleValues(dst, src)
 	}
+
 	return nil
 }
 
-func getTypeHint(d *pb.Data) string {
-	switch x := d.Value.(type) {
-	case *pb.Data_Primitive:
-		return x.Primitive.TypeHint
-	}
-	return ""
-}
-
-func assignTypeHint(d *pb.Data, assignment string) {
-	switch x := d.Value.(type) {
-	case *pb.Data_Primitive:
-		x.Primitive.TypeHint = assignment
-	}
-}
-
-func getDataFormats(d *pb.Data) map[string]bool {
-	switch x := d.Value.(type) {
-	case *pb.Data_Primitive:
-		return x.Primitive.Formats
-	}
-	return make(map[string]bool, 0)
-}
-
-func assignDataFormats(d *pb.Data, formats map[string]bool) {
-	switch x := d.Value.(type) {
-	case *pb.Data_Primitive:
-		x.Primitive.Formats = formats
-	}
-}
-
-func meldStruct(dst, src *pb.Struct) error {
+func (m *melder) meldStruct(dst, src *pb.Struct) error {
 	if isMap(dst) {
 		if isMap(src) {
-			return meldMap(dst, src)
+			return m.meldMap(dst, src)
 		}
 
 		// dst is a map, but src is not. Swap the two to reuse the logic for
@@ -421,8 +332,8 @@ func meldStruct(dst, src *pb.Struct) error {
 	if isMap(src) {
 		// Melding a map into a struct. Convert dst into a map and meld the two
 		// maps.
-		structToMap(dst)
-		return meldMap(dst, src)
+		m.structToMap(dst)
+		return m.meldMap(dst, src)
 	}
 
 	// If a field appears in both structs, it is assumed to be required.
@@ -443,7 +354,7 @@ func meldStruct(dst, src *pb.Struct) error {
 		if dstData, ok := dst.Fields[k]; ok {
 			// Found in both, MeldData handles if either is already
 			// optional.
-			if err := MeldData(dstData, srcData); err != nil {
+			if err := m.meldData(dstData, srcData); err != nil {
 				return errors.Wrapf(err, "failed to meld struct key %s", k)
 			}
 		} else {
@@ -455,7 +366,7 @@ func meldStruct(dst, src *pb.Struct) error {
 
 	// Apply a heuristic for deciding when to convert structs to maps.
 	if structShouldBeMap(dst) {
-		structToMap(dst)
+		m.structToMap(dst)
 	}
 
 	return nil
@@ -495,7 +406,7 @@ func structShouldBeMap(struc *pb.Struct) bool {
 }
 
 // Melds two maps together. The given pb.Structs are assumed to represent maps.
-func meldMap(dst, src *pb.Struct) error {
+func (m *melder) meldMap(dst, src *pb.Struct) error {
 	// Try to make the key and value in dst non-nil.
 	if dst.MapType.Key == nil {
 		src.MapType.Key, dst.MapType.Key = dst.MapType.Key, src.MapType.Key
@@ -506,14 +417,14 @@ func meldMap(dst, src *pb.Struct) error {
 
 	// Meld keys.
 	if src.MapType.Key != nil {
-		if err := MeldData(dst.MapType.Key, src.MapType.Key); err != nil {
+		if err := m.meldData(dst.MapType.Key, src.MapType.Key); err != nil {
 			return err
 		}
 	}
 
 	// Meld values.
 	if src.MapType.Value != nil {
-		if err := MeldData(dst.MapType.Value, src.MapType.Value); err != nil {
+		if err := m.meldData(dst.MapType.Value, src.MapType.Value); err != nil {
 			return err
 		}
 	}
@@ -522,7 +433,7 @@ func meldMap(dst, src *pb.Struct) error {
 }
 
 // Converts in place a pb.Struct (assumed to represent a struct) into a map.
-func structToMap(struc *pb.Struct) {
+func (m *melder) structToMap(struc *pb.Struct) {
 	// The map's value Data is obtained by melding all field types together into
 	// a single Data, while stripping away any optionality.
 	var mapKey *pb.Data
@@ -552,7 +463,7 @@ func structToMap(struc *pb.Struct) {
 			mapValue = curValue
 			//} else if curValue != nil {
 		} else if curValue != nil {
-			MeldData(mapValue, curValue)
+			m.meldData(mapValue, curValue)
 		}
 	}
 
@@ -573,7 +484,7 @@ func stripOptional(data *pb.Data) *pb.Data {
 	return optional.GetData()
 }
 
-func meldList(dst, src *pb.List) error {
+func (m *melder) meldList(dst, src *pb.List) error {
 	srcOffset := 0
 	if len(dst.Elems) == 0 {
 		if len(src.Elems) == 0 {
@@ -583,15 +494,118 @@ func meldList(dst, src *pb.List) error {
 		srcOffset = 1
 	} else if len(dst.Elems) > 1 {
 		for i := 1; i < len(dst.Elems); i++ {
-			MeldData(dst.Elems[0], dst.Elems[i])
+			m.meldData(dst.Elems[0], dst.Elems[i])
 		}
 		dst.Elems = dst.Elems[0:1]
 	}
 
 	for i, e := range src.Elems[srcOffset:] {
-		if err := MeldData(dst.Elems[0], e); err != nil {
+		if err := m.meldData(dst.Elems[0], e); err != nil {
 			return errors.Wrapf(err, "failed to meld list index %d", i)
 		}
 	}
+	return nil
+}
+
+// Assumes dst.value == src.value.
+// Meld data formats, tracking data, etc. from src to dst.
+// XXX(cns): In some cases, this modifies src as well as dst :/
+func (m *melder) meldPrimitive(dst, src *pb.Primitive) {
+	// Special case: If and only if one data has a type hint, assign it to the other
+	// data so that the difference does not trigger a conflict and the type hint is preserved.
+	// XXX(cns): This modifies src!  Not ideal, but I don't know if it's safe
+	// to remove this behavior.
+	{
+		if src.TypeHint != dst.TypeHint {
+			if dst.TypeHint == "" {
+				dst.TypeHint = src.TypeHint
+			} else if src.TypeHint == "" {
+				src.TypeHint = dst.TypeHint
+			}
+		}
+	}
+
+	// Merge data formats
+	mergedDataFormats := make(map[string]bool, len(src.Formats)+len(dst.Formats))
+	for k := range src.Formats {
+		mergedDataFormats[k] = true
+	}
+	for k := range dst.Formats {
+		mergedDataFormats[k] = true
+	}
+	if len(mergedDataFormats) > 0 {
+		dst.Formats = mergedDataFormats
+	}
+}
+
+func (m *melder) meldOneOf(dst, src *pb.OneOf) error {
+	for srcHash, srcVariant := range src.Options {
+		if err := m.meldOneOfVariant(dst, &srcHash, srcVariant); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Melds a variant into a one-of.
+func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb.Data) error {
+	// Make sure the meta field of srcVariant is cleared. For HTTP specs, OneOf
+	// variants all have the same metadata, recorded in the Data.Meta field of the
+	// containing Data.
+	if srcVariant.Meta != nil {
+		srcVariant = proto.Clone(srcVariant).(*pb.Data)
+		srcVariant.Meta = nil
+
+		// We'll recompute the hash.
+		srcHash = nil
+	}
+
+	// Hash if needed.
+	if srcHash == nil {
+		h := ir_hash.HashDataToString(srcVariant)
+		srcHash = &h
+	}
+
+	// There might be an existing option with the same hash because we ignore
+	// example values in the hash. If this is the case, just merge examples.
+	if existing, ok := dst.Options[*srcHash]; ok {
+		mergeExampleValues(existing, srcVariant)
+		return nil
+	}
+
+	// See if we can meld the srcVariant into one of the existing variants. For
+	// example, melding struct into struct or list into list. When we do this, we
+	// need to change the hash.
+	switch srcVariant.Value.(type) {
+	case *pb.Data_Struct:
+		// If the destination has a struct variant, merge with that. Otherwise, fall
+		// through.
+		for oldDstHash, dstVariant := range dst.Options {
+			if _, dstIsStruct := dstVariant.Value.(*pb.Data_Struct); dstIsStruct {
+				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
+			}
+		}
+
+	case *pb.Data_List:
+		// If the destination has a list variant, merge with that. Otherwise, fall
+		// through.
+		for oldDstHash, dstVariant := range dst.Options {
+			if _, dstIsList := dstVariant.Value.(*pb.Data_List); dstIsList {
+				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
+			}
+		}
+
+	case *pb.Data_Primitive:
+		// Fall through.
+		//
+		// XXX TODO Merge with existing primitive variants.
+
+	default:
+		return fmt.Errorf("unknown one-of variant type: %s", reflect.TypeOf(srcVariant.Value).Name())
+	}
+
+	// Add a new variant.
+	dst.Options[*srcHash] = srcVariant
 	return nil
 }

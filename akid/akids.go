@@ -11,6 +11,7 @@ const (
 	APISpecTag         = "api"
 	APIKeyTag          = "apk"
 	ClientTag          = "cli"
+	ConnectionTag      = "cxn"
 	DataCategoryTag    = "dct"
 	GraphTag           = "gph"
 	IdentityTag        = "idt"
@@ -21,6 +22,7 @@ const (
 	OutboundRequestTag = "obr"
 	ProjectTag         = "prj"
 	RequestTag         = "req"
+	RuleTag            = "rul"
 	ScheduleTag        = "sch"
 	ServiceClusterTag  = "scl"
 	ServiceTag         = "svc"
@@ -36,6 +38,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	APISpecTag:         func(ID uuid.UUID) ID { return NewAPISpecID(ID) },
 	APIKeyTag:          func(ID uuid.UUID) ID { return NewAPIKeyID(ID) },
 	ClientTag:          func(ID uuid.UUID) ID { return NewClientID(ID) },
+	ConnectionTag:      func(ID uuid.UUID) ID { return NewConnectionID(ID) },
 	DataCategoryTag:    func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
 	IdentityTag:        func(ID uuid.UUID) ID { return NewIdentityID(ID) },
 	GraphTag:           func(ID uuid.UUID) ID { return NewGraphID(ID) },
@@ -45,6 +48,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	OutboundRequestTag: func(ID uuid.UUID) ID { return NewOutboundRequestID(ID) },
 	ProjectTag:         func(ID uuid.UUID) ID { return NewProjectID(ID) },
 	RequestTag:         func(ID uuid.UUID) ID { return NewRequestID(ID) },
+	RuleTag:            func(ID uuid.UUID) ID { return NewRuleID(ID) },
 	ScheduleTag:        func(ID uuid.UUID) ID { return NewScheduleID(ID) },
 	ServiceClusterTag:  func(ID uuid.UUID) ID { return NewServiceClusterID(ID) },
 	ServiceTag:         func(ID uuid.UUID) ID { return NewServiceID(ID) },
@@ -179,6 +183,31 @@ func (id ClientID) MarshalText() ([]byte, error) {
 }
 
 func (id *ClientID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// ConnectionIDs represent a network connection
+type ConnectionID struct {
+	baseID
+}
+
+func (ConnectionID) GetType() string {
+	return ConnectionTag
+}
+
+func NewConnectionID(ID uuid.UUID) ConnectionID {
+	return ConnectionID{baseID(ID)}
+}
+
+func GenerateConnectionID() ConnectionID {
+	return NewConnectionID(uuid.New())
+}
+
+func (id ConnectionID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *ConnectionID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
 
@@ -540,5 +569,30 @@ func (id WitnessID) MarshalText() ([]byte, error) {
 }
 
 func (id *WitnessID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// RuleIDs
+type RuleID struct {
+	baseID
+}
+
+func (RuleID) GetType() string {
+	return RuleTag
+}
+
+func NewRuleID(ID uuid.UUID) RuleID {
+	return RuleID{baseID(ID)}
+}
+
+func GenerateRuleID() RuleID {
+	return NewRuleID(uuid.New())
+}
+
+func (id RuleID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *RuleID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }

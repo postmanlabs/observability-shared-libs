@@ -2,6 +2,7 @@ package memview
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -94,7 +95,381 @@ func TestReader(t *testing.T) {
 			t.Errorf("found diff with bufSize=%d: %s", bufSize, diff)
 		}
 	}
+}
 
+func TestReadByte(t *testing.T) {
+	input := "abcdefghijklmnopqrst"
+	var mv MemView
+	mv.Append(New([]byte("abcdefg")))
+	mv.Append(New([]byte("hijkl")))
+	mv.Append(New([]byte("mnopq")))
+	mv.Append(New([]byte("rst")))
+	r := mv.CreateReader()
+
+	for initialRIndex := 0; initialRIndex <= len(mv.buf); initialRIndex++ {
+		curBuf := []byte{}
+		if initialRIndex < len(mv.buf) {
+			curBuf = mv.buf[initialRIndex]
+		}
+
+		for initialROffset := 0; initialROffset <= len(curBuf); initialROffset++ {
+			// Figure out the initial global offset.
+			initialGOffset := int64(initialROffset)
+			for rIndex := 0; rIndex < initialRIndex; rIndex++ {
+				initialGOffset += int64(len(mv.buf[rIndex]))
+			}
+
+			r.rIndex, r.rOffset, r.gOffset = initialRIndex, initialROffset, initialGOffset
+
+			result, err := r.ReadByte()
+			if initialGOffset < int64(len(input)) {
+				if err != nil {
+					t.Errorf("Unexpected error reading from rIndex %d, rOffset %d: %v", initialRIndex, initialROffset, err)
+				}
+
+				if result != input[initialGOffset] {
+					t.Errorf("Expected %d after reading from rIndex %d, rOffset %d, but got %d", input[initialGOffset], initialRIndex, initialROffset, result)
+				}
+			}
+		}
+	}
+}
+
+func TestSeekStart(t *testing.T) {
+	input := "abcdefghijklmnopqrst"
+	var mv MemView
+	mv.Append(New([]byte("abcdefg")))
+	mv.Append(New([]byte("hijkl")))
+	mv.Append(New([]byte("mnopq")))
+	mv.Append(New([]byte("rst")))
+	r := mv.CreateReader()
+
+	for seekOffset := -1; seekOffset <= len(input)+1; seekOffset++ {
+		for initialRIndex := 0; initialRIndex <= len(mv.buf); initialRIndex++ {
+			curBuf := []byte{}
+			if initialRIndex < len(mv.buf) {
+				curBuf = mv.buf[initialRIndex]
+			}
+
+			for initialROffset := 0; initialROffset <= len(curBuf); initialROffset++ {
+				// Figure out the initial global offset.
+				initialGOffset := int64(initialROffset)
+				for rIndex := 0; rIndex < initialRIndex; rIndex++ {
+					initialGOffset += int64(len(mv.buf[rIndex]))
+				}
+
+				r.rIndex, r.rOffset, r.gOffset = initialRIndex, initialROffset, initialGOffset
+				result, err := r.Seek(int64(seekOffset), io.SeekStart)
+
+				if seekOffset < 0 {
+					// Expect an error.
+					if err == nil {
+						t.Errorf("Expected an error from seeking to offset %d, but didn't get one", seekOffset)
+					}
+				} else {
+					// Don't expect an error.
+					if err != nil {
+						t.Errorf("Got an unexpected error while seeking to offset %d: %v", seekOffset, err)
+					}
+				}
+
+				if err == nil {
+					// Make sure the returned offset is what we expect.
+					expectedResult := int64(seekOffset)
+					expectOutOfBounds := expectedResult > mv.length
+					if expectOutOfBounds {
+						// We seeked past the end. Just make sure the resulting offset is
+						// also past the end.
+						if result < mv.length {
+							t.Errorf("Result %d is not greater than %d after seeking past the end", result, mv.length)
+						}
+					} else {
+						if result != expectedResult {
+							t.Errorf("Expected a global offset of %d after seeking %d, but got %d", expectedResult, seekOffset, result)
+						}
+					}
+
+					// Do a read and make sure it lines up with what we expect.
+					read, err := r.ReadByte()
+					expectOutOfBounds = expectedResult >= mv.length
+					if expectOutOfBounds {
+						if err == nil {
+							t.Errorf("Expected an error from reading after seeking to %d, but didn't get one", seekOffset)
+						}
+					} else {
+						if err != nil {
+							t.Errorf("Got an unexpected error while reading after seeking to offset %d: %v", seekOffset, err)
+						}
+						if read != input[expectedResult] {
+							t.Errorf("Read %d but expected %d", read, input[expectedResult])
+						}
+					}
+				} else {
+					// Got an error while seeking. Do a read to check that the state was
+					// reset back.
+					read, err := r.ReadByte()
+					if initialGOffset == int64(len(input)) {
+						if err == nil {
+							t.Errorf("Expected an error from reading past the end, but didn't get one")
+						}
+					} else {
+						if err != nil {
+							t.Errorf("Got an unexpected error while reading: %v", err)
+						}
+						if read != input[initialGOffset] {
+							t.Errorf("Read %d but expected %d", read, input[initialGOffset])
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestSeekEnd(t *testing.T) {
+	input := "abcdefghijklmnopqrst"
+	var mv MemView
+	mv.Append(New([]byte("abcdefg")))
+	mv.Append(New([]byte("hijkl")))
+	mv.Append(New([]byte("mnopq")))
+	mv.Append(New([]byte("rst")))
+	r := mv.CreateReader()
+
+	for seekOffset := 1; seekOffset >= -len(input)-1; seekOffset-- {
+		for initialRIndex := 0; initialRIndex <= len(mv.buf); initialRIndex++ {
+			curBuf := []byte{}
+			if initialRIndex < len(mv.buf) {
+				curBuf = mv.buf[initialRIndex]
+			}
+
+			for initialROffset := 0; initialROffset <= len(curBuf); initialROffset++ {
+				// Figure out the initial global offset.
+				initialGOffset := int64(initialROffset)
+				for rIndex := 0; rIndex < initialRIndex; rIndex++ {
+					initialGOffset += int64(len(mv.buf[rIndex]))
+				}
+
+				r.rIndex, r.rOffset, r.gOffset = initialRIndex, initialROffset, initialGOffset
+				result, err := r.Seek(int64(seekOffset), io.SeekEnd)
+
+				if -seekOffset > len(input) {
+					// Expect an error.
+					if err == nil {
+						t.Errorf("Expected an error from seeking to offset %d, but didn't get one", seekOffset)
+					}
+				} else {
+					// Don't expect an error.
+					if err != nil {
+						t.Errorf("Got an unexpected error while seeking to offset %d: %v", seekOffset, err)
+					}
+				}
+
+				if err == nil {
+					// Make sure the returned offset is what we expect.
+					expectedResult := int64(len(input) + seekOffset)
+					expectOutOfBounds := expectedResult > mv.length
+					if expectOutOfBounds {
+						// We seeked past the end. Just make sure the resulting offset is
+						// also past the end.
+						if result < mv.length {
+							t.Errorf("Result %d is not greater than %d after seeking past the end", result, mv.length)
+						}
+					} else {
+						if result != expectedResult {
+							t.Errorf("Expected a global offset of %d after seeking %d, but got %d", expectedResult, seekOffset, result)
+						}
+					}
+
+					// Do a read and make sure it lines up with what we expect.
+					read, err := r.ReadByte()
+					expectOutOfBounds = expectedResult >= mv.length
+					if expectOutOfBounds {
+						if err == nil {
+							t.Errorf("Expected an error from reading after seeking to %d, but didn't get one", seekOffset)
+						}
+					} else {
+						if err != nil {
+							t.Errorf("Got an unexpected error while reading after seeking to offset %d: %v", seekOffset, err)
+						}
+						if read != input[expectedResult] {
+							t.Errorf("Read %d but expected %d", read, input[expectedResult])
+						}
+					}
+				} else {
+					// Got an error while seeking. Do a read to check that the state was
+					// reset back.
+					read, err := r.ReadByte()
+					if initialGOffset == int64(len(input)) {
+						if err == nil {
+							t.Errorf("Expected an error from reading past the end, but didn't get one")
+						}
+					} else {
+						if err != nil {
+							t.Errorf("Got an unexpected error while reading: %v", err)
+						}
+						if read != input[initialGOffset] {
+							t.Errorf("Read %d but expected %d", read, input[initialGOffset])
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestSeekCurrent(t *testing.T) {
+	input := "abcdefghijklmnopqrst"
+	var mv MemView
+	mv.Append(New([]byte("abcdefg")))
+	mv.Append(New([]byte("hijkl")))
+	mv.Append(New([]byte("mnopq")))
+	mv.Append(New([]byte("rst")))
+	r := mv.CreateReader()
+
+	for seekOffset := -len(input) - 1; seekOffset <= len(input)+1; seekOffset++ {
+		for initialRIndex := 0; initialRIndex <= len(mv.buf); initialRIndex++ {
+			curBuf := []byte{}
+			if initialRIndex < len(mv.buf) {
+				curBuf = mv.buf[initialRIndex]
+			}
+
+			for initialROffset := 0; initialROffset <= len(curBuf); initialROffset++ {
+				// Figure out the initial global offset.
+				initialGOffset := int64(initialROffset)
+				for rIndex := 0; rIndex < initialRIndex; rIndex++ {
+					initialGOffset += int64(len(mv.buf[rIndex]))
+				}
+
+				r.rIndex, r.rOffset, r.gOffset = initialRIndex, initialROffset, initialGOffset
+				result, err := r.Seek(int64(seekOffset), io.SeekCurrent)
+
+				if initialGOffset+int64(seekOffset) < 0 {
+					// Expect an error.
+					if err == nil {
+						t.Errorf("Expected an error from seeking to offset %d from %d, but didn't get one", seekOffset, initialGOffset)
+					}
+				} else {
+					// Don't expect an error.
+					if err != nil {
+						t.Errorf("Got an unexpected error while seeking to offset %d from %d: %v", seekOffset, initialGOffset, err)
+					}
+				}
+
+				if err == nil {
+					// Make sure the returned offset is what we expect.
+					expectedResult := initialGOffset + int64(seekOffset)
+					expectOutOfBounds := expectedResult > mv.length
+					if expectOutOfBounds {
+						// We seeked past the end. Just make sure the resulting offset is
+						// also past the end.
+						if result < mv.length {
+							t.Errorf("Result %d is not greater than %d after seeking past the end", result, mv.length)
+						}
+					} else {
+						if result != expectedResult {
+							t.Errorf("Expected a global offset of %d after seeking %d from %d, but got %d", expectedResult, seekOffset, initialGOffset, result)
+						}
+					}
+
+					// Do a read and make sure it lines up with what we expect.
+					read, err := r.ReadByte()
+					expectOutOfBounds = expectedResult >= mv.length
+					if expectOutOfBounds {
+						if err == nil {
+							t.Errorf("Expected an error from reading after seeking %d from %d, but didn't get one", seekOffset, initialGOffset)
+						}
+					} else {
+						if err != nil {
+							t.Errorf("Got an unexpected error while reading after seeking %d from %d: %v", seekOffset, initialGOffset, err)
+						}
+						if read != input[expectedResult] {
+							t.Errorf("Read %d but expected %d", read, input[expectedResult])
+						}
+					}
+				} else {
+					// Got an error while seeking. Do a read to check that the state was
+					// reset back.
+					read, err := r.ReadByte()
+					if initialGOffset == int64(len(input)) {
+						if err == nil {
+							t.Errorf("Expected an error from reading past the end, but didn't get one")
+						}
+					} else {
+						if err != nil {
+							t.Errorf("Got an unexpected error while reading: %v", err)
+						}
+						if read != input[initialGOffset] {
+							t.Errorf("Read %d but expected %d", read, input[initialGOffset])
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestTruncate(t *testing.T) {
+	input := "abcdefghijklmnopqrst"
+	var mv MemView
+	mv.Append(New([]byte("abcdefg")))
+	mv.Append(New([]byte("hijkl")))
+	mv.Append(New([]byte("mnopq")))
+	mv.Append(New([]byte("rst")))
+	r := mv.CreateReader()
+
+	for initialRIndex := 0; initialRIndex <= len(mv.buf); initialRIndex++ {
+		curBuf := []byte{}
+		if initialRIndex < len(mv.buf) {
+			curBuf = mv.buf[initialRIndex]
+		}
+
+		for initialROffset := 0; initialROffset <= len(curBuf); initialROffset++ {
+			// Figure out the initial global offset.
+			initialGOffset := int64(initialROffset)
+			for rIndex := 0; rIndex < initialRIndex; rIndex++ {
+				initialGOffset += int64(len(mv.buf[rIndex]))
+			}
+
+			for truncateOffset := -1; truncateOffset <= len(input)-int(initialGOffset)+1; truncateOffset++ {
+
+				r.rIndex, r.rOffset, r.gOffset = initialRIndex, initialROffset, initialGOffset
+				result, err := r.Truncate(int64(truncateOffset))
+
+				if truncateOffset < 0 || initialGOffset+int64(truncateOffset) > int64(len(input)) {
+					if err == nil {
+						t.Errorf("Expected an error from truncating past the end, but didn't get one")
+					}
+				} else {
+					if err != nil {
+						t.Errorf("Got an unexpected error while truncating: %v", err)
+					}
+
+					truncatedContent := make([]byte, len(input)+1)
+					read, err := result.Read(truncatedContent)
+					if truncateOffset == 0 {
+						if err == nil {
+							t.Errorf("Expected EOF while reading, but didn't get one")
+						} else if err != io.EOF {
+							t.Errorf("Got an unexpected error while reading: %v", err)
+						}
+					} else {
+						if err != nil {
+							t.Errorf("Got an unexpected error while reading: %v", err)
+						}
+
+						if read != truncateOffset {
+							t.Errorf("Expected to read %d bytes but got %d bytes", truncateOffset, read)
+						}
+
+						expectedContent := input[initialGOffset : initialGOffset+int64(truncateOffset)]
+						if expectedContent != string(truncatedContent[:truncateOffset]) {
+							t.Errorf("Expected to read %s but got %s bytes", expectedContent, string(truncatedContent))
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func TestWriteTo(t *testing.T) {
@@ -138,6 +513,99 @@ func TestGetByte(t *testing.T) {
 	for i := 0; i < len(input); i++ {
 		if b := mv.GetByte(int64(i)); b != input[i] {
 			t.Errorf(`GetByte(%d) expected %s, got %s`, i, strconv.Quote(string(input[i])), strconv.Quote(string(b)))
+		}
+	}
+}
+
+func Test_getBytes(t *testing.T) {
+	input := "prince is a good boy"
+	var mv MemView
+	mv.Append(New([]byte("prince ")))
+	mv.Append(New([]byte("is a ")))
+	mv.Append(New([]byte("good ")))
+	mv.Append(New([]byte("boy")))
+
+	for start := range input {
+		for end := start; end <= len(input); end++ {
+			b := string(mv.getBytes(int64(start), int64(end)))
+			if input[start:end] != b {
+				t.Errorf(`getBytes(%d, %d) expected %s, got %s`, start, end, input[start:end], b)
+			}
+		}
+	}
+
+	negativeTests := [][]int64{
+		{-1, 0},
+		{1, 0},
+		{0, int64(len(input)) + 1},
+	}
+	for _, test := range negativeTests {
+		b := mv.getBytes(test[0], test[1])
+		if b != nil {
+			t.Errorf(`getBytes(%d, %d) expected nil, got %s`, test[0], test[1], b)
+		}
+	}
+}
+
+func TestGetUint16(t *testing.T) {
+	input := "prince is a good boy"
+	var mv MemView
+	mv.Append(New([]byte("prince ")))
+	mv.Append(New([]byte("is a ")))
+	mv.Append(New([]byte("good ")))
+	mv.Append(New([]byte("boy")))
+
+	for offset := -1; offset <= len(input); offset++ {
+		expected := uint16(0)
+		if 0 <= offset && offset <= len(input)-2 {
+			expected = binary.BigEndian.Uint16([]byte(input[offset : offset+2]))
+		}
+
+		actual := mv.GetUint16(int64(offset))
+		if expected != actual {
+			t.Errorf(`GetUint16(%d) expected %d, got %d`, offset, expected, actual)
+		}
+	}
+}
+
+func TestGetUint24(t *testing.T) {
+	input := "prince is a good boy"
+	var mv MemView
+	mv.Append(New([]byte("prince ")))
+	mv.Append(New([]byte("is a ")))
+	mv.Append(New([]byte("good ")))
+	mv.Append(New([]byte("boy")))
+
+	for offset := -1; offset <= len(input); offset++ {
+		expected := uint32(0)
+		if 0 <= offset && offset <= len(input)-3 {
+			expected = binary.BigEndian.Uint32([]byte{0, input[offset], input[offset+1], input[offset+2]})
+		}
+
+		actual := mv.GetUint24(int64(offset))
+		if expected != actual {
+			t.Errorf(`GetUint24(%d) expected %d, got %d`, offset, expected, actual)
+		}
+	}
+}
+
+func TestGetUint32(t *testing.T) {
+	input := "prince is a good boy"
+	var mv MemView
+	mv.Append(New([]byte("prince ")))
+	mv.Append(New([]byte("is a ")))
+	mv.Append(New([]byte("good ")))
+	mv.Append(New([]byte("boy")))
+
+	for offset := -1; offset <= len(input); offset++ {
+		expected := uint32(0)
+		if 0 <= offset && offset <= len(input)-4 {
+			expected = binary.BigEndian.Uint32([]byte(input[offset : offset+4]))
+		}
+
+		actual := mv.GetUint32(int64(offset))
+		if expected != actual {
+			t.Errorf(`GetUint32(%d) expected %d, got %d`, offset, expected, actual)
 		}
 	}
 }
