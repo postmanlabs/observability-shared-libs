@@ -359,7 +359,10 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 
 	if arePrims && haveCompatibleTypes(dstPrim, srcPrim) {
 		// No conflict.  Merge primitive metadata.
-		m.meldPrimitive(dstPrim, srcPrim)
+		err := m.meldPrimitive(dstPrim, srcPrim)
+		if err != nil {
+			return err
+		}
 		mergeExampleValues(dst, src)
 	} else {
 		// New conflict detected. Create oneof to record the conflict.
