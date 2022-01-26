@@ -2,11 +2,13 @@ package spec_util
 
 import (
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/test"
@@ -292,6 +294,9 @@ func witnessLess(w1, w2 *pb.Witness) bool {
 }
 
 func TestMeldPrimitives(t *testing.T) {
+	epoch, err := time.Parse(time.RFC3339, "1970-01-01T00:00:00Z")
+	assert.NoError(t, err)
+
 	testCases := []struct {
 		name     string
 		left     *pb.Primitive
@@ -489,6 +494,70 @@ func TestMeldPrimitives(t *testing.T) {
 					}),
 				},
 				PotentialConflict: true,
+			}),
+		},
+		{
+			name: "merge sums counts",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				Tracking: &pb.AkitaWitnessTracking{Count: 1},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				Tracking: &pb.AkitaWitnessTracking{Count: 1},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				Tracking: &pb.AkitaWitnessTracking{Count: 2},
+			}),
+		},
+		{
+			name: "merge sums counts by data format",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				CountByDataFormat: map[string]int64{
+					"UUID": 1,
+					"InternationalPhoneNumber": 1,
+				},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				CountByDataFormat: map[string]int64{
+					"UUID": 1,
+					"USPhoneNumber": 1,
+				},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				CountByDataFormat: map[string]int64{
+					"UUID": 2,
+					"InternationalPhoneNumber": 1,
+					"USPhoneNumber": 1,
+				},
+			}),
+		},
+		{
+			name: "merge sums liveness spans",
+			left: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				Tracking: &pb.AkitaWitnessTracking{
+					FirstSeen: timestamppb.New(epoch.Add(-2 * time.Hour)),
+					LastSeen: timestamppb.New(epoch),
+				},
+			},
+			right: &pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				Tracking: &pb.AkitaWitnessTracking{
+					FirstSeen: timestamppb.New(epoch),
+					LastSeen: timestamppb.New(epoch.Add(2 * time.Hour)),
+				},
+			},
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				Tracking: &pb.AkitaWitnessTracking{
+					FirstSeen: timestamppb.New(epoch.Add(-2 * time.Hour)),
+					LastSeen: timestamppb.New(epoch.Add(2 * time.Hour)),
+				},
 			}),
 		},
 	}
