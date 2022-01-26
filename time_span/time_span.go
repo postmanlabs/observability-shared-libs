@@ -73,6 +73,22 @@ func (t ClosedInterval) Expand(delta time.Duration) ClosedInterval {
 	}
 }
 
+// Extend an interval to include the given time. If the interval is empty, then
+// the result will be the singleton interval containing the given time.
+func (interval ClosedInterval) ExpandToIncludeTime(t time.Time) ClosedInterval {
+	if interval.Empty() {
+		return ClosedInterval{
+			Start: t,
+			End:   t,
+		}
+	}
+
+	return ClosedInterval{
+		Start: MinTime(interval.Start, t),
+		End:   MaxTime(interval.End, t),
+	}
+}
+
 // Return the portion of this interval that lies entirely within another closed interval.
 // Intersection with an open interval or half-open interval is not provided because the result might
 // either be open or closed, and that's a pain to deal with (the point of splitting them out was

@@ -180,7 +180,7 @@ type LearnSessionTag struct {
 	//lint:ignore U1000 Used by pg-go
 	tableName struct{} `pg:"learn_session_tags"`
 
-	LearnSessionID akid.LearnSessionID `pg:"learn_session_id" json:"learn_session_id"`
+	LearnSessionID akid.LearnSessionID `pg:"learn_session_id,type:uuid" json:"learn_session_id"`
 	Key            tags.Key            `pg:"key" json:"key"`
 	Value          string              `pg:"value,use_zero" json:"value"`
 }
