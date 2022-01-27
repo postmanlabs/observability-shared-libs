@@ -730,41 +730,49 @@ func (m *melder) meldTracking(dst, src *pb.Primitive) {
 	// Update counts by data format.
 	if src.CountByDataFormat != nil {
 		if dst.CountByDataFormat == nil {
-			dst.CountByDataFormat = make(map[string]int64, len(src.CountByDataFormat))
+			dst.CountByDataFormat = make(map[string]*pb.AkitaWitnessTracking, len(src.CountByDataFormat))
 		}
-		for format, count := range src.CountByDataFormat {
-			dst.CountByDataFormat[format] += count
+		for format, tracking := range src.CountByDataFormat {
+			if dstTracking, exists := dst.CountByDataFormat[format]; exists && dstTracking != nil {
+				meldAkitaWitnessTracking(dstTracking, tracking)
+			} else {
+				dst.CountByDataFormat[format] = proto.Clone(tracking).(*pb.AkitaWitnessTracking)
+			}
 		}
 	}
 
-	if src.Tracking != nil {
-		if dst.Tracking == nil {
-			dst.Tracking = &pb.AkitaWitnessTracking{}
+	// Update field tracking.
+	meldAkitaWitnessTracking(dst.Tracking, src.Tracking)
+}
+
+// Adds src to dst.
+func meldAkitaWitnessTracking(dst, src *pb.AkitaWitnessTracking) {
+	if src == nil || dst == nil {
+		return
+	}
+
+	// Update count.
+	dst.Count += src.Count
+
+	// Use earliest first-seen date.
+	if dst.FirstSeen == nil {
+		dst.FirstSeen = src.FirstSeen
+	} else if src.FirstSeen != nil {
+		srcFirstSeen := src.FirstSeen.AsTime()
+		dstFirstSeen := dst.FirstSeen.AsTime()
+		if srcFirstSeen.Before(dstFirstSeen) {
+			dst.FirstSeen = src.FirstSeen
 		}
+	}
 
-		// Update count.
-		dst.Tracking.Count += src.Tracking.Count
-
-		// Use earliest first-seen date.
-		if dst.Tracking.FirstSeen == nil {
-			dst.Tracking.FirstSeen = src.Tracking.FirstSeen
-		} else if src.Tracking.FirstSeen != nil {
-			srcFirstSeen := src.Tracking.FirstSeen.AsTime()
-			dstFirstSeen := dst.Tracking.FirstSeen.AsTime()
-			if srcFirstSeen.Before(dstFirstSeen) {
-				dst.Tracking.FirstSeen = src.Tracking.FirstSeen
-			}
-		}
-
-		// Use latest last-seen date.
-		if dst.Tracking.LastSeen == nil {
-			dst.Tracking.LastSeen = src.Tracking.LastSeen
-		} else if src.Tracking.LastSeen != nil {
-			srcLastSeen := src.Tracking.LastSeen.AsTime()
-			dstLastSeen := dst.Tracking.LastSeen.AsTime()
-			if srcLastSeen.After(dstLastSeen) {
-				dst.Tracking.LastSeen = src.Tracking.LastSeen
-			}
+	// Use latest last-seen date.
+	if dst.LastSeen == nil {
+		dst.LastSeen = src.LastSeen
+	} else if src.LastSeen != nil {
+		srcLastSeen := src.LastSeen.AsTime()
+		dstLastSeen := dst.LastSeen.AsTime()
+		if srcLastSeen.After(dstLastSeen) {
+			dst.LastSeen = src.LastSeen
 		}
 	}
 }

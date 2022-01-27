@@ -515,24 +515,24 @@ func TestMeldPrimitives(t *testing.T) {
 			name: "merge sums counts by data format",
 			left: &pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-				CountByDataFormat: map[string]int64{
-					"UUID": 1,
-					"InternationalPhoneNumber": 1,
+				CountByDataFormat: map[string]*pb.AkitaWitnessTracking{
+					"UUID": {Count: 1},
+					"InternationalPhoneNumber": {Count: 1},
 				},
 			},
 			right: &pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-				CountByDataFormat: map[string]int64{
-					"UUID": 1,
-					"USPhoneNumber": 1,
+				CountByDataFormat: map[string]*pb.AkitaWitnessTracking{
+					"UUID": {Count: 1},
+					"USPhoneNumber": {Count: 1},
 				},
 			},
 			expected: wrapPrim(&pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-				CountByDataFormat: map[string]int64{
-					"UUID": 2,
-					"InternationalPhoneNumber": 1,
-					"USPhoneNumber": 1,
+				CountByDataFormat: map[string]*pb.AkitaWitnessTracking{
+					"UUID": {Count: 2},
+					"InternationalPhoneNumber": {Count: 1},
+					"USPhoneNumber": {Count: 1},
 				},
 			}),
 		},
