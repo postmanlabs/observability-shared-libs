@@ -540,3 +540,103 @@ func (c stackVisitorContext) setHttpAuthType(at pb.HTTPAuth_HTTPAuthType) {
 func (c stackVisitorContext) setTopLevelDataIndex(i int) {
 	c.Delegate().setTopLevelDataIndex(i)
 }
+
+type DummyVisitorContext struct{}
+
+var _ SpecVisitorContext = (*DummyVisitorContext)(nil)
+
+func NewDummyVisitorContext() *DummyVisitorContext {
+	return &DummyVisitorContext{}
+}
+
+func (c *DummyVisitorContext) EnterStruct(structNode interface{}, fieldName string) visitors.Context {
+	return c
+}
+
+func (c *DummyVisitorContext) EnterArray(arrayNode interface{}, elementIndex int) visitors.Context {
+	return c
+}
+
+func (c *DummyVisitorContext) EnterMapValue(mapNode, mapKey interface{}) visitors.Context {
+	return c
+}
+
+func (*DummyVisitorContext) GetPath() visitors.ContextPath {
+	return nil
+}
+
+func (c *DummyVisitorContext) GetOuter() visitors.Context {
+	return c
+}
+
+func (*DummyVisitorContext) GetFieldPath() []FieldPathElement {
+	return nil
+}
+
+func (*DummyVisitorContext) GetRestPath() []string {
+	return nil
+}
+
+func (*DummyVisitorContext) GetRestOperation() string {
+	return ""
+}
+
+func (*DummyVisitorContext) setRestOperation(string) {}
+
+func (*DummyVisitorContext) IsArg() bool {
+	return false
+}
+
+func (*DummyVisitorContext) IsResponse() bool {
+	return false
+}
+
+func (*DummyVisitorContext) IsOptional() bool {
+	return false
+}
+
+func (*DummyVisitorContext) GetValueType() HttpValueType {
+	return UNKNOWN
+}
+
+func (*DummyVisitorContext) GetHttpAuthType() *pb.HTTPAuth_HTTPAuthType {
+	return nil
+}
+
+func (*DummyVisitorContext) GetArgPath() []string {
+	return nil
+}
+
+func (*DummyVisitorContext) GetResponsePath() []string {
+	return nil
+}
+
+func (*DummyVisitorContext) GetEndpointPath() string {
+	return ""
+}
+
+func (*DummyVisitorContext) GetResponseCode() *string {
+	return nil
+}
+
+func (*DummyVisitorContext) GetContentType() *string {
+	return nil
+}
+
+func (*DummyVisitorContext) GetHost() string {
+	return ""
+}
+
+func (c *DummyVisitorContext) GetInnermostNode(reflect.Type) (interface{}, SpecVisitorContext) {
+	return nil, c
+}
+
+func (*DummyVisitorContext) appendFieldPath(FieldPathElement)         {}
+func (*DummyVisitorContext) appendRestPath(string)                    {}
+func (*DummyVisitorContext) setIsArg(bool)                            {}
+func (*DummyVisitorContext) setIsOptional()                           {}
+func (*DummyVisitorContext) setValueType(HttpValueType)               {}
+func (*DummyVisitorContext) setHttpAuthType(pb.HTTPAuth_HTTPAuthType) {}
+func (*DummyVisitorContext) setTopLevelDataIndex(int)                 {}
+func (*DummyVisitorContext) setResponseCode(string)                   {}
+func (*DummyVisitorContext) setContentType(string)                    {}
