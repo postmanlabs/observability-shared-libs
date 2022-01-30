@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -115,7 +116,10 @@ func makeOptional(d *pb.Data) {
 		d.Value = &pb.Data_Optional{
 			Optional: &pb.Optional{
 				Value: &pb.Optional_Data{
-					Data: &pb.Data{Value: d.Value},
+					Data: &pb.Data{
+						Value: d.Value,
+						Tracking: proto.Clone(d.Tracking).(*pb.AkitaWitnessTracking),
+					},
 				},
 			},
 		}
@@ -129,15 +133,22 @@ func MeldData(dst, src *pb.Data) (retErr error) {
 }
 
 // Assumes that dst.Meta == src.Meta.
-// Melds src into dst.  Leaves tracking data in dst untouched.
-func MeldDataIgnoreTracking(dst, src *pb.Data) (retErr error) {
+// Melds src into dst.  If there are elements in src not in dst, their tracking
+// data is added to dst as well.  Similarly, if new IR elements are added, e.g.
+// because of a conflict, tracking data is added to those elements.
+//
+// This method is used to meld list items in witnesses.  Tracking data counts
+// the number of witnesses each element occurs in.  If we sum tracking data
+// across list elements, that would inflate the count by the number of
+// occurrences within the list.
+func MeldDataUnionTracking(dst, src *pb.Data) (retErr error) {
 	melder := &melder{mergeTracking: false}
 	return melder.meldData(dst, src)
 }
 
 type melder struct {
-	// If true, sums tracking data on meld.  Otherwise leaves
-	// tracking data unmodified in dst.
+	// If true, sums tracking data on meld.  Otherwise takes the union rather
+	// than the sum.
 	mergeTracking bool
 }
 
@@ -155,10 +166,13 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 	// Set to true if dst and src are recorded as a conflict.
 	hasConflict := false
 	defer func() {
-		// Merge example values if there wasn't a conflict. Examples are merged in
-		// the conflict handler.
+		// Merge example values and tracking  if there wasn't a conflict.
+		// Otherwise, examples and tracking are merged in the conflict handler.
 		if !hasConflict && retErr == nil {
 			mergeExampleValues(dst, src)
+			if m.mergeTracking {
+				meldAkitaWitnessTracking(dst.Tracking, src.Tracking)
+			}
 		}
 	}()
 
@@ -227,7 +241,10 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 				dst.Value = &pb.Data_Optional{
 					Optional: &pb.Optional{
 						Value: &pb.Optional_Data{
-							Data: &pb.Data{Value: src.Value},
+							Data: &pb.Data{
+								Value: src.Value,
+								Tracking: proto.Clone(src.Tracking).(*pb.AkitaWitnessTracking),
+							},
 						},
 					},
 				}
@@ -379,6 +396,9 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 			return err
 		}
 		mergeExampleValues(dst, src)
+		if m.mergeTracking {
+			meldAkitaWitnessTracking(dst.Tracking, src.Tracking)
+		}
 	} else {
 		// New conflict detected. Create oneof to record the conflict.
 		// For HTTP specs, oneof options all have the same metadata, recorded in
@@ -399,6 +419,9 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 		}
 		// Example values from dst are recorded inside the oneof as dstNoMeta.
 		dst.ExampleValues = nil
+
+		// Tracking data for the oneof is the sum of its options.
+		meldAkitaWitnessTracking(dst.Tracking, src.Tracking)
 	}
 
 	return nil
@@ -679,6 +702,9 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb
 	// example values in the hash. If this is the case, just merge examples.
 	if existing, ok := dst.Options[*srcHash]; ok {
 		mergeExampleValues(existing, srcVariant)
+		if m.mergeTracking {
+			meldAkitaWitnessTracking(existing.Tracking, srcVariant.Tracking)
+		}
 		return nil
 	}
 
@@ -723,10 +749,6 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb
 }
 
 func (m *melder) meldTracking(dst, src *pb.Primitive) {
-	if !m.mergeTracking {
-		return
-	}
-
 	// Update counts by data format.
 	if src.CountByDataFormat != nil {
 		if dst.CountByDataFormat == nil {
@@ -734,15 +756,14 @@ func (m *melder) meldTracking(dst, src *pb.Primitive) {
 		}
 		for format, tracking := range src.CountByDataFormat {
 			if dstTracking, exists := dst.CountByDataFormat[format]; exists && dstTracking != nil {
-				meldAkitaWitnessTracking(dstTracking, tracking)
+				if m.mergeTracking {
+					meldAkitaWitnessTracking(dstTracking, tracking)
+				}
 			} else {
 				dst.CountByDataFormat[format] = proto.Clone(tracking).(*pb.AkitaWitnessTracking)
 			}
 		}
 	}
-
-	// Update field tracking.
-	meldAkitaWitnessTracking(dst.Tracking, src.Tracking)
 }
 
 // Adds src to dst.
@@ -754,25 +775,28 @@ func meldAkitaWitnessTracking(dst, src *pb.AkitaWitnessTracking) {
 	// Update count.
 	dst.Count += src.Count
 
-	// Use earliest first-seen date.
 	if dst.FirstSeen == nil {
 		dst.FirstSeen = src.FirstSeen
+		dst.LastSeenOffsetSeconds = src.LastSeenOffsetSeconds
 	} else if src.FirstSeen != nil {
+		// Update FirstSeen.
 		srcFirstSeen := src.FirstSeen.AsTime()
 		dstFirstSeen := dst.FirstSeen.AsTime()
+		firstSeenChanged := false
 		if srcFirstSeen.Before(dstFirstSeen) {
 			dst.FirstSeen = src.FirstSeen
+			firstSeenChanged = true
 		}
-	}
 
-	// Use latest last-seen date.
-	if dst.LastSeen == nil {
-		dst.LastSeen = src.LastSeen
-	} else if src.LastSeen != nil {
-		srcLastSeen := src.LastSeen.AsTime()
-		dstLastSeen := dst.LastSeen.AsTime()
+		// Update LastSeenOffsetSeconds.
+		srcLastSeen := srcFirstSeen.Add(time.Duration(src.LastSeenOffsetSeconds) * time.Second)
+		dstLastSeen := dstFirstSeen.Add(time.Duration(dst.LastSeenOffsetSeconds) * time.Second)
 		if srcLastSeen.After(dstLastSeen) {
-			dst.LastSeen = src.LastSeen
+			dst.LastSeenOffsetSeconds = uint32(srcLastSeen.Sub(dst.FirstSeen.AsTime()).Seconds())
+		} else if firstSeenChanged {
+			// Even though dst.LastSeenOffsetSeconds didn't change, we need to
+			// recalculate it w.r.t. the new value of dst.FirstSeen.
+			dst.LastSeenOffsetSeconds = uint32(dstLastSeen.Sub(dst.FirstSeen.AsTime()).Seconds())
 		}
 	}
 }

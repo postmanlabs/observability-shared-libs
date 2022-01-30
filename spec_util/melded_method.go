@@ -104,6 +104,9 @@ func (dst *meldedMethod) Meld(src MeldedMethod) error {
 		return errors.Wrap(err, "failed to meld response map")
 	}
 
+	// Update witness tracking.
+	meldAkitaWitnessTracking(dst.method.Tracking, src.GetMethod().Tracking)
+
 	return nil
 }
 

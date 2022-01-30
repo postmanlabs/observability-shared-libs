@@ -29,10 +29,11 @@ func main() {
 	gf.SetPackageName("ir_hash")
 	gf.AddImports()
 
+	gf.AddIgnoredField("Method", "Tracking")
 	gf.AddIgnoredField("HTTPMethodMeta", "ProcessingLatency")
 	gf.AddIgnoredField("Data", "ExampleValues")
+	gf.AddIgnoredField("Data", "Tracking")
 	gf.AddIgnoredField("Primitive", "CountByDataFormat")
-	gf.AddIgnoredField("Primitive", "Tracking")
 
 	// Newer protobuf compiler (1.39, v2 of go API) uses these instead of older XXX prefix (1.26, v1 of go API)
 	gf.AddIgnoredField("*", "state")
