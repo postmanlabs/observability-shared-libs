@@ -562,81 +562,109 @@ func (c *DummyVisitorContext) EnterMapValue(mapNode, mapKey interface{}) visitor
 }
 
 func (*DummyVisitorContext) GetPath() visitors.ContextPath {
-	return nil
+	panic("Cannot call GetPath() on dummy context")
 }
 
-func (c *DummyVisitorContext) GetOuter() visitors.Context {
-	return c
+func (*DummyVisitorContext) GetOuter() visitors.Context {
+	panic("Cannot call GetOuter() on dummy context")
 }
 
 func (*DummyVisitorContext) GetFieldPath() []FieldPathElement {
-	return nil
+	panic("Cannot call GetFieldPath() on dummy context")
 }
 
 func (*DummyVisitorContext) GetRestPath() []string {
-	return nil
+	panic("Cannot call GetRestPath() on dummy context")
 }
 
 func (*DummyVisitorContext) GetRestOperation() string {
-	return ""
+	panic("Cannot call GetRestOperation() on dummy context")
 }
 
-func (*DummyVisitorContext) setRestOperation(string) {}
+func (*DummyVisitorContext) setRestOperation(string) {
+	panic("Cannot call setRestOperation() on dummy context")
+}
 
 func (*DummyVisitorContext) IsArg() bool {
-	return false
+	panic("Cannot call IsArg() on dummy context")
 }
 
 func (*DummyVisitorContext) IsResponse() bool {
-	return false
+	panic("Cannot call IsResponse() on dummy context")
 }
 
 func (*DummyVisitorContext) IsOptional() bool {
-	return false
+	panic("Cannot call IsOptional() on dummy context")
 }
 
 func (*DummyVisitorContext) GetValueType() HttpValueType {
-	return UNKNOWN
+	panic("Cannot call GetValueType() on dummy context")
 }
 
 func (*DummyVisitorContext) GetHttpAuthType() *pb.HTTPAuth_HTTPAuthType {
-	return nil
+	panic("Cannot call GetHttpAuthType() on dummy context")
 }
 
 func (*DummyVisitorContext) GetArgPath() []string {
-	return nil
+	panic("Cannot call GetArgPath() on dummy context")
 }
 
 func (*DummyVisitorContext) GetResponsePath() []string {
-	return nil
+	panic("Cannot call GetResponsePath() on dummy context")
 }
 
 func (*DummyVisitorContext) GetEndpointPath() string {
-	return ""
+	panic("Cannot call GetEndpointPath() on dummy context")
 }
 
 func (*DummyVisitorContext) GetResponseCode() *string {
-	return nil
+	panic("Cannot call GetResponseCode() on dummy context")
 }
 
 func (*DummyVisitorContext) GetContentType() *string {
-	return nil
+	panic("Cannot call GetContentType() on dummy context")
 }
 
 func (*DummyVisitorContext) GetHost() string {
-	return ""
+	panic("Cannot call GetHost() on dummy context")
 }
 
-func (c *DummyVisitorContext) GetInnermostNode(reflect.Type) (interface{}, SpecVisitorContext) {
-	return nil, c
+func (*DummyVisitorContext) GetInnermostNode(reflect.Type) (interface{}, SpecVisitorContext) {
+	panic("Cannot call GetInnermostNode() on dummy context")
 }
 
-func (*DummyVisitorContext) appendFieldPath(FieldPathElement)         {}
-func (*DummyVisitorContext) appendRestPath(string)                    {}
-func (*DummyVisitorContext) setIsArg(bool)                            {}
-func (*DummyVisitorContext) setIsOptional()                           {}
-func (*DummyVisitorContext) setValueType(HttpValueType)               {}
-func (*DummyVisitorContext) setHttpAuthType(pb.HTTPAuth_HTTPAuthType) {}
-func (*DummyVisitorContext) setTopLevelDataIndex(int)                 {}
-func (*DummyVisitorContext) setResponseCode(string)                   {}
-func (*DummyVisitorContext) setContentType(string)                    {}
+func (*DummyVisitorContext) appendFieldPath(FieldPathElement) {
+	panic("Cannot call appendFieldPath() on dummy context")
+}
+
+func (*DummyVisitorContext) appendRestPath(string) {
+	panic("Cannot call appendRestPath() on dummy context")
+}
+
+func (*DummyVisitorContext) setIsArg(bool) {
+	panic("Cannot call setIsArg() on dummy context")
+}
+
+func (*DummyVisitorContext) setIsOptional() {
+	panic("Cannot call setIsOptional() on dummy context")
+}
+
+func (*DummyVisitorContext) setValueType(HttpValueType) {
+	panic("Cannot call setValueType() on dummy context")
+}
+
+func (*DummyVisitorContext) setHttpAuthType(pb.HTTPAuth_HTTPAuthType) {
+	panic("Cannot call setHttpAuthType() on dummy context")
+}
+
+func (*DummyVisitorContext) setTopLevelDataIndex(int) {
+	panic("Cannot call setTopLevelDataIndex() on dummy context")
+}
+
+func (*DummyVisitorContext) setResponseCode(string) {
+	panic("Cannot call setResponseCode() on dummy context")
+}
+
+func (*DummyVisitorContext) setContentType(string) {
+	panic("Cannot call setContentType() on dummy context")
+}

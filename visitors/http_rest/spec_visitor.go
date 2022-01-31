@@ -486,6 +486,11 @@ func (*DefaultContextlessSpecVisitorImpl) NewContext() SpecVisitorContext {
 
 // extendContext implementation for SpecVisitor.
 func extendContext(cin Context, node interface{}) {
+	// Do nothing if using a dummy context.
+	if _, isDummy := cin.(*DummyVisitorContext); isDummy {
+		return
+	}
+
 	ctx, ok := cin.(SpecVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.extendContext expected SpecVisitorContext, got %s",
