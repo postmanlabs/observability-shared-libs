@@ -16,6 +16,11 @@ import (
 // VisitorManager that lets you read each message in an APISpec, starting with
 // the APISpec message itself.
 type SpecVisitor interface {
+	// Creates a new empty context for visiting an IR root. For visitors that
+	// do not care about context, NewDummyContext() is a good implementation.
+	// Otherwise, NewPreallocatedVisitorContext() is a good default.
+	NewContext() SpecVisitorContext
+
 	EnterAPISpec(self interface{}, ctxt SpecVisitorContext, node *pb.APISpec) Cont
 	VisitAPISpecChildren(self interface{}, ctxt SpecVisitorContext, vm VisitorManager, node *pb.APISpec) Cont
 	LeaveAPISpec(self interface{}, ctxt SpecVisitorContext, node *pb.APISpec, cont Cont) Cont
@@ -113,6 +118,10 @@ type DefaultSpecVisitor interface {
 type DefaultSpecVisitorImpl struct{}
 
 var _ SpecVisitor = (*DefaultSpecVisitorImpl)(nil)
+
+func (*DefaultSpecVisitorImpl) NewContext() SpecVisitorContext {
+	return NewPreallocatedVisitorContext()
+}
 
 func (*DefaultSpecVisitorImpl) EnterNode(self interface{}, ctxt SpecVisitorContext, node interface{}) Cont {
 	return Continue
@@ -465,8 +474,23 @@ func (*DefaultSpecVisitorImpl) LeaveOneOf(self interface{}, c SpecVisitorContext
 	return self.(DefaultSpecVisitor).LeaveNode(self, c, d, cont)
 }
 
+type DefaultContextlessSpecVisitorImpl struct {
+	DefaultSpecVisitorImpl
+}
+
+var _ SpecVisitor = (*DefaultContextlessSpecVisitorImpl)(nil)
+
+func (*DefaultContextlessSpecVisitorImpl) NewContext() SpecVisitorContext {
+	return NewDummyVisitorContext()
+}
+
 // extendContext implementation for SpecVisitor.
 func extendContext(cin Context, node interface{}) {
+	// Do nothing if using a dummy context.
+	if _, isDummy := cin.(*DummyVisitorContext); isDummy {
+		return
+	}
+
 	ctx, ok := cin.(SpecVisitorContext)
 	if !ok {
 		panic(fmt.Sprintf("http_rest.extendContext expected SpecVisitorContext, got %s",
@@ -818,7 +842,7 @@ func leave(cin Context, visitor interface{}, node interface{}, cont Cont) Cont {
 
 // Visits m with v.
 func Apply(v SpecVisitor, m interface{}) Cont {
-	c := NewPreallocatedVisitorContext()
+	c := v.NewContext()
 	vis := NewVisitorManager(c, v, enter, visitChildren, leave, extendContext)
 	return go_ast.Apply(vis, m)
 }
