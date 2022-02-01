@@ -773,7 +773,21 @@ func meldAkitaWitnessTracking(dst, src *pb.AkitaWitnessTracking) {
 	}
 
 	// Update count.
-	dst.Count += src.Count
+	// Special case: a count of 1 is encoded as "0" to save space.  When
+	// reading the count, interpret 0 as 1.
+	{
+		dstCount := dst.Count
+		if dstCount == 0 {
+			dstCount = 1
+		}
+
+		srcCount := src.Count
+		if srcCount == 0 {
+			srcCount = 1
+		}
+
+		dst.Count = dstCount + srcCount
+	}
 
 	if dst.FirstSeen == nil {
 		dst.FirstSeen = src.FirstSeen

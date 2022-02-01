@@ -505,23 +505,23 @@ func TestMeldPrimitives(t *testing.T) {
 			left: &pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
 				CountByDataFormat: map[string]*pb.AkitaWitnessTracking{
-					"UUID":                     {Count: 1},
-					"InternationalPhoneNumber": {Count: 1},
+					"UUID":                     {Count: 0},
+					"InternationalPhoneNumber": {Count: 0},
 				},
 			},
 			right: &pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
 				CountByDataFormat: map[string]*pb.AkitaWitnessTracking{
-					"UUID":          {Count: 1},
-					"USPhoneNumber": {Count: 1},
+					"UUID":          {Count: 0},
+					"USPhoneNumber": {Count: 0},
 				},
 			},
 			expected: wrapPrim(&pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
 				CountByDataFormat: map[string]*pb.AkitaWitnessTracking{
 					"UUID":                     {Count: 2},
-					"InternationalPhoneNumber": {Count: 1},
-					"USPhoneNumber":            {Count: 1},
+					"InternationalPhoneNumber": {Count: 0},
+					"USPhoneNumber":            {Count: 0},
 				},
 			}),
 		},
@@ -588,58 +588,66 @@ func TestMeldData(t *testing.T) {
 		},
 		{
 			name: "merge sums liveness spans - left subsumes right",
-			left: wrapPrimWithTracking(&pb.Primitive{
-				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-			},
+			left: wrapPrimWithTracking(
+				&pb.Primitive{
+					Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				},
 				&pb.AkitaWitnessTracking{
-					FirstSeen: timestamppb.New(epoch),
-					LastSeenOffsetSeconds:  60 * 60 * 48,
+					FirstSeen:             timestamppb.New(epoch),
+					LastSeenOffsetSeconds: 60 * 60 * 48,
 				},
 			),
-			right: wrapPrimWithTracking(&pb.Primitive{
-				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-			},
+			right: wrapPrimWithTracking(
+				&pb.Primitive{
+					Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				},
 				&pb.AkitaWitnessTracking{
-					FirstSeen: timestamppb.New(epoch.Add(24 * time.Hour)),
-					LastSeenOffsetSeconds:  0,
+					FirstSeen:             timestamppb.New(epoch.Add(24 * time.Hour)),
+					LastSeenOffsetSeconds: 0,
 				},
 			),
-			expected: wrapPrimWithTracking(&pb.Primitive{
-				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-			},
+			expected: wrapPrimWithTracking(
+				&pb.Primitive{
+					Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				},
 				&pb.AkitaWitnessTracking{
-					FirstSeen: timestamppb.New(epoch),
-					LastSeenOffsetSeconds:  60 * 60 * 48 /* two days */,
+					FirstSeen:             timestamppb.New(epoch),
+					LastSeenOffsetSeconds: 60 * 60 * 48 /* two days */,
+					Count:                 2,
 				},
 			),
 		},
 		{
 			name: "merge sums liveness spans - left overlaps right",
-			left: wrapPrimWithTracking(&pb.Primitive{
-				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-			},
+			left: wrapPrimWithTracking(
+				&pb.Primitive{
+					Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				},
 				// [epoch + 1, epoch + 3]
 				&pb.AkitaWitnessTracking{
-					FirstSeen: timestamppb.New(epoch.Add(24 * time.Hour)),
-					LastSeenOffsetSeconds:  60 * 60 * 48 /* 2 days */,
+					FirstSeen:             timestamppb.New(epoch.Add(24 * time.Hour)),
+					LastSeenOffsetSeconds: 60 * 60 * 48 /* 2 days */,
 				},
 			),
-			right: wrapPrimWithTracking(&pb.Primitive{
-				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-			},
+			right: wrapPrimWithTracking(
+				&pb.Primitive{
+					Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				},
 				// [epoch, epoch + 2]
 				&pb.AkitaWitnessTracking{
-					FirstSeen: timestamppb.New(epoch),
-					LastSeenOffsetSeconds:  60 * 60 * 48 /* 2 days */,
+					FirstSeen:             timestamppb.New(epoch),
+					LastSeenOffsetSeconds: 60 * 60 * 48 /* 2 days */,
 				},
 			),
-			expected: wrapPrimWithTracking(&pb.Primitive{
-				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
-			},
+			expected: wrapPrimWithTracking(
+				&pb.Primitive{
+					Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
+				},
 				// [epoch, epoch + 3]
 				&pb.AkitaWitnessTracking{
-					FirstSeen: timestamppb.New(epoch),
-					LastSeenOffsetSeconds:  60 * 60 * 72 /* 3 days */,
+					FirstSeen:             timestamppb.New(epoch),
+					LastSeenOffsetSeconds: 60 * 60 * 72 /* 3 days */,
+					Count:                 2,
 				},
 			),
 		},
@@ -648,12 +656,12 @@ func TestMeldData(t *testing.T) {
 			left: wrapPrimWithTracking(&pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
 			},
-				&pb.AkitaWitnessTracking{Count: 1},
+				&pb.AkitaWitnessTracking{Count: 0},
 			),
 			right: wrapPrimWithTracking(&pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
 			},
-				&pb.AkitaWitnessTracking{Count: 1},
+				&pb.AkitaWitnessTracking{Count: 0},
 			),
 			expected: wrapPrimWithTracking(&pb.Primitive{
 				Value: &pb.Primitive_Int32Value{Int32Value: &pb.Int32{}},
