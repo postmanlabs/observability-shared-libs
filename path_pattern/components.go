@@ -1,7 +1,7 @@
 package path_pattern
 
 import (
-	"strings"
+	"regexp"
 )
 
 // Represents a path component value, which can be either a concrete string Val
@@ -23,17 +23,7 @@ func (v Val) String() string {
 }
 
 func (v Val) Regexp() string {
-	return "(" + escape(v.String()) + ")"
-}
-
-// Escapes special regexp characters in s.
-func escape(s string) string {
-	specialChars := []string{"\\",".","+","*","?","(",")","|","[","]","{","}","^","$"}
-	rv := s
-	for _, c := range specialChars {
-		rv = strings.ReplaceAll(rv, c, "\\" + c)
-	}
-	return rv
+	return "(" + regexp.QuoteMeta(v.String()) + ")"
 }
 
 type Var string
