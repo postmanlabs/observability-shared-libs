@@ -6,6 +6,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// For patterns with trailing slashes, for which serialization/deserialization
+// is not idempotent.
+func TestParse(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected Pattern
+	}{
+		{
+			input: "/v1//foobar/{foobar}/",
+			expected: Pattern{
+				Val(""),
+				Val("v1"),
+				Val(""),
+				Val("foobar"),
+				Var("foobar"),
+			},
+		},
+	}
+
+	for _, c := range testCases {
+		p := Parse(c.input)
+		assert.Equal(t, c.expected, p, c.input)
+	}
+}
+
+// For patterns without trailing slashes.  Also tests that parsing and then
+// serializing the pattern returns the original string.
 func TestParseAndString(t *testing.T) {
 	testCases := []struct {
 		input    string
@@ -17,26 +44,6 @@ func TestParseAndString(t *testing.T) {
 				Val(""),
 				Val("v1"),
 				Var("my_arg_name"),
-			},
-		},
-		{
-			input: "/v1//foobar/{foobar}/",
-			expected: Pattern{
-				Val(""),
-				Val("v1"),
-				Val(""),
-				Val("foobar"),
-				Var("foobar"),
-				Val(""),
-			},
-		},
-		{
-			input: "/v1/^/foobar",
-			expected: Pattern{
-				Val(""),
-				Val("v1"),
-				Placeholder{},
-				Val("foobar"),
 			},
 		},
 		{
@@ -71,11 +78,16 @@ func TestMatch(t *testing.T) {
 		{
 			pattern:     "/v1/{my_arg_name}",
 			target:      "/v1/foobar/x",
-			expectMatch: true,
+			expectMatch: false,
 		},
 		{
 			pattern:     "/v1/{my_arg_name}",
 			target:      "/v1/foobar/",
+			expectMatch: true,
+		},
+		{
+			pattern:     "/v1/{my_arg_name}/",
+			target:      "/v1/foobar",
 			expectMatch: true,
 		},
 		{
@@ -96,7 +108,7 @@ func TestMatch(t *testing.T) {
 		{
 			pattern:     "/v1/^/{my_arg_name}",
 			target:      "/v1/foo/bar",
-			expectMatch: true,
+			expectMatch: false,
 		},
 		{
 			pattern:     "/v1/{my_arg_name}",
@@ -113,6 +125,31 @@ func TestMatch(t *testing.T) {
 			// Target does not have enough components to match.
 			pattern:     "/v1/{my_arg_name}",
 			target:      "/v1",
+			expectMatch: false,
+		},
+		{
+			pattern:     "/v1/**",
+			target:      "/v1/foo/bar/baz",
+			expectMatch: true,
+		},
+		{
+			pattern:     "/v1/**/baz",
+			target:      "/v1/foo/bar/baz",
+			expectMatch: true,
+		},
+		{
+			pattern:     "/v1/**/baz/bar",
+			target:      "/v1/foo/bar/baz",
+			expectMatch: false,
+		},
+		{
+			pattern:     "/v1/foo/;|{}/bar",
+			target:      "/v1/foo/bar/baz",
+			expectMatch: false,
+		},
+		{
+			pattern:     "/v1/foo/b.r/baz",
+			target:      "/v1/foo/bar/baz",
 			expectMatch: false,
 		},
 	}

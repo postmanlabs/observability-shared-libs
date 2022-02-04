@@ -1,6 +1,7 @@
 package path_pattern
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -23,33 +24,45 @@ func (p *Pattern) UnmarshalText(data []byte) error {
 	return nil
 }
 
-// Match happens if the prefix of the input matches the pattern.
+func (p Pattern) regexp() *regexp.Regexp {
+	var pieces []string
+	for _, piece := range p {
+		pieces = append(pieces, piece.Regexp())
+	}
+	return regexp.MustCompile("^" + strings.Join(pieces, "/") + "$")
+}
+
+// Match happens if the pattern exactly matches the string.
 func (p Pattern) Match(v string) bool {
-	parts := strings.Split(v, "/")
+	r := p.regexp()
+	return r.MatchString(removeTrailingSlashes(v))
+}
 
-	compLen := len(p)
-	if compLen > len(parts) {
-		return false
-	}
+func (p Pattern) MatchWithGroup(v string) (bool, []string) {
+	r := p.regexp()
+	subMatches := r.FindStringSubmatch(removeTrailingSlashes(v))
+	return subMatches != nil, subMatches
+}
 
-	for i := 0; i < compLen; i++ {
-		if !p[i].Match(parts[i]) {
-			return false
-		}
+// Removes trailing slashes, except the final slash if v == "/".
+func removeTrailingSlashes(v string) string {
+	s := v
+	for len(s) > 1 && s[len(s) - 1] == '/' {
+		s = s[:len(s) - 1]
 	}
-	return true
+	return s
 }
 
 // Converts a string pattern "/v1/{arg2}" to Pattern.
 func Parse(v string) Pattern {
-	parts := strings.Split(v, "/")
+	parts := strings.Split(removeTrailingSlashes(v), "/")
 	result := make(Pattern, 0, len(parts))
 
 	for _, p := range parts {
 		if p == "*" {
 			result = append(result, Wildcard{})
-		} else if p == "^" {
-			result = append(result, Placeholder{})
+		} else if p == "**" {
+			result = append(result, DoubleWildcard{})
 		} else if strings.HasPrefix(p, "{") && strings.HasSuffix(p, "}") {
 			result = append(result, Var(p[1:len(p)-1]))
 		} else {
