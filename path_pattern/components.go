@@ -9,6 +9,8 @@ import (
 type Component interface {
 	Match(string) bool
 	String() string
+
+	// Returns a parenthesized regular expression for this component.
 	Regexp() string
 }
 
