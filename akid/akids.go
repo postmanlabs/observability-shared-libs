@@ -10,6 +10,7 @@ import (
 const (
 	APISpecTag         = "api"
 	APIKeyTag          = "apk"
+	APIMethodTag       = "mth"
 	ClientTag          = "cli"
 	ConnectionTag      = "cxn"
 	DataCategoryTag    = "dct"
@@ -37,6 +38,7 @@ type tagToIDConstructor func(uuid.UUID) ID
 var idConstructorMap = map[string]tagToIDConstructor{
 	APISpecTag:         func(ID uuid.UUID) ID { return NewAPISpecID(ID) },
 	APIKeyTag:          func(ID uuid.UUID) ID { return NewAPIKeyID(ID) },
+	APIMethodTag:       func(ID uuid.UUID) ID { return NewAPIMethodID(ID) },
 	ClientTag:          func(ID uuid.UUID) ID { return NewClientID(ID) },
 	ConnectionTag:      func(ID uuid.UUID) ID { return NewConnectionID(ID) },
 	DataCategoryTag:    func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
@@ -157,6 +159,31 @@ func (id APIKeyID) MarshalText() ([]byte, error) {
 }
 
 func (id *APIKeyID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// APIMethodIDs
+type APIMethodID struct {
+	baseID
+}
+
+func (APIMethodID) GetType() string {
+	return APIMethodTag
+}
+
+func NewAPIMethodID(ID uuid.UUID) APIMethodID {
+	return APIMethodID{baseID(ID)}
+}
+
+func GenerateAPIMethodID() APIMethodID {
+	return NewAPIMethodID(uuid.New())
+}
+
+func (id APIMethodID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *APIMethodID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
 
