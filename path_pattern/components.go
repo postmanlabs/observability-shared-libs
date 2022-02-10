@@ -4,8 +4,8 @@ import (
 	"regexp"
 )
 
-// Represents a path component value, which can be either a concrete string Val
-// or a Var.
+// Represents a path component value, which can be a concrete string Val, a Var,
+// a Wildcard, or a DoubleWildcard.
 type Component interface {
 	Match(string) bool
 	String() string
@@ -15,6 +15,8 @@ type Component interface {
 }
 
 type Val string
+
+var _ Component = (*Val)(nil)
 
 func (v Val) Match(c string) bool {
 	return string(v) == c
@@ -29,6 +31,8 @@ func (v Val) Regexp() string {
 }
 
 type Var string
+
+var _ Component = (*Var)(nil)
 
 func (Var) Match(c string) bool {
 	// Var matches anything other than empty.
@@ -47,6 +51,8 @@ func (v Var) Regexp() string {
 // parameter.
 type Wildcard struct{}
 
+var _ Component = (*Wildcard)(nil)
+
 func (Wildcard) Match(c string) bool {
 	return true
 }
@@ -61,6 +67,8 @@ func (v Wildcard) Regexp() string {
 
 // A component that matches any number of path arguments.
 type DoubleWildcard struct{}
+
+var _ Component = (*DoubleWildcard)(nil)
 
 func (DoubleWildcard) Match(c string) bool {
 	return true

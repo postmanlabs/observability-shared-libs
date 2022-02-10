@@ -6,17 +6,36 @@ import (
 )
 
 type Pattern interface {
+	// Returns this pattern, represented as a list of path components.
 	Components() []Component
-	MarshalText() ([]byte, error)
+
+	// Returns true if the pattern matches the path.  Patterns and paths are
+	// compared after removing any trailing slashes.
 	Match(string) bool
+
+	// Returns true if the pattern matches the path.  Patterns and paths are
+	// compared after removing any trailing slashes.
+	//
+	// Also returns a list of submatches, where each component is interpreted as a
+	// match group.  The first element is the entire matched string, and the
+	// remaining elements are per-component matches.
+	//
+	// For example, "/v1/{arg}/**".MatchWithGroup("/v1/foo/bar/baz") would return
+	// ["/v1/foo/bar/baz", "v1", "foo", "bar/baz"].
+	//
+	// See documentation for regexp.FindStringSubmatch for more details.
 	MatchWithGroup(string) (bool, []string)
+
+	// Returns a string that parses into an equivalent pattern.
 	String() string
+
+	MarshalText() ([]byte, error)
 	UnmarshalText(data []byte) error
 }
 
 type patternImpl struct {
 	components []Component
-	regexp *regexp.Regexp
+	regexp     *regexp.Regexp
 }
 
 func (p *patternImpl) Components() []Component {
@@ -52,23 +71,10 @@ func (p *patternImpl) getOrCreateRegexp() *regexp.Regexp {
 	return p.regexp
 }
 
-// Returns true if the pattern matches the path.  Patterns and paths are
-// compared after removing any trailing slashes.
 func (p *patternImpl) Match(v string) bool {
 	return p.getOrCreateRegexp().MatchString(removeTrailingSlashes(v))
 }
 
-// Returns true if the pattern matches the path.  Patterns and paths are
-// compared after removing any trailing slashes.
-//
-// Also returns a list of submatches, where each component is interpreted
-// as a match group.  The first element is the entire matched string, and
-// the remaining elements are per-component matches.
-//
-// For example, "/v1/{arg}/**".MatchWithGroup("/v1/foo/bar/baz") would return
-// ["/v1/foo/bar/baz", "v1", "foo", "bar/baz"].
-//
-// See documentation for regexp.FindStringSubmatch for more details.
 func (p *patternImpl) MatchWithGroup(v string) (bool, []string) {
 	subMatches := p.getOrCreateRegexp().FindStringSubmatch(removeTrailingSlashes(v))
 	return subMatches != nil, subMatches
@@ -77,8 +83,8 @@ func (p *patternImpl) MatchWithGroup(v string) (bool, []string) {
 // Removes trailing slashes, except the final slash if v == "/".
 func removeTrailingSlashes(v string) string {
 	s := v
-	for len(s) > 1 && s[len(s) - 1] == '/' {
-		s = s[:len(s) - 1]
+	for len(s) > 1 && s[len(s)-1] == '/' {
+		s = s[:len(s)-1]
 	}
 	return s
 }
