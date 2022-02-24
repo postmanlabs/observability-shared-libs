@@ -1,6 +1,7 @@
 package path_pattern
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,11 +12,11 @@ import (
 func TestParse(t *testing.T) {
 	testCases := []struct {
 		input    string
-		expected *patternImpl
+		expected *Pattern
 	}{
 		{
 			input: "/v1//foobar/{foobar}/",
-			expected: &patternImpl{
+			expected: &Pattern{
 				components: []Component{
 					Val(""),
 					Val("v1"),
@@ -38,11 +39,11 @@ func TestParse(t *testing.T) {
 func TestParseAndString(t *testing.T) {
 	testCases := []struct {
 		input    string
-		expected *patternImpl
+		expected *Pattern
 	}{
 		{
 			input: "/v1/{my_arg_name}",
-			expected: &patternImpl{
+			expected: &Pattern{
 				components: []Component{
 					Val(""),
 					Val("v1"),
@@ -52,7 +53,7 @@ func TestParseAndString(t *testing.T) {
 		},
 		{
 			input: "/v1/*/foobar",
-			expected: &patternImpl{
+			expected: &Pattern{
 				components: []Component{
 					Val(""),
 					Val("v1"),
@@ -67,6 +68,19 @@ func TestParseAndString(t *testing.T) {
 		p := Parse(c.input)
 		assert.Equal(t, c.expected, p, c.input)
 		assert.Equal(t, c.input, p.String())
+
+		jsonStr := `"` + c.input + `"`
+		var unmarshalled Pattern
+		if err := json.Unmarshal([]byte(jsonStr), &unmarshalled); err != nil {
+			assert.NoError(t, err, "failed to unmarshal %s", c.input)
+			continue
+		}
+		marshalled, err := json.Marshal(unmarshalled)
+		if err != nil {
+			assert.NoError(t, err, "failed to marshal %s", c.input)
+			continue
+		}
+		assert.Equal(t, jsonStr, string(marshalled), "failed to marshal/unmarshal %s", c.input)
 	}
 }
 
