@@ -29,7 +29,7 @@ func (p Pattern) MarshalText() ([]byte, error) {
 }
 
 func (p *Pattern) UnmarshalText(data []byte) error {
-	*p = *Parse(string(data))
+	*p = Parse(string(data))
 	return nil
 }
 
@@ -77,7 +77,7 @@ func removeTrailingSlashes(v string) string {
 }
 
 // Converts a string pattern "/v1/{arg2}" to Pattern.
-func Parse(v string) *Pattern {
+func Parse(v string) Pattern {
 	parts := strings.Split(removeTrailingSlashes(v), "/")
 	result := Pattern{
 		components: make([]Component, 0, len(parts)),
@@ -94,5 +94,5 @@ func Parse(v string) *Pattern {
 			result.components = append(result.components, Val(p))
 		}
 	}
-	return &result
+	return result
 }

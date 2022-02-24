@@ -12,11 +12,11 @@ import (
 func TestParse(t *testing.T) {
 	testCases := []struct {
 		input    string
-		expected *Pattern
+		expected Pattern
 	}{
 		{
 			input: "/v1//foobar/{foobar}/",
-			expected: &Pattern{
+			expected: Pattern{
 				components: []Component{
 					Val(""),
 					Val("v1"),
@@ -39,11 +39,11 @@ func TestParse(t *testing.T) {
 func TestParseAndString(t *testing.T) {
 	testCases := []struct {
 		input    string
-		expected *Pattern
+		expected Pattern
 	}{
 		{
 			input: "/v1/{my_arg_name}",
-			expected: &Pattern{
+			expected: Pattern{
 				components: []Component{
 					Val(""),
 					Val("v1"),
@@ -53,7 +53,7 @@ func TestParseAndString(t *testing.T) {
 		},
 		{
 			input: "/v1/*/foobar",
-			expected: &Pattern{
+			expected: Pattern{
 				components: []Component{
 					Val(""),
 					Val("v1"),
