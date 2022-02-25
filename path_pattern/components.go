@@ -81,3 +81,21 @@ func (DoubleWildcard) String() string {
 func (v DoubleWildcard) Regexp() string {
 	return "(.*)"
 }
+
+// A component that should retain the original value verbatim, otherwise behaves
+// like a wildcard.  Matches everything except path parameters.
+type Placeholder struct{}
+
+var _ Component = (*Placeholder)(nil)
+
+func (Placeholder) Match(c string) bool {
+	return true
+}
+
+func (Placeholder) String() string {
+	return "^"
+}
+
+func (Placeholder) Regexp() string {
+	return "([^{}/]+)"
+}

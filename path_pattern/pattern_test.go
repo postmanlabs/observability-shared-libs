@@ -128,7 +128,7 @@ func TestMatch(t *testing.T) {
 		{
 			pattern:     "/v1/^/{my_arg_name}",
 			target:      "/v1/foo/bar",
-			expectMatch: false,
+			expectMatch: true,
 		},
 		{
 			pattern:     "/v1/{my_arg_name}",
@@ -170,6 +170,31 @@ func TestMatch(t *testing.T) {
 		{
 			pattern:     "/v1/foo/b.r/baz",
 			target:      "/v1/foo/bar/baz",
+			expectMatch: false,
+		},
+		{
+			pattern:     "/^",
+			target:      "/v1",
+			expectMatch: true,
+		},
+		{
+			pattern:     "/v1/^",
+			target:      "/v1/foo",
+			expectMatch: true,
+		},
+		{
+			pattern:     "/v1/^/bar",
+			target:      "/v1/foo/bar",
+			expectMatch: true,
+		},
+		{
+			pattern:     "/v1/^",
+			target:      "/v1/{arg}",
+			expectMatch: false,
+		},
+		{
+			pattern:     "/v1/^/bar",
+			target:      "/v1/{arg}/bar",
 			expectMatch: false,
 		},
 	}

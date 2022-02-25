@@ -88,6 +88,8 @@ func Parse(v string) Pattern {
 			result.components = append(result.components, Wildcard{})
 		} else if p == "**" {
 			result.components = append(result.components, DoubleWildcard{})
+		} else if p == "^" {
+			result.components = append(result.components, Placeholder{})
 		} else if strings.HasPrefix(p, "{") && strings.HasSuffix(p, "}") {
 			result.components = append(result.components, Var(p[1:len(p)-1]))
 		} else {
