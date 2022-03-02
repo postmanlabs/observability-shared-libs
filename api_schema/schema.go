@@ -312,11 +312,8 @@ type SpecInfo struct {
 	PRStatus string `json:"pr_status,omitempty"`
 
 	// Model and trace statistics
-	// Number of endpoints, number of witnesses incorporated into model, and
-	// raw number of witnesses used as input.
-	NumEndpoints    int `json:"num_endpoints,omitempty"`
-	NumEvents       int `json:"num_events,omitempty"`
-	NumStoredEvents int `json:"num_stored_events,omitempty"`
+	// Number of endpoints.
+	NumEndpoints int `json:"num_endpoints,omitempty"`
 
 	// Deployment times
 	TraceStartTime *time.Time `json:"trace_start_time,omitempty"`
