@@ -11,14 +11,14 @@ type VersionName = string
 
 const (
 	// Unreserved names.  Users are also allowed to use these version names.
-	XAkitaStableVersionName         VersionName = "stable"
+	XAkitaStableVersionName VersionName = "stable"
 
 	// Reserved names.  Users are not allowed to use these version names.
-	XAkitaLatestVersionName         VersionName = "latest"
+	XAkitaLatestVersionName VersionName = "latest"
 
 	// Reserved prefixes.  Users are not allowed to use version names that
 	// start with these.
-	XAkitaReservedVersionNamePrefix string      = "x-akita"
+	XAkitaReservedVersionNamePrefix string = "x-akita"
 )
 
 // Determines whether a version is reserved for Akita internal use.
@@ -29,6 +29,8 @@ func IsReservedVersionName(k VersionName) bool {
 	return isReservedConstant || hasReservedPrefix
 }
 
+// Produces the version name for the latest model that aggregates all models for
+// a deployment and a source.
 func GetBigSpecVersionName(source tags.Source, deployment string) VersionName {
 	// XXX If source or deployment contain colons, this can result in collisions.
 	// For example, ("foo:bar", "baz") and ("foo", "bar:baz") will both result in
@@ -41,4 +43,16 @@ func GetBigSpecVersionName(source tags.Source, deployment string) VersionName {
 		builder.WriteString(deployment)
 	}
 	return builder.String()
+}
+
+// Produces the version name for the latest "large" model that was precomputed
+// for a deployment.
+func GetLargeModelVersionName(deployment string) VersionName {
+	return fmt.Sprintf("%s-large-model:%s", XAkitaReservedVersionNamePrefix, deployment)
+}
+
+// Produces the version name for the latest "large model" to be used for
+// diffing against other models in a deployment.
+func GetLargeDiffingModelVersionName(deployment string) VersionName {
+	return fmt.Sprintf("%s-large-diffing-model:%s", XAkitaReservedVersionNamePrefix, deployment)
 }
