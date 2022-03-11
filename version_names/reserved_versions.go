@@ -51,8 +51,14 @@ func GetLargeModelVersionName(deployment string) VersionName {
 	return fmt.Sprintf("%s-large-model:%s", XAkitaReservedVersionNamePrefix, deployment)
 }
 
-// Produces the version name for the latest "large model" to be used for
-// diffing against other models in a deployment.
+// Produces the version name for the latest "large diffing model" to be used for
+// diffing against the "small diffing model" in a deployment.
 func GetLargeDiffingModelVersionName(deployment string) VersionName {
 	return fmt.Sprintf("%s-large-diffing-model:%s", XAkitaReservedVersionNamePrefix, deployment)
+}
+
+// Produces the version name for the latest "small diffing model" to be used for
+// diffing against the "large diffing model" in a deployment.
+func GetSmallDiffingModelVersionName(deployment string) VersionName {
+	return fmt.Sprintf("%s-small-diffing-model:%s", XAkitaReservedVersionNamePrefix, deployment)
 }
