@@ -51,8 +51,29 @@ func (p *Pattern) Match(v string) bool {
 	return p.getOrCreateRegexp().MatchString(removeTrailingSlashes(v))
 }
 
-// Returns true if the pattern matches the path.  Patterns and paths are
-// compared after removing any trailing slashes.
+func (p *Pattern) getOrCreatePrefixRegexp() *regexp.Regexp {
+	if p.regexp != nil {
+		return p.regexp
+	}
+	var pieces []string
+	for _, piece := range p.components {
+		pieces = append(pieces, piece.Regexp())
+	}
+	// Append `/|$` to ensure the pattern either exactly matches or
+	// matches a prefix, but doesn't match part of a segment.  For example,
+	// `/foo` should match `/foo`, `/foo/bar`, but not `/foobar`.
+	p.regexp = regexp.MustCompile("^" + strings.Join(pieces, "/") + "(?:/|$)")
+	return p.regexp
+}
+
+// Returns true if the pattern matches a prefix of the path.  Patterns and
+// paths are compared after removing any trailing slashes.
+func (p *Pattern) PrefixMatch(v string) bool {
+	return p.getOrCreatePrefixRegexp().MatchString(removeTrailingSlashes(v))
+}
+
+// Returns true if the pattern matches a prefix of the path.  Patterns and
+// paths are compared after removing any trailing slashes.
 //
 // Also returns a list of submatches, where each component is interpreted as a
 // match group.  The first element is the entire matched string, and the
@@ -64,6 +85,12 @@ func (p *Pattern) Match(v string) bool {
 // See documentation for regexp.FindStringSubmatch for more details.
 func (p *Pattern) MatchWithGroup(v string) (bool, []string) {
 	subMatches := p.getOrCreateRegexp().FindStringSubmatch(removeTrailingSlashes(v))
+	return subMatches != nil, subMatches
+}
+
+// Like MatchWithGroup, but matches a prefix of v in addition to the whole string.
+func (p *Pattern) PrefixMatchWithGroup(v string) (bool, []string) {
+	subMatches := p.getOrCreatePrefixRegexp().FindStringSubmatch(removeTrailingSlashes(v))
 	return subMatches != nil, subMatches
 }
 
