@@ -54,7 +54,7 @@ type MethodMatcher struct {
 // match on (host, string) is attempted instead. This handles things calls like
 // OPTION that we do not include in our API model, which currently does path
 // parameter inference without considering operations to be distinct.
-func (m *MethodMatcher) LookupWithHost(operation string, host string, path string) (template string) {
+func (m *MethodMatcher) LookupWithHost(operation string, host string, path string) (template string, found bool) {
 	for _, candidate := range m.methods {
 		if candidate.Operation != operation {
 			continue
@@ -63,7 +63,7 @@ func (m *MethodMatcher) LookupWithHost(operation string, host string, path strin
 			continue
 		}
 		if candidate.RE.MatchString(path) {
-			return candidate.Template
+			return candidate.Template, true
 		}
 	}
 	// If we failed, try again without Operation filter
@@ -72,10 +72,10 @@ func (m *MethodMatcher) LookupWithHost(operation string, host string, path strin
 			continue
 		}
 		if candidate.RE.MatchString(path) {
-			return candidate.Template
+			return candidate.Template, true
 		}
 	}
-	return path
+	return path, false
 }
 
 const (
