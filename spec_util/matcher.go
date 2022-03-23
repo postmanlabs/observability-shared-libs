@@ -49,12 +49,11 @@ type MethodMatcher struct {
 	methods []methodRegexp
 }
 
-// Lookup returns either a matching template, or the original path if no match
-// is found. This version matches on host as well. If there is no exact match on
-// (operation, host, string) accept a partial match on (host, string) instead.
-// This handles things calls like OPTION that we do not include in our API
-// model, which currently does path parameter inference without considering
-// operations to be distinct.
+// Returns either a matching template, or the original path if no match is
+// found. If there is no exact match on (operation, host, string) a partial
+// match on (host, string) is attempted instead. This handles things calls like
+// OPTION that we do not include in our API model, which currently does path
+// parameter inference without considering operations to be distinct.
 func (m *MethodMatcher) LookupWithHost(operation string, host string, path string) (template string) {
 	for _, candidate := range m.methods {
 		if candidate.Operation != operation {
