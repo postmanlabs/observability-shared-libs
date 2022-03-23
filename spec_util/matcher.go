@@ -48,20 +48,6 @@ type MethodMatcher struct {
 	methods []methodRegexp
 }
 
-// Original behavior-- deprecated but still in use.
-// Lookup returns either a matching template, or the original path if no match is found.
-func (m *MethodMatcher) Lookup(operation string, path string) (template string) {
-	for _, candidate := range m.methods {
-		if candidate.Operation != operation {
-			continue
-		}
-		if candidate.RE.MatchString(path) {
-			return candidate.Template
-		}
-	}
-	return path
-}
-
 // Lookup returns either a matching template, or the original path if no match is found.
 // This version matches on host as well.
 // If there is no exact match on (operation, host,string) accept a partial match on (host,string) instead.
