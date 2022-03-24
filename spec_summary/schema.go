@@ -4,6 +4,7 @@ package spec_summary
 // parts of the spec.
 type Summary struct {
 	Authentications map[string]int `json:"authentications"`
+	Directions      map[string]int `json:"directions"`
 	HTTPMethods     map[string]int `json:"http_methods"`
 	Paths           map[string]int `json:"paths"`
 	Params          map[string]int `json:"params"`
