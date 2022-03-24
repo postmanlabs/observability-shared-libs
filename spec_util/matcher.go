@@ -20,8 +20,8 @@ type methodRegexp struct {
 
 func (r methodRegexp) LessThan(other methodRegexp) bool {
 	for i, p := range r.VariablePositions {
-		// Other template has more specific path if it has fewer
-		// variables, or the variable in it comes later.
+		// Other template has more specific path if it has fewer variables, or the
+		// variable in it comes later.
 		if i >= len(other.VariablePositions) {
 			return false
 		}
@@ -39,35 +39,22 @@ func (r methodRegexp) LessThan(other methodRegexp) bool {
 	return false
 }
 
-// MethodMatcher is currently a list of regular expressions to try in order;
-// in the future it could be a tree lookup structure (for efficiency and
-// to more easily accommodate longest-prefix matching.)
+// MethodMatcher is currently a list of regular expressions to try in order; in
+// the future it could be a tree lookup structure (for efficiency and to more
+// easily accommodate longest-prefix matching.)
 //
-// During creation, ensure that /abc/def is sorted before /abc/{var1} so that the former is preferred.
+// During creation, ensure that /abc/def is sorted before /abc/{var1} so that
+// the former is preferred.
 type MethodMatcher struct {
 	methods []methodRegexp
 }
 
-// Original behavior-- deprecated but still in use.
-// Lookup returns either a matching template, or the original path if no match is found.
-func (m *MethodMatcher) Lookup(operation string, path string) (template string) {
-	for _, candidate := range m.methods {
-		if candidate.Operation != operation {
-			continue
-		}
-		if candidate.RE.MatchString(path) {
-			return candidate.Template
-		}
-	}
-	return path
-}
-
-// Lookup returns either a matching template, or the original path if no match is found.
-// This version matches on host as well.
-// If there is no exact match on (operation, host,string) accept a partial match on (host,string) instead.
-// This handles things calls like OPTION that we do not include in our API model, which currently does
-// path parameter inference without considering operations to be distinct.
-func (m *MethodMatcher) LookupWithHost(operation string, host string, path string) (template string) {
+// Returns either a matching template, or the original path if no match is
+// found. If there is no exact match on (operation, host, string) a partial
+// match on (host, string) is attempted instead. This handles things calls like
+// OPTION that we do not include in our API model, which currently does path
+// parameter inference without considering operations to be distinct.
+func (m *MethodMatcher) LookupWithHost(operation string, host string, path string) (template string, found bool) {
 	for _, candidate := range m.methods {
 		if candidate.Operation != operation {
 			continue
@@ -76,7 +63,7 @@ func (m *MethodMatcher) LookupWithHost(operation string, host string, path strin
 			continue
 		}
 		if candidate.RE.MatchString(path) {
-			return candidate.Template
+			return candidate.Template, true
 		}
 	}
 	// If we failed, try again without Operation filter
@@ -85,18 +72,18 @@ func (m *MethodMatcher) LookupWithHost(operation string, host string, path strin
 			continue
 		}
 		if candidate.RE.MatchString(path) {
-			return candidate.Template
+			return candidate.Template, true
 		}
 	}
-	return path
+	return path, false
 }
 
 const (
-	// Allow % for URL encoding but I'm not bothering to verify that the
-	// correct format is followed.  Other valid unreserved characters are
-	// - . _ ~
+	// Allow % for URL encoding but I'm not bothering to verify that the correct
+	// format is followed.  Other valid unreserved characters are
+	//   - . _ ~
 	// according to RFC3986.  I'm not accepting the reserved characters
-	// : / ? # [ ] @ ! $ & ' ( ) *  + , ; =
+	//   : / ? # [ ] @ ! $ & ' ( ) *  + , ; =
 	//
 	uriPathCharacters = "[A-Za-z0-9-._~%]+"
 	uriArgument       = "\\{.*?\\}" // non-greedy match
@@ -107,20 +94,19 @@ var (
 )
 
 // Convert a string with templates like
-// v1/api/get/user/{arg1}/{arg2}
+//   v1/api/get/user/{arg1}/{arg2}
 // to a regular expression that matches the entire path like
-// ^v1/api/get/user/([^/]+)/([^/]+)$
+//   ^v1/api/get/user/([^/]+)/([^/]+)$
 //
-// Return the position of each argument within the original template, in sorted order,
-// counting all variables as length 1.
+// Return the position of each argument within the original template, in sorted
+// order, counting all variables as length 1.
 func templateToRegexp(pathTemplate string) (*regexp.Regexp, []int, error) {
-	// If there are special characters, then the easiest way to escape them is
-	// to break the string up by arguments, and escape everything in between.
+	// If there are special characters, then the easiest way to escape them is to
+	// break the string up by arguments, and escape everything in between.
 	literals := uriArgumentRegexp.Split(pathTemplate, -1)
 
-	// Insert between every pair of literals, so not after the last.
-	// If the path ends with an argument we should get an empty literal at
-	// the end.
+	// Insert between every pair of literals, so not after the last. If the path
+	// ends with an argument we should get an empty literal at the end.
 	var buf strings.Builder
 	buf.WriteString("^")
 	positions := make([]int, 0, len(literals)-1)
@@ -148,8 +134,8 @@ func templateToRegexp(pathTemplate string) (*regexp.Regexp, []int, error) {
 
 }
 
-// NewMethodMatcher takes an API spec and returns a dictionary that
-// converts witness methods into the matching templatized path in the spec.
+// NewMethodMatcher takes an API spec and returns a dictionary that converts
+// witness methods into the matching templatized path in the spec.
 func NewMethodMatcher(spec *pb.APISpec) (*MethodMatcher, error) {
 	// Convert each method in the spec to a regular expression
 	mm := &MethodMatcher{
