@@ -43,6 +43,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 	v := specSummaryVisitor{
 		methodSummary: &Summary{
 			Authentications: make(map[string]int),
+			Directions:      make(map[string]int),
 			HTTPMethods:     make(map[string]int),
 			Paths:           make(map[string]int),
 			Params:          make(map[string]int),
@@ -54,6 +55,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 		},
 		summary: &Summary{
 			Authentications: make(map[string]int),
+			Directions:      make(map[string]int),
 			HTTPMethods:     make(map[string]int),
 			Paths:           make(map[string]int),
 			Params:          make(map[string]int),
@@ -73,6 +75,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 	}
 	knownFilterKeys := map[string]struct{}{
 		"authentications": {},
+		"directions":      {},
 		"http_methods":    {},
 		"paths":           {},
 		"params":          {},
@@ -162,6 +165,8 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 		switch filterKind {
 		case "authentications":
 			summary.Authentications = countsByFilterVal
+		case "directions":
+			summary.Directions = countsByFilterVal
 		case "data_kinds":
 			summary.DataKinds = countsByFilterVal
 		case "data_formats":
@@ -223,6 +228,7 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 		kind string
 	}{
 		{dst: v.summary.Authentications, src: v.methodSummary.Authentications, kind: "authentications"},
+		{dst: v.summary.Directions, src: v.methodSummary.Directions, kind: "directions"},
 		{dst: v.summary.HTTPMethods, src: v.methodSummary.HTTPMethods, kind: "http_methods"},
 		{dst: v.summary.Paths, src: v.methodSummary.Paths, kind: "paths"},
 		{dst: v.summary.Params, src: v.methodSummary.Params, kind: "params"},
@@ -245,7 +251,7 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 	return cont
 }
 
-func (v *specSummaryVisitor) LeaveData(self interface{}, _ vis.SpecVisitorContext, d *pb.Data, cont Cont) Cont {
+func (v *specSummaryVisitor) LeaveData(self interface{}, context vis.SpecVisitorContext, d *pb.Data, cont Cont) Cont {
 	// Handle auth vs params vs properties.
 	if meta := spec_util.HTTPAuthFromData(d); meta != nil {
 		v.methodSummary.Authentications[meta.Type.String()] += 1
@@ -263,6 +269,12 @@ func (v *specSummaryVisitor) LeaveData(self interface{}, _ vis.SpecVisitorContex
 				v.methodSummary.Properties[k] += 1
 			}
 		}
+	}
+
+	if context.IsResponse() {
+		v.methodSummary.Directions["response"] += 1
+	} else {
+		v.methodSummary.Directions["request"] += 1
 	}
 
 	// Handle response codes.

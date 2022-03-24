@@ -14,6 +14,10 @@ func TestSummarize(t *testing.T) {
 		Authentications: map[string]int{
 			"BASIC": 1,
 		},
+		Directions: map[string]int{
+			"request":  1,
+			"response": 1,
+		},
 		HTTPMethods: map[string]int{
 			"POST": 1,
 		},
