@@ -1,6 +1,6 @@
 module github.com/akitasoftware/akita-libs
 
-go 1.15
+go 1.18
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
@@ -14,9 +14,16 @@ require (
 	github.com/google/martian/v3 v3.0.1
 	github.com/google/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	google.golang.org/protobuf v1.27.1
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/sergi/go-diff v1.1.0 // indirect
+	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
 
 replace (
