@@ -16,6 +16,10 @@ const (
 
 	// The original filesystem path of an uploaded trace.
 	XAkitaTraceLocalPath Key = "x-akita-trace-local-path"
+
+	// The version of the service(s) under observation, as defined by the
+	// user.
+	XAkitaServiceVersion Key = "x-akita-service-version"
 )
 
 // Generic CI tags

@@ -255,7 +255,7 @@ type GetSpecMetadataResponse struct {
 
 	State APISpecState `json:"state"`
 
-	Tags map[tags.Key]string `json:"tags"`
+	Tags map[tags.Key][]string `json:"tags"`
 }
 
 type GetSpecResponse struct {
@@ -276,7 +276,7 @@ type GetSpecResponse struct {
 
 	Summary *spec_summary.Summary `json:"summary,omitempty"`
 
-	Tags map[tags.Key]string `json:"tags"`
+	Tags map[tags.Key][]string `json:"tags"`
 }
 
 type SetSpecVersionRequest struct {
@@ -302,8 +302,8 @@ type SpecInfo struct {
 	// Use Tags field instead.
 	LearnSessionTags []LearnSessionTag `json:"learn_session_tags,omitempty"`
 
-	Tags        map[tags.Key]string `json:"tags,omitempty"`
-	VersionTags []string            `json:"version_tags,omitempty"`
+	Tags        map[tags.Key][]string `json:"tags,omitempty"`
+	VersionTags []string              `json:"version_tags,omitempty"`
 
 	CreationTime time.Time    `json:"creation_time"`
 	EditTime     time.Time    `json:"edit_time"`
