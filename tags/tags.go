@@ -8,19 +8,20 @@ import (
 )
 
 type Key = tags.Key
-type Values = []string
+type Tags map[Key][]string
+type SingletonTags map[Key]string
 
-// FromPairs returns a map from parsing a list of "key=value" pairs.
+// Returns a map from parsing a list of "key=value" pairs.
 // Produces an error if any element of the list is improperly formatted,
 // or if any key is given more than once.
 // The caller must emit an appropriate warning if any keys are reserved.
-func FromPairs(pairs []string) (map[Key]string, error) {
+func FromPairs(pairs []string) (SingletonTags, error) {
 	multiset, err := FromPairsMultiset(pairs)
 	if err != nil {
 		return nil, err
 	}
 
-	results := make(map[Key]string, len(multiset))
+	results := make(SingletonTags, len(multiset))
 	for k, vs := range multiset {
 		if len(vs) > 1 {
 			return nil, errors.Errorf("tag with key %s specified more than once", k)
@@ -36,8 +37,8 @@ func FromPairs(pairs []string) (map[Key]string, error) {
 // FromPairsMultiset returns a map from parsing a list of "key=value" pairs.
 // Produces an error if any element of the list is improperly formatted.
 // The caller must emit an appropriate warning if any keys are reserved.
-func FromPairsMultiset(pairs []string) (map[Key]Values, error) {
-	results := make(map[Key]Values, len(pairs))
+func FromPairsMultiset(pairs []string) (Tags, error) {
+	results := make(Tags, len(pairs))
 	for _, p := range pairs {
 		parts := strings.Split(p, "=")
 		if len(parts) != 2 {
