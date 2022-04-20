@@ -255,10 +255,10 @@ type GetSpecMetadataResponse struct {
 
 	State APISpecState `json:"state"`
 
-	// Deprecated in favor of TagsMultiset, which supports multiple values
+	// Deprecated in favor of TagsSet, which supports multiple values
 	// per tag.
-	Tags         tags.SingletonTags `json:"tags,omitempty"`
-	TagsMultiset tags.Tags          `json:"tags_multiset,omitempty"`
+	Tags    tags.SingletonTags `json:"tags,omitempty"`
+	TagsSet tags.Tags          `json:"tags_set,omitempty"`
 }
 
 type GetSpecResponse struct {
@@ -279,10 +279,10 @@ type GetSpecResponse struct {
 
 	Summary *spec_summary.Summary `json:"summary,omitempty"`
 
-	// Deprecated in favor of TagsMultiset, which supports multiple values
+	// Deprecated in favor of TagsSet, which supports multiple values
 	// per tag.
-	Tags         tags.SingletonTags `json:"tags,omitempty"`
-	TagsMultiset tags.Tags          `json:"tags_multiset,omitempty"`
+	Tags    tags.SingletonTags `json:"tags,omitempty"`
+	TagsSet tags.Tags          `json:"tags_set,omitempty"`
 }
 
 type SetSpecVersionRequest struct {
@@ -308,10 +308,10 @@ type SpecInfo struct {
 	// Use Tags field instead.
 	LearnSessionTags []LearnSessionTag `json:"learn_session_tags,omitempty"`
 
-	// Deprecated in favor of TagsMultiset, which supports multiple values
+	// Deprecated in favor of TagsSet, which supports multiple values
 	// per tag.
-	Tags         tags.SingletonTags `json:"tags,omitempty"`
-	TagsMultiset tags.Tags          `json:"tags_multiset,omitempty"`
+	Tags    tags.SingletonTags `json:"tags,omitempty"`
+	TagsSet tags.Tags          `json:"tags_set,omitempty"`
 
 	VersionTags []string `json:"version_tags,omitempty"`
 
