@@ -37,13 +37,6 @@ func (vs ValueSet) Add(v Value) {
 	vs[v] = struct{}{}
 }
 
-// Adds all values from other to v.
-func (vs ValueSet) AddAll(other ValueSet) {
-	for v, _ := range other {
-		vs.Add(v)
-	}
-}
-
 // Removes values in vs that are not in other.
 func (vs ValueSet) Intersect(other ValueSet) {
 	for v, _ := range vs {
@@ -53,7 +46,7 @@ func (vs ValueSet) Intersect(other ValueSet) {
 	}
 }
 
-// Adds values to vs that are in other.
+// Adds values from other to vs.
 func (vs ValueSet) Union(other ValueSet) {
 	for v, _ := range other {
 		vs.Add(v)

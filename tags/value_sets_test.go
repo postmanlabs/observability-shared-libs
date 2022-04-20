@@ -16,15 +16,6 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, NewValueSet("v", "v2"), vs, "two values")
 }
 
-func TestAddAll(t *testing.T) {
-	vs := NewValueSet()
-	vs.AddAll(NewValueSet("v"))
-	assert.Equal(t, NewValueSet("v"), vs, "single value")
-
-	vs.AddAll(NewValueSet("v2"))
-	assert.Equal(t, NewValueSet("v", "v2"), vs, "two values")
-}
-
 func TestValueSetUnion(t *testing.T) {
 	testCases := []struct {
 		name     string

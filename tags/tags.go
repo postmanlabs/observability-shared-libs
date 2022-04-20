@@ -20,7 +20,7 @@ func (t Tags) Set(key tags.Key, values []string) {
 
 // Sets the given key to the given value.
 func (t Tags) SetSingleton(key tags.Key, value string) {
-	t.Set(key, []Value{value})
+	t[key] = NewValueSet(value)
 }
 
 // Adds a value to the given key.
@@ -37,7 +37,8 @@ func (t Tags) SetAll(t2 Tags) {
 }
 
 // Removes any tag from t that doesn't exist in t2.  For any key k in both t
-// and t2, t[k] is remapped to the intersection of their values.
+// and t2, t[k] is remapped to the intersection of their values.  If the
+// intersection is empty, then k is removed.
 func (t Tags) Intersect(t2 Tags) {
 	for key, values := range t {
 		otherValues, ok := t2[key]
@@ -65,7 +66,7 @@ func (t Tags) Union(t2 Tags) {
 		if values, exists := t[otherTag]; !exists {
 			t[otherTag] = otherValues.Clone()
 		} else {
-			values.AddAll(otherValues)
+			values.Union(otherValues)
 		}
 	}
 }
@@ -91,7 +92,7 @@ func (t Tags) AsSingletonTags() SingletonTags {
 	return rv
 }
 
-// FromPairs returns a map from parsing a list of "key=value" pairs.
+// Returns a Tags from parsing a list of "key=value" pairs.
 // Produces an error if any element of the list is improperly formatted.
 // The caller must emit an appropriate warning if any keys are reserved.
 func FromPairsMultivalue(pairs []string) (Tags, error) {

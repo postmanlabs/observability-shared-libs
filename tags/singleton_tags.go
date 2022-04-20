@@ -13,7 +13,7 @@ func (ts SingletonTags) AsTags() Tags {
 	return tags
 }
 
-// FromPairsSingleton returns a map from parsing a list of "key=value" pairs.
+// Returns a SingletonTags from parsing a list of "key=value" pairs.
 // Produces an error if any element of the list is improperly formatted,
 // or if any key is given more than once.
 // The caller must emit an appropriate warning if any keys are reserved.
