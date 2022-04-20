@@ -15,6 +15,95 @@ func TestSet(t *testing.T) {
 	assert.Equal(t, Tags{"key": NewValueSet("v1", "v2")}, tagMap, "insert two values")
 }
 
+func TestSetSingleton(t *testing.T) {
+	tagMap := Tags{}
+
+	// Add new tag
+	tagMap.SetSingleton("key", "v1")
+	assert.Equal(t, Tags{"key": NewValueSet("v1")}, tagMap, "insert new value")
+
+	// Overwrite existing tag
+	tagMap.SetSingleton("key", "v2")
+	assert.Equal(t, Tags{"key": NewValueSet("v2")}, tagMap, "overwrite value")
+}
+
+func TestTagAdd(t *testing.T) {
+	tagMap := Tags{}
+
+	// Add new tag
+	tagMap.Add("key", "v1")
+	assert.Equal(t, Tags{"key": NewValueSet("v1")}, tagMap, "add new tag")
+
+	// Add existing value to existing tag
+	tagMap.Add("key", "v1")
+	assert.Equal(t, Tags{"key": NewValueSet("v1")}, tagMap, "add existing value")
+
+	// Add new value to existing tag
+	tagMap.Add("key", "v2")
+	assert.Equal(t, Tags{"key": NewValueSet("v1", "v2")}, tagMap, "add new value")
+}
+
+func TestTagSetAll(t *testing.T) {
+	testCases := []struct {
+		name     string
+		left     Tags
+		right    Tags
+		expected Tags
+	}{
+		{
+			name:     "write to empty",
+			left:     Tags{},
+			right:    Tags{"k": NewValueSet("v")},
+			expected: Tags{"k": NewValueSet("v")},
+		},
+		{
+			name:     "overwrite when left is a subset of right",
+			left:     Tags{"k1": NewValueSet("v2")},
+			right:    Tags{"k1": NewValueSet("v"), "k2": NewValueSet("v2")},
+			expected: Tags{"k1": NewValueSet("v"), "k2": NewValueSet("v2")},
+		},
+		{
+			name:     "overwrite when right is a subset of left",
+			left:     Tags{"k1": NewValueSet("v"), "k2": NewValueSet("v2")},
+			right:    Tags{"k1": NewValueSet("v2")},
+			expected: Tags{"k1": NewValueSet("v2"), "k2": NewValueSet("v2")},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc.left.SetAll(tc.right)
+		assert.Equal(t, tc.expected, tc.left, tc.name)
+	}
+}
+
+func TestAsSingletonTags(t *testing.T) {
+	testCases := []struct {
+		name     string
+		tags     Tags
+		expected SingletonTags
+	}{
+		{
+			name:     "tags are singletons",
+			tags:     Tags{"k1": NewValueSet("v1"), "k2": NewValueSet("v2")},
+			expected: SingletonTags{"k1": "v1", "k2": "v2"},
+		},
+		{
+			name:     "tags have multiple values",
+			tags:     Tags{"k1": NewValueSet("v11", "v12"), "k2": NewValueSet("v22", "v21")},
+			expected: SingletonTags{"k1": "v11", "k2": "v21"},
+		},
+		{
+			name:     "tags have empty sets",
+			tags:     Tags{"k1": NewValueSet("v11", "v12"), "k2": NewValueSet()},
+			expected: SingletonTags{"k1": "v11"},
+		},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expected, tc.tags.AsSingletonTags(), tc.name)
+	}
+}
+
 func TestTagsUnion(t *testing.T) {
 	testCases := []struct {
 		name     string
