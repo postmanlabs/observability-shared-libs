@@ -25,7 +25,11 @@ func (t Tags) SetSingleton(key tags.Key, value string) {
 
 // Adds a value to the given key.
 func (t Tags) Add(key tags.Key, value string) {
-	t[key].Add(value)
+	if values, exists := t[key]; !exists {
+		t[key] = NewValueSet(value)
+	} else {
+		values.Add(value)
+	}
 }
 
 // SetAll copies all values from t2 into t. If a key exists in both sets of tags, the
