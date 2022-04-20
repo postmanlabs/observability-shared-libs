@@ -68,7 +68,7 @@ type CreateLearnSessionRequest struct {
 
 	// Optional key-value pairs to tag this learn session.
 	// We reserve tags with "x-akita-" prefix for internal use.
-	Tags map[tags.Key]string `json:"tags,omitempty"`
+	Tags tags.SingletonTags `json:"tags,omitempty"`
 
 	// Optional name for the learn session.
 	Name string `json:"name"`
@@ -193,7 +193,7 @@ type CreateSpecRequest struct {
 	Name string `json:"name"`
 
 	// Optional: user-specified tags.
-	Tags map[tags.Key]string `json:"tags"`
+	Tags tags.SingletonTags `json:"tags"`
 }
 
 type CreateTimeSpanSpecRequest struct {
@@ -202,8 +202,8 @@ type CreateTimeSpanSpecRequest struct {
 }
 
 type UploadSpecRequest struct {
-	Name string              `json:"name"`
-	Tags map[tags.Key]string `json:"tags,omitempty"`
+	Name string             `json:"name"`
+	Tags tags.SingletonTags `json:"tags,omitempty"`
 
 	// TODO(kku): use multipart/form-data upload once we can support it.
 	Content string `json:"content"`
@@ -239,8 +239,8 @@ type WitnessReport struct {
 	// A serialized Witness protobuf in base64 URL encoded format.
 	WitnessProto string `json:"witness_proto"`
 
-	ID   akid.WitnessID      `json:"id"`
-	Tags map[tags.Key]string `json:"tags"`
+	ID   akid.WitnessID     `json:"id"`
+	Tags tags.SingletonTags `json:"tags"`
 
 	// Hash of the witness proto. Only used internally in the client.
 	Hash string `json:"-"`
@@ -255,7 +255,10 @@ type GetSpecMetadataResponse struct {
 
 	State APISpecState `json:"state"`
 
-	Tags map[tags.Key][]string `json:"tags"`
+	// Deprecated in favor of TagsSet, which supports multiple values
+	// per tag.
+	Tags    tags.SingletonTags `json:"tags,omitempty"`
+	TagsSet tags.Tags          `json:"tags_set,omitempty"`
 }
 
 type GetSpecResponse struct {
@@ -276,7 +279,10 @@ type GetSpecResponse struct {
 
 	Summary *spec_summary.Summary `json:"summary,omitempty"`
 
-	Tags map[tags.Key][]string `json:"tags"`
+	// Deprecated in favor of TagsSet, which supports multiple values
+	// per tag.
+	Tags    tags.SingletonTags `json:"tags,omitempty"`
+	TagsSet tags.Tags          `json:"tags_set,omitempty"`
 }
 
 type SetSpecVersionRequest struct {
@@ -302,8 +308,12 @@ type SpecInfo struct {
 	// Use Tags field instead.
 	LearnSessionTags []LearnSessionTag `json:"learn_session_tags,omitempty"`
 
-	Tags        map[tags.Key][]string `json:"tags,omitempty"`
-	VersionTags []string              `json:"version_tags,omitempty"`
+	// Deprecated in favor of TagsSet, which supports multiple values
+	// per tag.
+	Tags    tags.SingletonTags `json:"tags,omitempty"`
+	TagsSet tags.Tags          `json:"tags_set,omitempty"`
+
+	VersionTags []string `json:"version_tags,omitempty"`
 
 	CreationTime time.Time    `json:"creation_time"`
 	EditTime     time.Time    `json:"edit_time"`

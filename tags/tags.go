@@ -8,36 +8,95 @@ import (
 )
 
 type Key = tags.Key
-type Values = []string
+type Value = string
 
-// FromPairs returns a map from parsing a list of "key=value" pairs.
-// Produces an error if any element of the list is improperly formatted,
-// or if any key is given more than once.
-// The caller must emit an appropriate warning if any keys are reserved.
-func FromPairs(pairs []string) (map[Key]string, error) {
-	multiset, err := FromPairsMultiset(pairs)
-	if err != nil {
-		return nil, err
-	}
+// Maps tags to sets of values.
+type Tags map[Key]ValueSet
 
-	results := make(map[Key]string, len(multiset))
-	for k, vs := range multiset {
-		if len(vs) > 1 {
-			return nil, errors.Errorf("tag with key %s specified more than once", k)
-		}
-		for _, v := range vs {
-			results[k] = v
-		}
-	}
-
-	return results, nil
+// Sets the given key to the given values.  Values are copied.
+func (t Tags) Set(key tags.Key, values []string) {
+	t[key] = NewValueSet(values...)
 }
 
-// FromPairsMultiset returns a map from parsing a list of "key=value" pairs.
+// Sets the given key to the given value.
+func (t Tags) SetSingleton(key tags.Key, value string) {
+	t[key] = NewValueSet(value)
+}
+
+// Adds a value to the given key.
+func (t Tags) Add(key tags.Key, value string) {
+	t[key].Add(value)
+}
+
+// SetAll copies all values from t2 into t. If a key exists in both sets of tags, the
+// value in t is overwritten with that in t2.
+func (t Tags) SetAll(t2 Tags) {
+	for key, values := range t2 {
+		t.Set(key, values.AsSlice())
+	}
+}
+
+// Removes any tag from t that doesn't exist in t2.  For any key k in both t
+// and t2, t[k] is remapped to the intersection of their values.  If the
+// intersection is empty, then k is removed.
+func (t Tags) Intersect(t2 Tags) {
+	for key, values := range t {
+		otherValues, ok := t2[key]
+
+		// Remove keys not in t2.
+		if !ok {
+			delete(t, key)
+		}
+
+		// Remove values not in t2.
+		values.Intersect(otherValues)
+
+		// If there are no values remaining, remove the tag.
+		if len(values) == 0 {
+			delete(t, key)
+		}
+	}
+}
+
+// Copies tags from t2 that don't exist in t.  For any key k in both t and t2,
+// t[k] is remapped to the union of their values.  Does not preserve duplicates
+// or maintain list order.
+func (t Tags) Union(t2 Tags) {
+	for otherTag, otherValues := range t2 {
+		if values, exists := t[otherTag]; !exists {
+			t[otherTag] = otherValues.Clone()
+		} else {
+			values.Union(otherValues)
+		}
+	}
+}
+
+func (t Tags) Clone() Tags {
+	rv := make(Tags, len(t))
+	for t, vs := range t {
+		rv[t] = vs.Clone()
+	}
+	return rv
+}
+
+// Returns a new tags map with a single value for each tag.  If more than one
+// value was present for a given tag, returns the first value in the list.
+// If there are no values in the list, the tag is removed.
+func (t Tags) AsSingletonTags() SingletonTags {
+	rv := make(SingletonTags, len(t))
+	for tag, values := range t {
+		if v, exists := values.GetFirst(); exists {
+			rv[tag] = v
+		}
+	}
+	return rv
+}
+
+// Returns a Tags from parsing a list of "key=value" pairs.
 // Produces an error if any element of the list is improperly formatted.
 // The caller must emit an appropriate warning if any keys are reserved.
-func FromPairsMultiset(pairs []string) (map[Key]Values, error) {
-	results := make(map[Key]Values, len(pairs))
+func FromPairsMultivalue(pairs []string) (Tags, error) {
+	results := make(Tags, len(pairs))
 	for _, p := range pairs {
 		parts := strings.Split(p, "=")
 		if len(parts) != 2 {
@@ -45,7 +104,7 @@ func FromPairsMultiset(pairs []string) (map[Key]Values, error) {
 		}
 
 		k, v := Key(parts[0]), parts[1]
-		results[k] = append(results[k], v)
+		results.Add(k, v)
 	}
 	return results, nil
 }
