@@ -35,6 +35,9 @@ func TestSummarize(t *testing.T) {
 		ResponseCodes: map[string]int{
 			"200": 1,
 		},
+		Hosts: map[string]int{
+			"example.com": 1,
+		},
 		DataFormats: map[string]int{
 			"rfc3339": 1,
 		},

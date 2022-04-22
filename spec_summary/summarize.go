@@ -49,6 +49,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 			Params:          make(map[string]int),
 			Properties:      make(map[string]int),
 			ResponseCodes:   make(map[string]int),
+			Hosts:           make(map[string]int),
 			DataFormats:     make(map[string]int),
 			DataKinds:       make(map[string]int),
 			DataTypes:       make(map[string]int),
@@ -61,6 +62,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 			Params:          make(map[string]int),
 			Properties:      make(map[string]int),
 			ResponseCodes:   make(map[string]int),
+			Hosts:           make(map[string]int),
 			DataFormats:     make(map[string]int),
 			DataKinds:       make(map[string]int),
 			DataTypes:       make(map[string]int),
@@ -81,6 +83,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 		"params":          {},
 		"properties":      {},
 		"response_codes":  {},
+		"hosts":           {},
 		"data_formats":    {},
 		"data_kinds":      {},
 		"data_types":      {},
@@ -183,6 +186,8 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 			summary.Properties = countsByFilterVal
 		case "response_codes":
 			summary.ResponseCodes = countsByFilterVal
+		case "hosts":
+			summary.Hosts = countsByFilterVal
 		}
 	}
 
@@ -212,6 +217,9 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 
 		v.summary.Paths[meta.GetPathTemplate()] += 1
 		v.filtersToMethods.insert("paths", meta.GetPathTemplate(), m)
+
+		v.summary.Hosts[meta.Host] += 1
+		v.filtersToMethods.insert("hosts", meta.Host, m)
 	}
 
 	// If this method has no authentications, increment Authentications["None"].
@@ -234,6 +242,7 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 		{dst: v.summary.Params, src: v.methodSummary.Params, kind: "params"},
 		{dst: v.summary.Properties, src: v.methodSummary.Properties, kind: "properties"},
 		{dst: v.summary.ResponseCodes, src: v.methodSummary.ResponseCodes, kind: "response_codes"},
+		{dst: v.summary.Hosts, src: v.methodSummary.Hosts, kind: "hosts"},
 		{dst: v.summary.DataFormats, src: v.methodSummary.DataFormats, kind: "data_formats"},
 		{dst: v.summary.DataKinds, src: v.methodSummary.DataKinds, kind: "data_kinds"},
 		{dst: v.summary.DataTypes, src: v.methodSummary.DataTypes, kind: "data_types"},
