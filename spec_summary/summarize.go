@@ -218,8 +218,8 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 		v.summary.Paths[meta.GetPathTemplate()] += 1
 		v.filtersToMethods.insert("paths", meta.GetPathTemplate(), m)
 
-		v.summary.Hosts[meta.Host] += 1
-		v.filtersToMethods.insert("hosts", meta.Host, m)
+		v.summary.Hosts[meta.GetHost()] += 1
+		v.filtersToMethods.insert("hosts", meta.GetHost(), m)
 	}
 
 	// If this method has no authentications, increment Authentications["None"].
