@@ -44,6 +44,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 		methodSummary: &Summary{
 			Authentications: make(map[string]int),
 			Directions:      make(map[string]int),
+			Hosts:           make(map[string]int),
 			HTTPMethods:     make(map[string]int),
 			Paths:           make(map[string]int),
 			Params:          make(map[string]int),
@@ -56,6 +57,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 		summary: &Summary{
 			Authentications: make(map[string]int),
 			Directions:      make(map[string]int),
+			Hosts:           make(map[string]int),
 			HTTPMethods:     make(map[string]int),
 			Paths:           make(map[string]int),
 			Params:          make(map[string]int),
@@ -76,6 +78,7 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 	knownFilterKeys := map[string]struct{}{
 		"authentications": {},
 		"directions":      {},
+		"hosts":           {},
 		"http_methods":    {},
 		"paths":           {},
 		"params":          {},
@@ -173,6 +176,8 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 			summary.DataFormats = countsByFilterVal
 		case "data_types":
 			summary.DataTypes = countsByFilterVal
+		case "hosts":
+			summary.Hosts = countsByFilterVal
 		case "http_methods":
 			summary.HTTPMethods = countsByFilterVal
 		case "params":
@@ -212,6 +217,9 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 
 		v.summary.Paths[meta.GetPathTemplate()] += 1
 		v.filtersToMethods.insert("paths", meta.GetPathTemplate(), m)
+
+		v.summary.Hosts[meta.GetHost()] += 1
+		v.filtersToMethods.insert("hosts", meta.GetHost(), m)
 	}
 
 	// If this method has no authentications, increment Authentications["None"].
@@ -229,6 +237,7 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 	}{
 		{dst: v.summary.Authentications, src: v.methodSummary.Authentications, kind: "authentications"},
 		{dst: v.summary.Directions, src: v.methodSummary.Directions, kind: "directions"},
+		{dst: v.summary.Hosts, src: v.methodSummary.Hosts, kind: "hosts"},
 		{dst: v.summary.HTTPMethods, src: v.methodSummary.HTTPMethods, kind: "http_methods"},
 		{dst: v.summary.Paths, src: v.methodSummary.Paths, kind: "paths"},
 		{dst: v.summary.Params, src: v.methodSummary.Params, kind: "params"},

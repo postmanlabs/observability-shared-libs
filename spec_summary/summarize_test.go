@@ -10,42 +10,108 @@ import (
 )
 
 func TestSummarize(t *testing.T) {
-	expected := &Summary{
-		Authentications: map[string]int{
-			"BASIC": 1,
+	testCases := []struct {
+		name     string
+		specFile string
+		filters  map[string][]string
+		expected *Summary
+	}{
+		{
+			name:     "summary without filters",
+			specFile: "testdata/spec1.pb.txt",
+			filters:  nil,
+			expected: &Summary{
+				Authentications: map[string]int{
+					"BASIC": 2,
+				},
+				Directions: map[string]int{
+					"request":  2,
+					"response": 2,
+				},
+				HTTPMethods: map[string]int{
+					"POST": 2,
+				},
+				Paths: map[string]int{
+					"/v1/projects/{arg3}": 1,
+					"/v1/users/{arg3}": 1,
+				},
+				Params: map[string]int{
+					"X-My-Header": 2,
+				},
+				Properties: map[string]int{
+					"top-level-prop":       2,
+					"my-special-prop":      2,
+					"other-top-level-prop": 2,
+				},
+				ResponseCodes: map[string]int{
+					"200": 1,
+					"201": 1,
+				},
+				Hosts: map[string]int{
+					"example.com": 1,
+					"other-example.com": 1,
+				},
+				DataFormats: map[string]int{
+					"rfc3339": 2,
+				},
+				DataKinds: map[string]int{},
+				DataTypes: map[string]int{
+					"string": 2,
+				},
+			},
 		},
-		Directions: map[string]int{
-			"request":  1,
-			"response": 1,
-		},
-		HTTPMethods: map[string]int{
-			"POST": 1,
-		},
-		Paths: map[string]int{
-			"/v1/projects/{arg3}": 1,
-		},
-		Params: map[string]int{
-			"X-My-Header": 1,
-		},
-		Properties: map[string]int{
-			"top-level-prop":       1,
-			"my-special-prop":      1,
-			"other-top-level-prop": 1,
-		},
-		ResponseCodes: map[string]int{
-			"200": 1,
-		},
-		DataFormats: map[string]int{
-			"rfc3339": 1,
-		},
-		DataKinds: map[string]int{},
-		DataTypes: map[string]int{
-			"string": 1,
+		{
+			name:     "summary with one filter",
+			specFile: "testdata/spec1.pb.txt",
+			filters:  map[string][]string{
+				"hosts": {"example.com"},
+			},
+			expected: &Summary{
+				Authentications: map[string]int{
+					"BASIC": 1,
+				},
+				Directions: map[string]int{
+					"request":  1,
+					"response": 1,
+				},
+				HTTPMethods: map[string]int{
+					"POST": 1,
+				},
+				Paths: map[string]int{
+					"/v1/projects/{arg3}": 1,
+					"/v1/users/{arg3}": 0,
+				},
+				Params: map[string]int{
+					"X-My-Header": 1,
+				},
+				Properties: map[string]int{
+					"top-level-prop":       1,
+					"my-special-prop":      1,
+					"other-top-level-prop": 1,
+				},
+				ResponseCodes: map[string]int{
+					"200": 1,
+					"201": 0,
+				},
+				Hosts: map[string]int{
+					"example.com": 1,
+					"other-example.com": 1,
+				},
+				DataFormats: map[string]int{
+					"rfc3339": 1,
+				},
+				DataKinds: nil,
+				DataTypes: map[string]int{
+					"string": 1,
+				},
+			},
 		},
 	}
 
-	m1 := test.LoadMethodFromFileOrDie("testdata/method1.pb.txt")
-	assert.Equal(t, expected, Summarize(&pb.APISpec{Methods: []*pb.Method{m1}}))
+	for _, tc := range testCases {
+		spec := test.LoadAPISpecFromFileOrDie(tc.specFile)
+		assert.Equal(t, tc.expected, SummarizeWithFilters(spec, tc.filters), tc.name)
+	}
 }
 
 func TestIntersect(t *testing.T) {
