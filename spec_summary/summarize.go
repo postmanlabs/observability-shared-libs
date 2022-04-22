@@ -44,12 +44,12 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 		methodSummary: &Summary{
 			Authentications: make(map[string]int),
 			Directions:      make(map[string]int),
+			Hosts:           make(map[string]int),
 			HTTPMethods:     make(map[string]int),
 			Paths:           make(map[string]int),
 			Params:          make(map[string]int),
 			Properties:      make(map[string]int),
 			ResponseCodes:   make(map[string]int),
-			Hosts:           make(map[string]int),
 			DataFormats:     make(map[string]int),
 			DataKinds:       make(map[string]int),
 			DataTypes:       make(map[string]int),
@@ -57,12 +57,12 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 		summary: &Summary{
 			Authentications: make(map[string]int),
 			Directions:      make(map[string]int),
+			Hosts:           make(map[string]int),
 			HTTPMethods:     make(map[string]int),
 			Paths:           make(map[string]int),
 			Params:          make(map[string]int),
 			Properties:      make(map[string]int),
 			ResponseCodes:   make(map[string]int),
-			Hosts:           make(map[string]int),
 			DataFormats:     make(map[string]int),
 			DataKinds:       make(map[string]int),
 			DataTypes:       make(map[string]int),
@@ -78,12 +78,12 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 	knownFilterKeys := map[string]struct{}{
 		"authentications": {},
 		"directions":      {},
+		"hosts":           {},
 		"http_methods":    {},
 		"paths":           {},
 		"params":          {},
 		"properties":      {},
 		"response_codes":  {},
-		"hosts":           {},
 		"data_formats":    {},
 		"data_kinds":      {},
 		"data_types":      {},
@@ -176,6 +176,8 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 			summary.DataFormats = countsByFilterVal
 		case "data_types":
 			summary.DataTypes = countsByFilterVal
+		case "hosts":
+			summary.Hosts = countsByFilterVal
 		case "http_methods":
 			summary.HTTPMethods = countsByFilterVal
 		case "params":
@@ -186,8 +188,6 @@ func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summar
 			summary.Properties = countsByFilterVal
 		case "response_codes":
 			summary.ResponseCodes = countsByFilterVal
-		case "hosts":
-			summary.Hosts = countsByFilterVal
 		}
 	}
 
@@ -237,12 +237,12 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 	}{
 		{dst: v.summary.Authentications, src: v.methodSummary.Authentications, kind: "authentications"},
 		{dst: v.summary.Directions, src: v.methodSummary.Directions, kind: "directions"},
+		{dst: v.summary.Hosts, src: v.methodSummary.Hosts, kind: "hosts"},
 		{dst: v.summary.HTTPMethods, src: v.methodSummary.HTTPMethods, kind: "http_methods"},
 		{dst: v.summary.Paths, src: v.methodSummary.Paths, kind: "paths"},
 		{dst: v.summary.Params, src: v.methodSummary.Params, kind: "params"},
 		{dst: v.summary.Properties, src: v.methodSummary.Properties, kind: "properties"},
 		{dst: v.summary.ResponseCodes, src: v.methodSummary.ResponseCodes, kind: "response_codes"},
-		{dst: v.summary.Hosts, src: v.methodSummary.Hosts, kind: "hosts"},
 		{dst: v.summary.DataFormats, src: v.methodSummary.DataFormats, kind: "data_formats"},
 		{dst: v.summary.DataKinds, src: v.methodSummary.DataKinds, kind: "data_kinds"},
 		{dst: v.summary.DataTypes, src: v.methodSummary.DataTypes, kind: "data_types"},
