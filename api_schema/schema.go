@@ -347,15 +347,17 @@ type TimelineEvent struct {
 // These arguments may be given as the "aggregate" query parameter.
 // They correspond with the keys in the response below.
 const (
-	Aggr_Count  TimelineAggregation = "count"  // count of events within bucket
-	Aggr_Rate   TimelineAggregation = "rate"   // rate in events per minute
-	Aggr_Max    TimelineAggregation = "max"    // max of latency and RTT
-	Aggr_Min    TimelineAggregation = "min"    // min of latency and RTT
-	Aggr_Mean   TimelineAggregation = "mean"   // arithmetic mean of latency and RTT
-	Aggr_Median TimelineAggregation = "median" // median value of latency and RTT
-	Aggr_90p    TimelineAggregation = "90p"    // 90th percentile latency and RTT
-	Aggr_95p    TimelineAggregation = "95p"    // 95th percentile latency and RTT
-	Aggr_99p    TimelineAggregation = "99p"    // 99th percentile latency and RTT
+	Aggr_Count     TimelineAggregation = "count"     // count of events within bucket
+	Aggr_Count_4XX TimelineAggregation = "count_4xx" // count of HTTP events with a 4XX status code
+	Aggr_Count_5XX TimelineAggregation = "count_5xx" // count of HTTP events with a 5XX status code
+	Aggr_Rate      TimelineAggregation = "rate"      // rate in events per minute
+	Aggr_Max       TimelineAggregation = "max"       // max of latency and RTT
+	Aggr_Min       TimelineAggregation = "min"       // min of latency and RTT
+	Aggr_Mean      TimelineAggregation = "mean"      // arithmetic mean of latency and RTT
+	Aggr_Median    TimelineAggregation = "median"    // median value of latency and RTT
+	Aggr_90p       TimelineAggregation = "90p"       // 90th percentile latency and RTT
+	Aggr_95p       TimelineAggregation = "95p"       // 95th percentile latency and RTT
+	Aggr_99p       TimelineAggregation = "99p"       // 99th percentile latency and RTT
 )
 
 // These are the available keys for Timeline.Values.
