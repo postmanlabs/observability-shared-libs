@@ -340,8 +340,37 @@ type TimelineValue string
 // Time along with a map of values such as
 // count, latency, etc.
 type TimelineEvent struct {
-	Time   time.Time                 `json:"time"`
-	Values map[TimelineValue]float32 `json:"values"`
+	Time   time.Time      `json:"time"`
+	Values TimelineValues `json:"values"`
+}
+
+// Tracks summary statistics for a group of events, as derived from an
+// EndpointStats object. Each statistic is optionally populated.
+type TimelineValues struct {
+	NumEvents       *int     `json:"count,omitempty"`
+	EventsPerMinute *float32 `json:"rate,omitempty"`
+
+	MaxLatency    *float32 `json:"latency_max,omitempty"`
+	MinLatency    *float32 `json:"latency_min,omitempty"`
+	MeanLatency   *float32 `json:"latency_mean,omitempty"`
+	MedianLatency *float32 `json:"latency_median,omitempty"`
+	P90Latency    *float32 `json:"latency_90p,omitempty"`
+	P95Latency    *float32 `json:"latency_95p,omitempty"`
+	P99Latency    *float32 `json:"latency_99p,omitempty"`
+
+	MaxRTT    *float32 `json:"rtt_max,omitempty"`
+	MinRTT    *float32 `json:"rtt_min,omitempty"`
+	MeanRTT   *float32 `json:"rtt_mean,omitempty"`
+	MedianRTT *float32 `json:"rtt_median,omitempty"`
+	P90RTT    *float32 `json:"rtt_90p,omitempty"`
+	P95RTT    *float32 `json:"rtt_95p,omitempty"`
+	P99RTT    *float32 `json:"rtt_99p,omitempty"`
+
+	// The number of calls that resulted in a 4XX response.
+	Num4xx *int `json:"num_4xx,omitempty"`
+
+	// The number of calls that resulted in a 5XX response.
+	Num5xx *int `json:"num_5xx,omitempty"`
 }
 
 // These arguments may be given as the "aggregate" query parameter.
