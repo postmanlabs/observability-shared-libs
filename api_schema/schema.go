@@ -340,22 +340,53 @@ type TimelineValue string
 // Time along with a map of values such as
 // count, latency, etc.
 type TimelineEvent struct {
-	Time   time.Time                 `json:"time"`
-	Values map[TimelineValue]float32 `json:"values"`
+	Time   time.Time      `json:"time"`
+	Values TimelineValues `json:"values"`
+}
+
+// Tracks summary statistics for a group of events, as derived from an
+// EndpointStats object. Each statistic is optionally populated.
+type TimelineValues struct {
+	NumEvents       *int     `json:"count,omitempty"`
+	EventsPerMinute *float32 `json:"rate,omitempty"`
+
+	MaxLatency    *float32 `json:"latency_max,omitempty"`
+	MinLatency    *float32 `json:"latency_min,omitempty"`
+	MeanLatency   *float32 `json:"latency_mean,omitempty"`
+	MedianLatency *float32 `json:"latency_median,omitempty"`
+	P90Latency    *float32 `json:"latency_90p,omitempty"`
+	P95Latency    *float32 `json:"latency_95p,omitempty"`
+	P99Latency    *float32 `json:"latency_99p,omitempty"`
+
+	MaxRTT    *float32 `json:"rtt_max,omitempty"`
+	MinRTT    *float32 `json:"rtt_min,omitempty"`
+	MeanRTT   *float32 `json:"rtt_mean,omitempty"`
+	MedianRTT *float32 `json:"rtt_median,omitempty"`
+	P90RTT    *float32 `json:"rtt_90p,omitempty"`
+	P95RTT    *float32 `json:"rtt_95p,omitempty"`
+	P99RTT    *float32 `json:"rtt_99p,omitempty"`
+
+	// The number of calls that resulted in a 4XX response.
+	Num4xx *int `json:"num_4xx,omitempty"`
+
+	// The number of calls that resulted in a 5XX response.
+	Num5xx *int `json:"num_5xx,omitempty"`
 }
 
 // These arguments may be given as the "aggregate" query parameter.
 // They correspond with the keys in the response below.
 const (
-	Aggr_Count  TimelineAggregation = "count"  // count of events within bucket
-	Aggr_Rate   TimelineAggregation = "rate"   // rate in events per minute
-	Aggr_Max    TimelineAggregation = "max"    // max of latency and RTT
-	Aggr_Min    TimelineAggregation = "min"    // min of latency and RTT
-	Aggr_Mean   TimelineAggregation = "mean"   // arithmetic mean of latency and RTT
-	Aggr_Median TimelineAggregation = "median" // median value of latency and RTT
-	Aggr_90p    TimelineAggregation = "90p"    // 90th percentile latency and RTT
-	Aggr_95p    TimelineAggregation = "95p"    // 95th percentile latency and RTT
-	Aggr_99p    TimelineAggregation = "99p"    // 99th percentile latency and RTT
+	Aggr_Count     TimelineAggregation = "count"     // count of events within bucket
+	Aggr_Count_4XX TimelineAggregation = "count_4xx" // count of HTTP events with a 4XX status code
+	Aggr_Count_5XX TimelineAggregation = "count_5xx" // count of HTTP events with a 5XX status code
+	Aggr_Rate      TimelineAggregation = "rate"      // rate in events per minute
+	Aggr_Max       TimelineAggregation = "max"       // max of latency and RTT
+	Aggr_Min       TimelineAggregation = "min"       // min of latency and RTT
+	Aggr_Mean      TimelineAggregation = "mean"      // arithmetic mean of latency and RTT
+	Aggr_Median    TimelineAggregation = "median"    // median value of latency and RTT
+	Aggr_90p       TimelineAggregation = "90p"       // 90th percentile latency and RTT
+	Aggr_95p       TimelineAggregation = "95p"       // 95th percentile latency and RTT
+	Aggr_99p       TimelineAggregation = "99p"       // 99th percentile latency and RTT
 )
 
 // These are the available keys for Timeline.Values.
