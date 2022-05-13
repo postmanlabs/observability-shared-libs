@@ -73,8 +73,9 @@ func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filter
 	// Remove any unknown filters.
 	knownFilters := ParseFiltersIgnoreErrors(appliedFilters)
 
-	// For each filter kind in applied filters, precompute the union of method
-	// sets of its values.  These are the methods that match just this filter.
+	// For each filter kind in applied filters, compute the set of methods
+	// matching any of the filter's values.  These are the methods that match just
+	// this filter.
 	methodsByAppliedFilterKind := make(map[FilterKind]Set[MethodID], len(knownFilters))
 	allFilterMethodSets := make([]Set[MethodID], 0, len(knownFilters))
 	for filter, values := range knownFilters {
