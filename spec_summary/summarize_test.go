@@ -13,7 +13,7 @@ func TestSummarize(t *testing.T) {
 	testCases := []struct {
 		name     string
 		specFile string
-		filters  map[string][]string
+		filters  Filters
 		expected *Summary
 	}{
 		{
@@ -63,7 +63,7 @@ func TestSummarize(t *testing.T) {
 		{
 			name:     "summary with one filter",
 			specFile: "testdata/spec1.pb.txt",
-			filters: map[string][]string{
+			filters: Filters{
 				"hosts": {"example.com"},
 			},
 			expected: &Summary{
@@ -109,7 +109,7 @@ func TestSummarize(t *testing.T) {
 		{
 			name:     "summary with two different filters",
 			specFile: "testdata/spec1.pb.txt",
-			filters: map[string][]string{
+			filters: Filters{
 				"hosts": {"example.com"},
 				"paths": {"/v1/projects/{arg3}"},
 			},
@@ -156,7 +156,7 @@ func TestSummarize(t *testing.T) {
 		{
 			name:     "summary with two different filters that don't overlap",
 			specFile: "testdata/spec1.pb.txt",
-			filters: map[string][]string{
+			filters: Filters{
 				"hosts": {"other-example.com"},
 				"paths": {"/v1/projects/{arg3}"},
 			},

@@ -166,12 +166,10 @@ func (cs DirectedFilterCounts) GetCountsByValue(direction Direction, kind Filter
 func (cs DirectedFilterCounts) MergeAcrossDirections(kind FilterKind) map[FilterValue]int {
 	merged := make(map[FilterValue]int)
 
-	for _, direction := range []Direction{RequestDirection, ResponseDirection} {
-		if byKind, ok := cs[direction]; ok {
-			if byVal, ok := byKind[kind]; ok {
-				for v, count := range byVal {
-					merged[v] += count
-				}
+	for _, byKind := range cs {
+		if byVal, ok := byKind[kind]; ok {
+			for v, count := range byVal {
+				merged[v] += count
 			}
 		}
 	}

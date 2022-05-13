@@ -2,10 +2,11 @@ package spec_summary
 
 import "github.com/pkg/errors"
 
-type FilterKind = string
 type FilterValue = string
-type FilterValues = []FilterValue
-type Filters = map[FilterKind]FilterValues
+
+type FilterKind string
+type FilterValues []FilterValue
+type Filters map[FilterKind]FilterValues
 
 const (
 	AuthFilter           FilterKind = "authentications"

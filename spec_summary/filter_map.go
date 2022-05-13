@@ -70,15 +70,12 @@ func (fm *FiltersToMethods[MethodID]) InsertDirectionalFilter(direction Directio
 // for paths=/ will be the number of methods with a 200 response code, a GET
 // http method, and path "/".
 func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filters) (*SummaryByDirection, Set[MethodID]) {
-	// Remove any unknown filters.
-	knownFilters := ParseFiltersIgnoreErrors(appliedFilters)
-
 	// For each filter kind in applied filters, compute the set of methods
 	// matching any of the filter's values.  These are the methods that match just
 	// this filter.
-	methodsByAppliedFilterKind := make(map[FilterKind]Set[MethodID], len(knownFilters))
-	allFilterMethodSets := make([]Set[MethodID], 0, len(knownFilters))
-	for filter, values := range knownFilters {
+	methodsByAppliedFilterKind := make(map[FilterKind]Set[MethodID], len(appliedFilters))
+	allFilterMethodSets := make([]Set[MethodID], 0, len(appliedFilters))
+	for filter, values := range appliedFilters {
 		ms := make(Set[MethodID], len(values))
 		for _, v := range values {
 			// Process non-directional filters.
@@ -96,10 +93,10 @@ func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filter
 	// For each filter kind, precompute the intersection of the joined method
 	// sets of all other filter kinds.  These are the methods that match all
 	// the other applied filters.
-	methodsIntersected := make(map[FilterKind]Set[MethodID], len(knownFilters))
-	for filter := range knownFilters {
-		toIntersect := make([]Set[MethodID], 0, len(knownFilters))
-		for otherFilter := range knownFilters {
+	methodsIntersected := make(map[FilterKind]Set[MethodID], len(appliedFilters))
+	for filter := range appliedFilters {
+		toIntersect := make([]Set[MethodID], 0, len(appliedFilters))
+		for otherFilter := range appliedFilters {
 			if otherFilter == filter {
 				continue
 			}
@@ -119,7 +116,7 @@ func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filter
 	// Precompute the set of all methods after filters are applied.  If there
 	// are no filters, this is the set of all methods.
 	allFilteredMethods := fm.allMethods
-	if len(knownFilters) > 0 {
+	if len(appliedFilters) > 0 {
 		allFilteredMethods = Intersect(allFilterMethodSets...)
 	}
 

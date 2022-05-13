@@ -36,7 +36,7 @@ func TestFiltersToMethods(t *testing.T) {
 	assert.Equal(t, 1, summary.HTTPMethods["GET"], "get")
 
 	// With filters.
-	directedSummary, methods = fm.SummarizeWithFilters(map[string][]string{
+	directedSummary, methods = fm.SummarizeWithFilters(Filters{
 		HttpMethodFilter: {"GET"},
 	})
 

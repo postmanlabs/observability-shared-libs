@@ -22,7 +22,7 @@ func Summarize(spec *pb.APISpec) *Summary {
 // For example, suppose filters were { response_codes: [404] }.  If the summary
 // included HTTPMethods: {"GET": 2}, it would mean that there are two GET
 // methods with 404 response codes.
-func SummarizeWithFilters(spec *pb.APISpec, filters map[string][]string) *Summary {
+func SummarizeWithFilters(spec *pb.APISpec, filters Filters) *Summary {
 	return SummarizeByDirectionWithFilters(spec, filters).ToSummary()
 }
 
@@ -40,10 +40,7 @@ func SummarizeByDirectionWithFilters(spec *pb.APISpec, filters Filters) *Summary
 	}
 	vis.Apply(&v, spec)
 
-	// If there are no known filters, return the default count.
-	knownFilters := ParseFiltersIgnoreErrors(filters)
-
-	if len(knownFilters) == 0 {
+	if len(filters) == 0 {
 		return v.summary
 	}
 
