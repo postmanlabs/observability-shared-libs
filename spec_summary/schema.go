@@ -104,8 +104,8 @@ func (cs NondirectedFilterCounts) Insert(kind FilterKind, v FilterValue, count i
 	byVal[v] = count
 }
 
-// Calls f on each kind, value.  Returns false immediately if f returns false
-// or true otherwise.
+// Calls f on each kind–value pair. If f returns false, iteration stops
+// immediately, and false is returned. Otherwise, returns true.
 func (cs NondirectedFilterCounts) ForEach(f func(kind FilterKind, v FilterValue, count int) bool) bool {
 	for kind, byVal := range cs {
 		for v, count := range byVal {
@@ -140,8 +140,8 @@ func (cs DirectedFilterCounts) Insert(direction Direction, kind FilterKind, v Fi
 	byKind.Insert(kind, v, count)
 }
 
-// Calls f on each direction, kind, value.  Returns false immediately if f returns false
-// or true otherwise.
+// Calls f on each (direction, kind, value) tuple. If f returns false, iteration
+// stops immediately, and false is returned. Otherwise, returns true.
 func (cs DirectedFilterCounts) ForEach(f func(direction Direction, kind FilterKind, v FilterValue, count int) bool) bool {
 	for direction, byKind := range cs {
 		df := func(kind FilterKind, v FilterValue, count int) bool {

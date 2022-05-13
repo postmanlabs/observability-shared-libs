@@ -4,7 +4,15 @@ import (
 	. "github.com/akitasoftware/go-utils/sets"
 )
 
-// Maps filter kinds/values to the methods that match them.
+// Maps all supported filter kinds to the methods that match them. The methods
+// for each filter kind are indexed by the filter's value for each method.
+//
+// For example, if the supported filter kinds are operation and path, then the
+// method set {"GET /", "PUT /"} is represented as follows:
+//
+//   operation -> "GET" -> "GET /"
+//                "PUT" -> "PUT /"
+//   path -> "/" -> "GET /", "PUT /"
 type FiltersToMethods[MethodID comparable] struct {
 	// For non-directional filters.
 	filterMap FilterMap[MethodID]
@@ -48,16 +56,19 @@ func (fm *FiltersToMethods[MethodID]) InsertDirectionalFilter(direction Directio
 	fm.allMethods.Insert(method)
 }
 
-// Compute a summary that reflects filters that have already been applied, as
-// well as the set of methods that match the applied filters.
-// The count for a given filter value is calculated as the number of
-// methods that match it, assuming
-// - no other values of the same filter are applied
-// - all other filters are applied.
+// Returns a summary of the effect of adding an additional filter to a set of
+// filters that have already been applied. For filter kinds that are already
+// applied, the summary indicates how many methods would be added to the result
+// set if an additional value were added for that filter kind. For filter kinds
+// that are not yet been applied, the summary indicates how many methods would
+// remain in the result set if a filter with that kind were added to the filter
+// set.
 //
-// For example, if the current filters are http_method=GET and response_code=200,
-// then the count for response_code=404 is calculated as the number of methods
-// with a 404 response code a GET http method.
+// For example, if the current filters are http_methods=GET and
+// response_codes=200, then the count for response_codes=404 will be the number
+// of methods with a 404 response code and a GET http method, whereas the count
+// for paths=/ will be the number of methods with a 200 response code, a GET
+// http method, and path "/".
 func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filters) (*SummaryByDirection, Set[MethodID]) {
 	// Remove any unknown filters.
 	knownFilters := ParseFiltersIgnoreErrors(appliedFilters)
@@ -69,10 +80,10 @@ func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filter
 	for filter, values := range knownFilters {
 		ms := make(Set[MethodID], len(values))
 		for _, v := range values {
-			// Process directed filters.
+			// Process non-directional filters.
 			ms.Union(fm.filterMap.Get(filter, v))
 
-			// Process nondirected filters.
+			// Process directional filters.
 			for _, direction := range []Direction{RequestDirection, ResponseDirection} {
 				ms.Union(fm.filterMapByDirection.Get(direction, filter, v))
 			}
@@ -114,7 +125,7 @@ func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filter
 	// Compute the summary by intersecting the method set for each filter
 	// kind/value with the intersection of the method sets of all other
 	// filter kinds.  This is the set of methods that match this filter as
-	// well as all the other applied filters.
+	// well as all the applied filters having a different kind.
 	summary := NewSummaryByDirection()
 
 	// Process nondirected filters.
