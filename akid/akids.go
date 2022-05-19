@@ -121,6 +121,10 @@ func (APISpecID) GetType() string {
 	return APISpecTag
 }
 
+func (id APISpecID) String() string {
+	return String(id)
+}
+
 func NewAPISpecID(ID uuid.UUID) APISpecID {
 	return APISpecID{baseID(ID)}
 }
@@ -146,6 +150,10 @@ func (APIKeyID) GetType() string {
 	return APIKeyTag
 }
 
+func (id APIKeyID) String() string {
+	return String(id)
+}
+
 func NewAPIKeyID(ID uuid.UUID) APIKeyID {
 	return APIKeyID{baseID(ID)}
 }
@@ -169,6 +177,10 @@ type APIMethodID struct {
 
 func (APIMethodID) GetType() string {
 	return APIMethodTag
+}
+
+func (id APIMethodID) String() string {
+	return String(id)
 }
 
 func NewAPIMethodID(ID uuid.UUID) APIMethodID {
@@ -197,6 +209,10 @@ func (ClientID) GetType() string {
 	return ClientTag
 }
 
+func (id ClientID) String() string {
+	return String(id)
+}
+
 func NewClientID(ID uuid.UUID) ClientID {
 	return ClientID{baseID(ID)}
 }
@@ -220,6 +236,10 @@ type ConnectionID struct {
 
 func (ConnectionID) GetType() string {
 	return ConnectionTag
+}
+
+func (id ConnectionID) String() string {
+	return String(id)
 }
 
 func NewConnectionID(ID uuid.UUID) ConnectionID {
@@ -247,6 +267,10 @@ func (DataCategoryID) GetType() string {
 	return DataCategoryTag
 }
 
+func (id DataCategoryID) String() string {
+	return String(id)
+}
+
 func NewDataCategoryID(ID uuid.UUID) DataCategoryID {
 	return DataCategoryID{baseID(ID)}
 }
@@ -262,6 +286,10 @@ type IdentityID struct {
 
 func (IdentityID) GetType() string {
 	return IdentityTag
+}
+
+func (id IdentityID) String() string {
+	return String(id)
 }
 
 func NewIdentityID(ID uuid.UUID) IdentityID {
@@ -289,6 +317,10 @@ func (GraphID) GetType() string {
 	return GraphTag
 }
 
+func (id GraphID) String() string {
+	return String(id)
+}
+
 func NewGraphID(ID uuid.UUID) GraphID {
 	return GraphID{baseID(ID)}
 }
@@ -312,6 +344,10 @@ type ServiceID struct {
 
 func (ServiceID) GetType() string {
 	return ServiceTag
+}
+
+func (id ServiceID) String() string {
+	return String(id)
 }
 
 func NewServiceID(ID uuid.UUID) ServiceID {
@@ -339,6 +375,10 @@ func (ScheduleID) GetType() string {
 	return ScheduleTag
 }
 
+func (id ScheduleID) String() string {
+	return String(id)
+}
+
 func NewScheduleID(ID uuid.UUID) ScheduleID {
 	return ScheduleID{baseID(ID)}
 }
@@ -364,6 +404,10 @@ func (ServiceClusterID) GetType() string {
 	return ServiceClusterTag
 }
 
+func (id ServiceClusterID) String() string {
+	return String(id)
+}
+
 func NewServiceClusterID(ID uuid.UUID) ServiceClusterID {
 	return ServiceClusterID{baseID(ID)}
 }
@@ -379,6 +423,10 @@ type ShardID struct {
 
 func (ShardID) GetType() string {
 	return ShardTag
+}
+
+func (id ShardID) String() string {
+	return String(id)
 }
 
 func NewShardID(ID uuid.UUID) ShardID {
@@ -399,6 +447,10 @@ func (ShardAliasID) GetType() string {
 	return ShardAliasTag
 }
 
+func (id ShardAliasID) String() string {
+	return String(id)
+}
+
 func NewShardAliasID(ID uuid.UUID) ShardAliasID {
 	return ShardAliasID{baseID(ID)}
 }
@@ -414,6 +466,10 @@ type LearnSessionID struct {
 
 func (LearnSessionID) GetType() string {
 	return LearnSessionTag
+}
+
+func (id LearnSessionID) String() string {
+	return String(id)
 }
 
 func NewLearnSessionID(ID uuid.UUID) LearnSessionID {
@@ -441,6 +497,10 @@ func (ProjectID) GetType() string {
 	return ProjectTag
 }
 
+func (id ProjectID) String() string {
+	return String(id)
+}
+
 func NewProjectID(ID uuid.UUID) ProjectID {
 	return ProjectID{baseID(ID)}
 }
@@ -456,6 +516,10 @@ type RequestID struct {
 
 func (RequestID) GetType() string {
 	return RequestTag
+}
+
+func (id RequestID) String() string {
+	return String(id)
 }
 
 func NewRequestID(ID uuid.UUID) RequestID {
@@ -483,6 +547,10 @@ func (UserID) GetType() string {
 	return UserTag
 }
 
+func (id UserID) String() string {
+	return String(id)
+}
+
 func NewUserID(ID uuid.UUID) UserID {
 	return UserID{baseID(ID)}
 }
@@ -508,6 +576,10 @@ func (MessageID) GetType() string {
 	return MessageTag
 }
 
+func (id MessageID) String() string {
+	return String(id)
+}
+
 func NewMessageID(ID uuid.UUID) MessageID {
 	return MessageID{baseID(ID)}
 }
@@ -531,6 +603,10 @@ type OrganizationID struct {
 
 func (OrganizationID) GetType() string {
 	return OrganizationTag
+}
+
+func (id OrganizationID) String() string {
+	return String(id)
 }
 
 func NewOrganizationID(ID uuid.UUID) OrganizationID {
@@ -563,6 +639,10 @@ func (OutboundRequestID) GetType() string {
 	return OutboundRequestTag
 }
 
+func (id OutboundRequestID) String() string {
+	return String(id)
+}
+
 func GenerateOutboundRequestID() OutboundRequestID {
 	return NewOutboundRequestID(uuid.New())
 }
@@ -591,6 +671,10 @@ func (WitnessID) GetType() string {
 	return WitnessTag
 }
 
+func (id WitnessID) String() string {
+	return String(id)
+}
+
 func (id WitnessID) MarshalText() ([]byte, error) {
 	return toText(id)
 }
@@ -606,6 +690,10 @@ type RuleID struct {
 
 func (RuleID) GetType() string {
 	return RuleTag
+}
+
+func (id RuleID) String() string {
+	return String(id)
 }
 
 func NewRuleID(ID uuid.UUID) RuleID {

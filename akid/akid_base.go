@@ -22,6 +22,7 @@ var (
 type ID interface {
 	GetType() string
 	GetUUID() uuid.UUID
+	String() string
 }
 
 // Base Akita ID structure. Embed this in your own IDs.
