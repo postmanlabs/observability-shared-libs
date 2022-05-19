@@ -3,10 +3,18 @@ package akid
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
 )
+
+func TestString(t *testing.T) {
+	akitaID := GenerateUserID()
+	if String(akitaID) != fmt.Sprintf("%s", akitaID) {
+		t.Fatalf("did not get expected string representation %q for Akita ID. Instead got %q", String(akitaID), akitaID)
+	}
+}
 
 func TestBaseAkitaIDReflexiveParse(t *testing.T) {
 	akitaID := GenerateUserID()
@@ -18,7 +26,7 @@ func TestBaseAkitaIDReflexiveParse(t *testing.T) {
 	}
 
 	if reAkitaID.GetType() != "usr" {
-		t.Fatal("did not get expcted type 'usr' for parsed Akita ID, instead got", reAkitaID.GetType())
+		t.Fatal("did not get expected type 'usr' for parsed Akita ID, instead got", reAkitaID.GetType())
 	}
 
 	if reAkitaID.GetUUID() != akitaID.GetUUID() {
@@ -41,22 +49,22 @@ func TestBaseAkitaIDParse(t *testing.T) {
 	tests := []akitaIDParseTest{
 		// Only some of these tests use valid UUIDs. GetUUID is tested in
 		// TestBaseAkitaIDReflexiveParse
-		akitaIDParseTest{"usr_21raAVTqUKOHvmxgK0ySCZ", "usr", true},
-		akitaIDParseTest{"lrn_7IObUDuFf0fddZ4Ix1DPAC", "lrn", true},
-		akitaIDParseTest{"svc_6NiejyYEVpWfziUXJgovV6", "svc", true},
-		akitaIDParseTest{"svc_s8VseBBxopFn5eDnVEoRa", "svc", true},
-		akitaIDParseTest{"svc_0s8VseBBxopFn5eDnVEoRa", "svc", true},
-		akitaIDParseTest{"svc_0", "svc", true},
-		akitaIDParseTest{"svc_7n42DGM5Tflk9n8mt7Fhc7", "svc", true},
+		{"usr_21raAVTqUKOHvmxgK0ySCZ", "usr", true},
+		{"lrn_7IObUDuFf0fddZ4Ix1DPAC", "lrn", true},
+		{"svc_6NiejyYEVpWfziUXJgovV6", "svc", true},
+		{"svc_s8VseBBxopFn5eDnVEoRa", "svc", true},
+		{"svc_0s8VseBBxopFn5eDnVEoRa", "svc", true},
+		{"svc_0", "svc", true},
+		{"svc_7n42DGM5Tflk9n8mt7Fhc7", "svc", true},
 		// failure case because xxx is not in the set of valid ID prefixes
-		akitaIDParseTest{"svc_7n42DGM5Tflk9n8mt7Fhc8", "svc", false},  // overflows
-		akitaIDParseTest{"xxx_21raAVTqUKOHvmxgK0ySCZ", "xxx", false},
-		akitaIDParseTest{"f!o_21raAVTqUKOHvmxgK0ySCZ", "f!o", false},
-		akitaIDParseTest{"Foo_21raAVTqUKOHvmxgK0ySCZ", "Foo", false},
-		akitaIDParseTest{"lar_aaaaaaaaaaaaaaaaaaaaa!", "lar", false},
-		akitaIDParseTest{"derp_aaaaaaaaaaaaaaaaaaaaaa", "derp", false},
-		akitaIDParseTest{"qux_asdf", "qux", false},
-		akitaIDParseTest{"zed__aaaaaaaaaaaaaaaaaaaa", "zed", false},
+		{"svc_7n42DGM5Tflk9n8mt7Fhc8", "svc", false}, // overflows
+		{"xxx_21raAVTqUKOHvmxgK0ySCZ", "xxx", false},
+		{"f!o_21raAVTqUKOHvmxgK0ySCZ", "f!o", false},
+		{"Foo_21raAVTqUKOHvmxgK0ySCZ", "Foo", false},
+		{"lar_aaaaaaaaaaaaaaaaaaaaa!", "lar", false},
+		{"derp_aaaaaaaaaaaaaaaaaaaaaa", "derp", false},
+		{"qux_asdf", "qux", false},
+		{"zed__aaaaaaaaaaaaaaaaaaaa", "zed", false},
 	}
 
 	for _, tst := range tests {
@@ -92,7 +100,7 @@ func TestParseIDAs(t *testing.T) {
 	}
 
 	if String(userID) != idStr {
-		t.Fatal("incorrectedly parsed ID", idStr, "!=", String(userID))
+		t.Fatal("incorrectly parsed ID", idStr, "!=", String(userID))
 	}
 
 	var projectID ProjectID
