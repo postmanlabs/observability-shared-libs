@@ -608,6 +608,13 @@ func extendContext(cin Context, node interface{}) {
 						} else {
 							panic(fmt.Sprintf("Unknown field of MapData: %s", edge.FieldName))
 						}
+					} else if _, isOptional := astParent.(pb.Optional_Data); isOptional {
+						// Visiting an optional type.
+						if edge.FieldName == "Data" {
+							ctx.appendFieldPath(NewOptionalType())
+						} else {
+							panic(fmt.Sprintf("Unknown field of Optional_Data: %s", edge.FieldName))
+						}
 					} else {
 						ctx.appendFieldPath(NewFieldName(edge.FieldName))
 					}
