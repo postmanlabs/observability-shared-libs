@@ -22,6 +22,7 @@ const (
 	oneOfVariantKind
 	mapKeyTypeKind
 	mapValueTypeKind
+	optionalTypeKind
 )
 
 type abstractFieldPathElement struct {
@@ -46,6 +47,10 @@ func (elt *abstractFieldPathElement) IsMapKeyType() bool {
 
 func (elt *abstractFieldPathElement) IsMapValueType() bool {
 	return elt.kind == mapValueTypeKind
+}
+
+func (elt *abstractFieldPathElement) IsOptionalType() bool {
+	return elt.kind == optionalTypeKind
 }
 
 // Identifies a field of an object.
@@ -135,7 +140,7 @@ func NewMapKeyType() *MapKeyType {
 }
 
 func (mk *MapKeyType) String() string {
-	return "keys"
+	return "(keys)"
 }
 
 // Identifies a map's value type.
@@ -154,5 +159,24 @@ func NewMapValueType() *MapValueType {
 }
 
 func (mv *MapValueType) String() string {
-	return "values"
+	return "(values)"
+}
+
+// Identifies an optional type.
+type OptionalType struct {
+	abstractFieldPathElement
+}
+
+var _ FieldPathElement = (*OptionalType)(nil)
+
+func NewOptionalType() *OptionalType {
+	return &OptionalType{
+		abstractFieldPathElement: abstractFieldPathElement{
+			kind: optionalTypeKind,
+		},
+	}
+}
+
+func (*OptionalType) String() string {
+	return "(optional)"
 }
