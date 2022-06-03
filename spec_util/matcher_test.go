@@ -33,61 +33,120 @@ func testMethodWithHost(operation string, host string, template string) *pb.Meth
 }
 
 func TestMethodMatching(t *testing.T) {
+	matchConcreteOpts := MethodMatchOptions{
+		MatchOperation:     true,
+		MatchHost:          true,
+		MatchConcretePaths: true,
+	}
+	matchConcreteOptsNoOperation := MethodMatchOptions{
+		MatchHost:          true,
+		MatchConcretePaths: true,
+	}
+	matchTemplateOpts := MethodMatchOptions{
+		MatchOperation:     true,
+		MatchHost:          true,
+		MatchPathTemplates: true,
+	}
+
 	testCases := []struct {
 		Name            string
 		MethodOperation string
 		MethodTemplate  string
 		TestOperation   string
 		TestPath        string
+		Options         MethodMatchOptions
 		ExpectedMatch   bool
 	}{
 		{
 			"single match",
 			"GET", "/v1/{service}/foo",
 			"GET", "/v1/abcdef/foo",
+			matchConcreteOpts,
 			true,
 		},
 		{
 			"different operation",
 			"POST", "/v1/{service}/foo",
 			"GET", "/v1/abcdef/foo",
+			matchConcreteOpts,
+			false,
+		},
+		{
+			"different operation (ignore operation)",
+			"POST", "/v1/{service}/foo",
+			"GET", "/v1/abcdef/foo",
+			matchConcreteOptsNoOperation,
 			true,
 		},
 		{
 			"missing component",
 			"GET", "/v1/{service}/foo",
 			"GET", "/v1/abcdef",
+			matchConcreteOpts,
 			false,
 		},
 		{
 			"too many components",
 			"GET", "/v1/{service}/foo",
 			"GET", "/v1/abc/def/foo",
+			matchConcreteOpts,
 			false,
 		},
 		{
 			"multiple matches",
 			"GET", "/v1/{abc}/{def}",
 			"GET", "/v1/abc/def",
+			matchConcreteOpts,
 			true,
 		},
 		{
 			"too few matches",
 			"GET", "/v1/{abc}/{def}",
 			"GET", "/v1/abcdef",
+			matchConcreteOpts,
 			false,
 		},
 		{
 			"matches with non-alphabetic characters",
 			"GET", "/v.1/{abc}/{def}",
 			"GET", "/v.1/a~c/d-f",
+			matchConcreteOpts,
 			true,
 		},
 		{
 			"non-matches with non-alphabetic characters",
 			"GET", "/v.1/{abc}/{def}",
 			"GET", "/vx1/a.c/d.f",
+			matchConcreteOpts,
 			false,
+		},
+		{
+			"match template as concrete",
+			"GET", "/v1/{service}/foo",
+			"GET", "/v1/{service}/foo",
+			matchConcreteOpts,
+			false,
+		},
+		{
+			"match template as concrete (different arg name)",
+			"GET", "/v1/{service}/foo",
+			"GET", "/v1/{arg}/foo",
+			matchConcreteOpts,
+			false,
+		},
+		{
+			"match template as template",
+			"GET", "/v1/{service}/foo",
+			"GET", "/v1/{service}/foo",
+			matchTemplateOpts,
+			true,
+		},
+		{
+			"match template as template (different arg name)",
+			"GET", "/v1/{service}/foo",
+			"GET", "/v1/{arg}/foo",
+			matchTemplateOpts,
+			true,
 		},
 	}
 	host := "localhost:5000"
@@ -97,7 +156,7 @@ func TestMethodMatching(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		actual, matched := m.LookupWithHost(tc.TestOperation, host, tc.TestPath)
+		actual, matched := m.Lookup(tc.TestOperation, host, tc.TestPath, tc.Options)
 		if tc.ExpectedMatch {
 			if actual != tc.MethodTemplate {
 				t.Errorf("in case %q, expected template match but got %q", tc.Name, actual)
