@@ -14,7 +14,8 @@ type methodRegexp struct {
 	Operation         string         // HTTP operation
 	Host              string         // HTTP host
 	Template          string         // original method template
-	RE                *regexp.Regexp // template converted to regexp on path
+	ConcretePathRE    *regexp.Regexp // template converted to regexp for matching concrete paths
+	TemplatePathRE    *regexp.Regexp // template converted to regexp for matching path templates
 	VariablePositions []int          // positions of path variables in templates, in sorted order
 }
 
@@ -49,33 +50,66 @@ type MethodMatcher struct {
 	methods []methodRegexp
 }
 
+type MethodMatchOptions struct {
+	// If true, the operation (GET, PUT, etc.) must match.
+	MatchOperation bool
+
+	// If true, the host must match.
+	MatchHost bool
+
+	// If true, the given path must be a concrete path that matches against a
+	// path template in the matcher.
+	MatchConcretePaths bool
+
+	// If true, the given path can be a path template. To match, the given
+	// template must be equivalent to, or a refinement of, a template in the
+	// matcher (modulo alpha renaming).
+	MatchPathTemplates bool
+}
+
+// Returns either a matching template, or the original path if no match is
+// found.
+func (m *MethodMatcher) Lookup(operation string, host string, path string, opts MethodMatchOptions) (template string, found bool) {
+	for _, candidate := range m.methods {
+		if opts.MatchOperation && candidate.Operation != operation {
+			continue
+		}
+		if opts.MatchHost && candidate.Host != host {
+			continue
+		}
+		if opts.MatchConcretePaths && !candidate.ConcretePathRE.MatchString(path) {
+			continue
+		}
+		if opts.MatchPathTemplates && !candidate.TemplatePathRE.MatchString(path) {
+			continue
+		}
+		return candidate.Template, true
+	}
+
+	return path, false
+}
+
 // Returns either a matching template, or the original path if no match is
 // found. If there is no exact match on (operation, host, string) a partial
 // match on (host, string) is attempted instead. This handles things calls like
 // OPTION that we do not include in our API model, which currently does path
 // parameter inference without considering operations to be distinct.
 func (m *MethodMatcher) LookupWithHost(operation string, host string, path string) (template string, found bool) {
-	for _, candidate := range m.methods {
-		if candidate.Operation != operation {
-			continue
-		}
-		if candidate.Host != host {
-			continue
-		}
-		if candidate.RE.MatchString(path) {
-			return candidate.Template, true
-		}
+	opts := MethodMatchOptions{
+		MatchOperation:     true,
+		MatchHost:          true,
+		MatchConcretePaths: true,
+		MatchPathTemplates: false,
 	}
+	template, found = m.Lookup(operation, host, path, opts)
+
 	// If we failed, try again without Operation filter
-	for _, candidate := range m.methods {
-		if candidate.Host != host {
-			continue
-		}
-		if candidate.RE.MatchString(path) {
-			return candidate.Template, true
-		}
+	if !found {
+		opts.MatchOperation = false
+		template, found = m.Lookup(operation, host, path, opts)
 	}
-	return path, false
+
+	return template, found
 }
 
 const (
@@ -85,8 +119,9 @@ const (
 	// according to RFC3986.  I'm not accepting the reserved characters
 	//   : / ? # [ ] @ ! $ & ' ( ) *  + , ; =
 	//
-	uriPathCharacters = "[A-Za-z0-9-._~%]+"
-	uriArgument       = "\\{.*?\\}" // non-greedy match
+	uriPathCharacters            = "[A-Za-z0-9-._~%]+"
+	uriPathCharactersOrParameter = "(" + uriPathCharacters + "|{" + uriPathCharacters + "})"
+	uriArgument                  = "\\{.*?\\}" // non-greedy match
 )
 
 var (
@@ -95,21 +130,25 @@ var (
 
 // Convert a string with templates like
 //   v1/api/get/user/{arg1}/{arg2}
-// to a regular expression that matches the entire path like
-//   ^v1/api/get/user/([^/]+)/([^/]+)$
+// to a pair of regular expressions. The first matches the entire path like
+//   ^v1/api/get/user/([^/{}]+)/([^/{}]+)$
+// the second matches a refinement of the template like
+//   ^v1/api/get/user/([^/{}]+|{[^/{}]+})/([^/{}]+|{[^/{}]+})$
 //
 // Return the position of each argument within the original template, in sorted
 // order, counting all variables as length 1.
-func templateToRegexp(pathTemplate string) (*regexp.Regexp, []int, error) {
+func templateToRegexp(pathTemplate string) (concreteRE *regexp.Regexp, templateRE *regexp.Regexp, argPositions []int, err error) {
 	// If there are special characters, then the easiest way to escape them is to
 	// break the string up by arguments, and escape everything in between.
 	literals := uriArgumentRegexp.Split(pathTemplate, -1)
 
 	// Insert between every pair of literals, so not after the last. If the path
 	// ends with an argument we should get an empty literal at the end.
-	var buf strings.Builder
-	buf.WriteString("^")
-	positions := make([]int, 0, len(literals)-1)
+	var concreteBuf strings.Builder
+	var templateBuf strings.Builder
+	concreteBuf.WriteString("^")
+	templateBuf.WriteString("^")
+	argPositions = make([]int, 0, len(literals)-1)
 	first := true
 	currentPosition := 0
 
@@ -118,20 +157,29 @@ func templateToRegexp(pathTemplate string) (*regexp.Regexp, []int, error) {
 			// No variable before the first literal
 			first = false
 		} else {
-			buf.WriteString(uriPathCharacters)
-			positions = append(positions, currentPosition)
+			concreteBuf.WriteString(uriPathCharacters)
+			templateBuf.WriteString(uriPathCharactersOrParameter)
+			argPositions = append(argPositions, currentPosition)
 			currentPosition += 1
 		}
-		buf.WriteString(regexp.QuoteMeta(l))
+		concreteBuf.WriteString(regexp.QuoteMeta(l))
+		templateBuf.WriteString(regexp.QuoteMeta(l))
 		currentPosition += len(l)
 	}
-	buf.WriteString("$")
-	re, err := regexp.Compile(buf.String())
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "could not convert template %q to regexp", pathTemplate)
-	}
-	return re, positions, nil
 
+	concreteBuf.WriteString("$")
+	concreteRE, err = regexp.Compile(concreteBuf.String())
+	if err != nil {
+		return nil, nil, nil, errors.Wrapf(err, "could not convert template %q to concrete regexp", pathTemplate)
+	}
+
+	templateBuf.WriteString("$")
+	templateRE, err = regexp.Compile(templateBuf.String())
+	if err != nil {
+		return nil, nil, nil, errors.Wrapf(err, "could not convert template %q to template regexp", pathTemplate)
+	}
+
+	return concreteRE, templateRE, argPositions, nil
 }
 
 // NewMethodMatcher takes an API spec and returns a dictionary that converts
@@ -147,7 +195,7 @@ func NewMethodMatcher(spec *pb.APISpec) (*MethodMatcher, error) {
 		if httpMeta == nil {
 			continue // just ignore non-http methods
 		}
-		re, positions, err := templateToRegexp(httpMeta.PathTemplate)
+		concreteRE, templateRE, positions, err := templateToRegexp(httpMeta.PathTemplate)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not extract paths from spec")
 		}
@@ -155,7 +203,8 @@ func NewMethodMatcher(spec *pb.APISpec) (*MethodMatcher, error) {
 			Operation:         httpMeta.Method,
 			Host:              httpMeta.Host,
 			Template:          httpMeta.PathTemplate,
-			RE:                re,
+			ConcretePathRE:    concreteRE,
+			TemplatePathRE:    templateRE,
 			VariablePositions: positions,
 		})
 	}
