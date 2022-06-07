@@ -10,6 +10,7 @@ import (
 	. "github.com/akitasoftware/akita-libs/visitors"
 	"github.com/akitasoftware/akita-libs/visitors/go_ast_pair"
 	"github.com/akitasoftware/akita-libs/visitors/http_rest"
+	"golang.org/x/exp/maps"
 )
 
 // A SpecPairVisitor with hooks for processing each difference found between
@@ -30,7 +31,9 @@ type SpecDiffVisitor interface {
 	LeaveAddedOrRemovedList(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.List, cont Cont) Cont
 
 	EnterAddedOrRemovedOneOf(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.OneOf) Cont
+	EnterChangedOneOf(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.OneOf) Cont
 	LeaveAddedOrRemovedOneOf(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont
+	LeaveChangedOneOf(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont
 
 	EnterAddedOrRemovedOptional(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.Optional) Cont
 	LeaveAddedOrRemovedOptional(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.Optional, cont Cont) Cont
@@ -210,7 +213,37 @@ func (*DefaultSpecDiffVisitorImpl) EnterOneOfs(self interface{}, ctx http_rest.S
 		return v.EnterAddedOrRemovedOneOf(self, ctx, left, right)
 	}
 
+	if oneOfsDiffer(left, right) {
+		return v.EnterChangedOneOf(self, ctx, left, right)
+	}
+
 	return Continue
+}
+
+func oneOfsDiffer(left, right *pb.OneOf) bool {
+	if left.PotentialConflict != right.PotentialConflict {
+		return true
+	}
+
+	if len(left.Options) != len(right.Options) {
+		return true
+	}
+
+	// Manually pair up the options to see if we can get things to match.
+	rightOptions := maps.Clone(right.Options)
+OUTER:
+	for _, leftOption := range left.Options {
+		for rightKey, rightOption := range rightOptions {
+			if IsSameData(leftOption, rightOption) {
+				delete(rightOptions, rightKey)
+				continue OUTER
+			}
+		}
+
+		// No match found for leftOption.
+		return true
+	}
+	return false
 }
 
 func (*DefaultSpecDiffVisitorImpl) VisitOneOfChildren(self interface{}, ctx http_rest.SpecPairVisitorContext, vm PairVisitorManager, left, right *pb.OneOf) Cont {
@@ -275,6 +308,10 @@ func (*DefaultSpecDiffVisitorImpl) LeaveOneOfs(self interface{}, ctx http_rest.S
 		return v.LeaveAddedOrRemovedOneOf(self, ctx, left, right, cont)
 	}
 
+	if oneOfsDiffer(left, right) {
+		return v.LeaveChangedOneOf(self, ctx, left, right, cont)
+	}
+
 	return cont
 }
 
@@ -284,10 +321,22 @@ func (*DefaultSpecDiffVisitorImpl) EnterAddedOrRemovedOneOf(self interface{}, ct
 	return v.EnterAddedOrRemovedNode(self, ctx, left, right)
 }
 
+// Delegates to EnterChangedNode.
+func (*DefaultSpecDiffVisitorImpl) EnterChangedOneOf(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.OneOf) Cont {
+	v := self.(DefaultSpecDiffVisitor)
+	return v.EnterChangedNode(self, ctx, left, right)
+}
+
 // Delegates to LeaveAddedOrRemovedNode.
 func (*DefaultSpecDiffVisitorImpl) LeaveAddedOrRemovedOneOf(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
 	v := self.(DefaultSpecDiffVisitor)
 	return v.LeaveAddedOrRemovedNode(self, ctx, left, right, cont)
+}
+
+// Delegates to LeaveChangedNode.
+func (*DefaultSpecDiffVisitorImpl) LeaveChangedOneOf(self interface{}, ctx http_rest.SpecPairVisitorContext, left, right *pb.OneOf, cont Cont) Cont {
+	v := self.(DefaultSpecDiffVisitor)
+	return v.LeaveChangedNode(self, ctx, left, right, cont)
 }
 
 // == Optional ================================================================
