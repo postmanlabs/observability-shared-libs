@@ -2,11 +2,11 @@ package spec_util
 
 import (
 	"fmt"
-	"reflect"
-	"sort"
-
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"reflect"
+	"regexp"
+	"sort"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
@@ -450,7 +450,7 @@ func (m *melder) meldStruct(dst, src *pb.Struct) error {
 	}
 
 	// Apply a heuristic for deciding when to convert structs to maps.
-	if structShouldBeMap(dst) {
+	if StructShouldBeMap(dst) {
 		m.structToMap(dst)
 	}
 
@@ -465,10 +465,11 @@ func isMap(struc *pb.Struct) bool {
 // Tuning parameters for deciding when a struct should be turned into a map.
 const maxOptionalFieldsPerStruct = 50
 const maxFieldsPerStruct = 100
+const minNumberedFields = 10
 
 // Heuristically determines whether the given pb.Struct (assumed to not
 // represent a map) should be a map.
-func structShouldBeMap(struc *pb.Struct) bool {
+func StructShouldBeMap(struc *pb.Struct) bool {
 	// A struct should be a map if its total number of fields exceeds
 	// maxFieldsPerStruct.
 	if len(struc.Fields) > maxFieldsPerStruct {
@@ -478,16 +479,34 @@ func structShouldBeMap(struc *pb.Struct) bool {
 	// A struct should be a map if its number of optional fields exceeds
 	// maxOptionalFieldsPerStruct.
 	numOptionalFields := 0
-	for _, field := range struc.Fields {
+	allFieldsStartWithNumbers := true
+	for fieldName, field := range struc.Fields {
 		if field.GetOptional() != nil {
 			numOptionalFields++
 			if numOptionalFields > maxOptionalFieldsPerStruct {
 				return true
 			}
 		}
+		if !startsWithNumber(fieldName) {
+			allFieldsStartWithNumbers = false
+		}
+	}
+
+	// A struct should be a map if all its fields start with numbers and there
+	// are a sufficient number of fields.  Because many programming languages
+	// disallow struct names starting with numbers, the number of fields is
+	// lower.
+	if allFieldsStartWithNumbers && len(struc.Fields) >= minNumberedFields {
+		return true
 	}
 
 	return false
+}
+
+var startsWithNumberRegexp = regexp.MustCompile(`^\d`)
+
+func startsWithNumber(s string) bool {
+	return startsWithNumberRegexp.MatchString(s)
 }
 
 // Melds two maps together. The given pb.Structs are assumed to represent maps.

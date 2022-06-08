@@ -236,6 +236,14 @@ var tests = []testData{
 		},
 		"testdata/meld/meld_map_1_map_2_expected.pb.txt",
 	},
+	{
+		"structs with number fields",
+		[]string{
+			"testdata/meld/meld_map_4.pb.txt",
+			"testdata/meld/meld_map_5.pb.txt",
+		},
+		"testdata/meld/meld_map_4_map_5_expected.pb.txt",
+	},
 }
 
 func TestMeldWithFormats(t *testing.T) {
@@ -533,9 +541,9 @@ func TestMeldData(t *testing.T) {
 				PotentialConflict: true,
 			}),
 			right: wrapPrim(&pb.Primitive{
-				Value: &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
+				Value:      &pb.Primitive_Int64Value{Int64Value: &pb.Int64{}},
 				FormatKind: "datetime",
-				Formats: map[string]bool{"timestamp": true},
+				Formats:    map[string]bool{"timestamp": true},
 			}),
 			expected: wrapOneOf(&pb.OneOf{
 				Options: map[string]*pb.Data{
