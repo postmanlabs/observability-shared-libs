@@ -1,0 +1,120 @@
+# api_spec.Witness proto
+
+method {
+  id {
+    api_type: HTTP_REST
+  }
+
+  args {
+    key: "_uRKmYFjfd4="
+    value {
+      struct {
+        fields {
+          key: "2022-01-01"
+            value {
+              primitive {
+                string_value {
+                }
+              }
+            }
+          }
+        fields {
+          key: "2022-01-02"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-03"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-04"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-05"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-06"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-07"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-08"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-09"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-10"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+      }
+      meta {
+        http {
+          body {
+            content_type: JSON
+          }
+        }
+      }
+    }
+  }
+
+  meta {
+    http {
+      method: "GET"
+      path_template: "/t1"
+      host: "kafka"
+    }
+  }
+}
