@@ -2,11 +2,11 @@ package spec_util
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
+
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
-	"reflect"
-	"regexp"
-	"sort"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
@@ -466,48 +466,6 @@ func isMap(struc *pb.Struct) bool {
 const maxOptionalFieldsPerStruct = 50
 const maxFieldsPerStruct = 100
 const minNumberedFields = 10
-
-// Heuristically determines whether the given pb.Struct (assumed to not
-// represent a map) should be a map.
-func StructShouldBeMap(struc *pb.Struct) bool {
-	// A struct should be a map if its total number of fields exceeds
-	// maxFieldsPerStruct.
-	if len(struc.Fields) > maxFieldsPerStruct {
-		return true
-	}
-
-	// A struct should be a map if its number of optional fields exceeds
-	// maxOptionalFieldsPerStruct.
-	numOptionalFields := 0
-	allFieldsStartWithNumbers := true
-	for fieldName, field := range struc.Fields {
-		if field.GetOptional() != nil {
-			numOptionalFields++
-			if numOptionalFields > maxOptionalFieldsPerStruct {
-				return true
-			}
-		}
-		if !startsWithNumber(fieldName) {
-			allFieldsStartWithNumbers = false
-		}
-	}
-
-	// A struct should be a map if all its fields start with numbers and there
-	// are a sufficient number of fields.  Because many programming languages
-	// disallow struct names starting with numbers, the number of fields is
-	// lower.
-	if allFieldsStartWithNumbers && len(struc.Fields) >= minNumberedFields {
-		return true
-	}
-
-	return false
-}
-
-var startsWithNumberRegexp = regexp.MustCompile(`^\d`)
-
-func startsWithNumber(s string) bool {
-	return startsWithNumberRegexp.MatchString(s)
-}
 
 // Melds two maps together. The given pb.Structs are assumed to represent maps.
 func (m *melder) meldMap(dst, src *pb.Struct) error {

@@ -1,0 +1,42 @@
+# api_spec.Witness proto
+
+method <
+  id: <
+    api_type: HTTP_REST
+  >
+  args: <
+    key: "_uRKmYFjfd4="
+    value: <
+      struct: <
+        map_type: <
+          key: <
+            primitive: <
+              string_value: <
+              >
+            >
+          >
+          value: <
+            primitive: <
+              string_value: <
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "GET"
+      path_template: "/t1"
+      host: "kafka"
+    >
+  >
+>
