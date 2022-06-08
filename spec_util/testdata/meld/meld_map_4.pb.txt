@@ -1,0 +1,360 @@
+# api_spec.Witness proto
+
+method {
+  id {
+    api_type: HTTP_REST
+  }
+
+  args {
+    key: "_uRKmYFjfd4="
+    value {
+      struct {
+        fields {
+          key: "2022-01-01"
+            value {
+              primitive {
+                string_value {
+                }
+              }
+            }
+          }
+        fields {
+          key: "2022-01-02"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-03"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-04"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-05"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-06"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-07"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-08"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-09"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "2022-01-10"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+      }
+      meta {
+        http {
+          body {
+            content_type: JSON
+          }
+        }
+      }
+    }
+  }
+
+  responses {
+    key: "FiNRlcJh7SI="
+    value {
+      struct {
+        fields {
+          key: "addr1@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr2@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr3@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr4@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr5@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr6@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr7@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr8@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr9@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr10@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr11@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr12@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr13@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr14@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr15@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr16@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr17@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr18@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr19@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr20@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr21@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr22@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr23@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr24@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "addr25@example.com"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+      }
+      meta {
+        http {
+          body {
+            content_type: JSON
+          }
+          response_code: 200
+        }
+      }
+    }
+  }
+  meta {
+    http {
+      method: "GET"
+      path_template: "/t1"
+      host: "kafka"
+    }
+  }
+}
