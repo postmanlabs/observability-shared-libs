@@ -2,12 +2,11 @@ package spec_util
 
 import (
 	"fmt"
-	"reflect"
-	"sort"
-	"strconv"
-
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"reflect"
+	"regexp"
+	"sort"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
@@ -504,16 +503,10 @@ func StructShouldBeMap(struc *pb.Struct) bool {
 	return false
 }
 
+var startsWithNumberRegexp = regexp.MustCompile(`^\d`)
+
 func startsWithNumber(s string) bool {
-	if len(s) == 0 {
-		return false
-	}
-
-	if _, err := strconv.Atoi(s[0:1]); err != nil {
-		return false
-	}
-
-	return true
+	return startsWithNumberRegexp.MatchString(s)
 }
 
 // Melds two maps together. The given pb.Structs are assumed to represent maps.
