@@ -18,7 +18,7 @@ const maxFieldsPerStruct = 100
 
 // A struct is inferred to be a map if it has more than this number of fields
 // whose name starts with a number.
-const maxNumberedFieldsPerStruct = 10
+const maxNumberedFieldsPerStruct = 9
 
 // Heuristically determines whether the given pb.Struct (assumed to not
 // represent a map) should be a map.
