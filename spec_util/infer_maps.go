@@ -8,6 +8,18 @@ import (
 	"github.com/akitasoftware/akita-libs/visitors/http_rest"
 )
 
+// The maximum number of optional fields a struct can have before it's inferred
+// to be a map.
+const maxOptionalFieldsPerStruct = 50
+
+// The maximum number of fields a struct can have before it's inferred to be a
+// map.
+const maxFieldsPerStruct = 100
+
+// A struct is inferred to be a map if it has more than this number of fields
+// whose name starts with a number.
+const maxNumberedFieldsPerStruct = 9
+
 // Heuristically determines whether the given pb.Struct (assumed to not
 // represent a map) should be a map.
 func StructShouldBeMap(struc *pb.Struct) bool {
@@ -20,7 +32,7 @@ func StructShouldBeMap(struc *pb.Struct) bool {
 	// A struct should be a map if its number of optional fields exceeds
 	// maxOptionalFieldsPerStruct.
 	numOptionalFields := 0
-	allFieldsStartWithNumbers := true
+	numNumberedFields := 0
 	for fieldName, field := range struc.Fields {
 		if field.GetOptional() != nil {
 			numOptionalFields++
@@ -28,17 +40,12 @@ func StructShouldBeMap(struc *pb.Struct) bool {
 				return true
 			}
 		}
-		if !startsWithNumber(fieldName) {
-			allFieldsStartWithNumbers = false
+		if startsWithNumber(fieldName) {
+			numNumberedFields++
+			if numNumberedFields > maxNumberedFieldsPerStruct {
+				return true
+			}
 		}
-	}
-
-	// A struct should be a map if all its fields start with numbers and there
-	// are a sufficient number of fields.  Because many programming languages
-	// disallow struct names starting with numbers, the number of fields is
-	// lower.
-	if allFieldsStartWithNumbers && len(struc.Fields) >= minNumberedFields {
-		return true
 	}
 
 	return false

@@ -462,11 +462,6 @@ func isMap(struc *pb.Struct) bool {
 	return struc.MapType != nil
 }
 
-// Tuning parameters for deciding when a struct should be turned into a map.
-const maxOptionalFieldsPerStruct = 50
-const maxFieldsPerStruct = 100
-const minNumberedFields = 10
-
 // Melds two maps together. The given pb.Structs are assumed to represent maps.
 func (m *melder) meldMap(dst, src *pb.Struct) error {
 	// Try to make the key and value in dst non-nil.
