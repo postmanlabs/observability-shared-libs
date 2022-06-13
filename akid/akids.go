@@ -14,6 +14,7 @@ const (
 	ClientTag          = "cli"
 	ConnectionTag      = "cxn"
 	DataCategoryTag    = "dct"
+    DeltaTag           = "dlt"
 	GraphTag           = "gph"
 	IdentityTag        = "idt"
 	InvalidTag         = "xxx"
@@ -42,6 +43,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	ClientTag:          func(ID uuid.UUID) ID { return NewClientID(ID) },
 	ConnectionTag:      func(ID uuid.UUID) ID { return NewConnectionID(ID) },
 	DataCategoryTag:    func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
+	DeltaTag:           func(ID uuid.UUID) ID { return NewDeltaID(ID) },
 	IdentityTag:        func(ID uuid.UUID) ID { return NewIdentityID(ID) },
 	GraphTag:           func(ID uuid.UUID) ID { return NewGraphID(ID) },
 	LearnSessionTag:    func(ID uuid.UUID) ID { return NewLearnSessionID(ID) },
@@ -278,6 +280,28 @@ func NewDataCategoryID(ID uuid.UUID) DataCategoryID {
 func GenerateDataCategoryID() DataCategoryID {
 	return NewDataCategoryID(uuid.New())
 }
+
+// DeltaIDs
+type DeltaID struct {
+	baseID
+}
+
+func (DeltaID) GetType() string {
+	return DeltaTag
+}
+
+func (id DeltaID) String() string {
+	return String(id)
+}
+
+func NewDeltaID(ID uuid.UUID) DeltaID {
+	return DeltaID{baseID(ID)}
+}
+
+func GenerateDeltaID() DeltaID {
+	return NewDeltaID(uuid.New())
+}
+
 
 // IdentityIDs
 type IdentityID struct {
