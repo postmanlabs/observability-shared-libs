@@ -1,6 +1,7 @@
 package agent_telemetry
 
 import (
+	"encoding/json"
 	"sync"
 )
 
@@ -8,15 +9,15 @@ import (
 // port number (*either* source or destination.)
 type PacketCounters struct {
 	// Flow
-	Interface string
-	SrcPort   int
-	DstPort   int
+	Interface string `json:"interface"`
+	SrcPort   int    `json:"src_port"`
+	DstPort   int    `json:"dst_port"`
 
 	// Number of events
-	TCPPackets    int
-	HTTPRequests  int
-	HTTPResponses int
-	Unparsed      int
+	TCPPackets    int `json:"tcp_packets"`
+	HTTPRequests  int `json:"http_requests"`
+	HTTPResponses int `json:"http_responses"`
+	Unparsed      int `json:"unparsed"`
 }
 
 func (c *PacketCounters) Add(d PacketCounters) {
@@ -49,7 +50,7 @@ type PacketCountSummary struct {
 	total       PacketCounters
 	byPort      map[int]*PacketCounters
 	byInterface map[string]*PacketCounters
-	mutex       sync.RWMutex
+	mutex       sync.RWMutex `json:"-"`
 }
 
 func NewPacketCountSummary() *PacketCountSummary {
@@ -57,6 +58,43 @@ func NewPacketCountSummary() *PacketCountSummary {
 		byPort:      make(map[int]*PacketCounters),
 		byInterface: make(map[string]*PacketCounters),
 	}
+}
+
+// Used to implement JSON marshalling/unmarshalling for PacketCountSummary.
+// We define custom methods in order to avoid making the fields of
+// PacketCountSummary publicly accessible.
+type packetCountSummaryExporter struct {
+	Total       PacketCounters             `json:"total"`
+	ByPort      map[int]*PacketCounters    `json:"by_port"`
+	ByInterface map[string]*PacketCounters `json:"by_interface"`
+}
+
+func (s *PacketCountSummary) UnmarshalJSON(b []byte) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	var exporter packetCountSummaryExporter
+	if err := json.Unmarshal(b, &exporter); err != nil {
+		return err
+	}
+
+	s.total = exporter.Total
+	s.byPort = exporter.ByPort
+	s.byInterface = exporter.ByInterface
+
+	return nil
+}
+
+func (s *PacketCountSummary) MarshalJSON() ([]byte, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	exporter := &packetCountSummaryExporter{
+		Total:       s.total,
+		ByPort:      s.byPort,
+		ByInterface: s.byInterface,
+	}
+	return json.Marshal(exporter)
 }
 
 func (s *PacketCountSummary) Update(c PacketCounters) {
