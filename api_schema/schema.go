@@ -6,6 +6,7 @@ import (
 
 	"github.com/akitasoftware/akita-libs/akid"
 	"github.com/akitasoftware/akita-libs/akinet"
+	"github.com/akitasoftware/akita-libs/client_telemetry"
 	"github.com/akitasoftware/akita-libs/spec_summary"
 	"github.com/akitasoftware/akita-libs/tags"
 	"github.com/akitasoftware/akita-libs/time_span"
@@ -512,4 +513,15 @@ func (g *GraphResponse) NumEdges() int {
 
 func (g *GraphResponse) IsEmpty() bool {
 	return g.NumEdges() == 0
+}
+
+type PostClientPacketCaptureStatsRequest struct {
+	ClientID           akid.ClientID `json:"client_id"`
+	ObservedStartingAt time.Time     `json:"observed_starting_at"`
+	ObservingDuration  time.Duration `json:"observing_duration"`
+
+	// If ObservedEndingAt and PacketCountSummary are absent, then this
+	// observation period has started but not yet concluded.
+	ObservedEndingAt   *time.Time                           `json:"observed_ending_at,omitempty"`
+	PacketCountSummary *client_telemetry.PacketCountSummary `json:"packet_count_summary,omitempty"`
 }
