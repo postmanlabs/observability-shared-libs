@@ -1,4 +1,4 @@
-package agent_telemetry
+package client_telemetry
 
 import (
 	"encoding/json"
@@ -60,6 +60,11 @@ func NewPacketCountSummary() *PacketCountSummary {
 	}
 }
 
+// Reflects the version of the JSON encoding.  Increase the minor version
+// number for backwards-compatible changes and the major number for non-
+// backwards compatible changes.
+const Version = "v0"
+
 // Used to implement JSON marshalling/unmarshalling for PacketCountSummary.
 // We define custom methods in order to avoid making the fields of
 // PacketCountSummary publicly accessible.
@@ -67,6 +72,9 @@ type packetCountSummaryExporter struct {
 	Total       PacketCounters             `json:"total"`
 	ByPort      map[int]*PacketCounters    `json:"by_port"`
 	ByInterface map[string]*PacketCounters `json:"by_interface"`
+
+	// Reflects the version of this JSON encoding.
+	Version string `json:"version"`
 }
 
 func (s *PacketCountSummary) UnmarshalJSON(b []byte) error {
@@ -93,6 +101,7 @@ func (s *PacketCountSummary) MarshalJSON() ([]byte, error) {
 		Total:       s.total,
 		ByPort:      s.byPort,
 		ByInterface: s.byInterface,
+		Version:     Version,
 	}
 	return json.Marshal(exporter)
 }

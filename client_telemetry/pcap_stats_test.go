@@ -1,4 +1,4 @@
-package agent_telemetry
+package client_telemetry
 
 import (
 	"encoding/json"
