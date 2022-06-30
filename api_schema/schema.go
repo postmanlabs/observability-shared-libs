@@ -518,7 +518,7 @@ func (g *GraphResponse) IsEmpty() bool {
 type PostClientPacketCaptureStatsRequest struct {
 	ClientID                  akid.ClientID `json:"client_id"`
 	ObservedStartingAt        time.Time     `json:"observed_starting_at"`
-	ObservedDurationInMinutes int           `json:"observed_duration_in_minutes"`
+	ObservedDurationInSeconds int           `json:"observed_duration_in_seconds"`
 
 	// If PacketCountSummary is absent, then this observation period has
 	// started but not yet concluded.
