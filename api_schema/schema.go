@@ -515,12 +515,14 @@ func (g *GraphResponse) IsEmpty() bool {
 	return g.NumEdges() == 0
 }
 
+type PostClientStartedRequest struct {
+	ClientID   akid.ClientID `json:"client_id"`
+	Deployment string        `json:"deployment"`
+}
+
 type PostClientPacketCaptureStatsRequest struct {
 	ClientID                  akid.ClientID `json:"client_id"`
 	ObservedStartingAt        time.Time     `json:"observed_starting_at"`
 	ObservedDurationInSeconds int           `json:"observed_duration_in_seconds"`
-
-	// If PacketCountSummary is absent, then this observation period has
-	// started but not yet concluded.
 	PacketCountSummary *client_telemetry.PacketCountSummary `json:"packet_count_summary,omitempty"`
 }
