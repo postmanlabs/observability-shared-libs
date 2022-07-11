@@ -8,56 +8,58 @@ import (
 )
 
 const (
-	APISpecTag         = "api"
-	APIKeyTag          = "apk"
-	APIMethodTag       = "mth"
-	ClientTag          = "cli"
-	ConnectionTag      = "cxn"
-	DataCategoryTag    = "dct"
-	GraphTag           = "gph"
-	IdentityTag        = "idt"
-	InvalidTag         = "xxx"
-	LearnSessionTag    = "lrn"
-	MessageTag         = "msg"
-	OrganizationTag    = "org"
-	OutboundRequestTag = "obr"
-	ProjectTag         = "prj"
-	RequestTag         = "req"
-	RuleTag            = "rul"
-	ScheduleTag        = "sch"
-	ServiceClusterTag  = "scl"
-	ServiceTag         = "svc"
-	ShardAliasTag      = "sal"
-	ShardTag           = "shd"
-	UserTag            = "usr"
-	WitnessTag         = "wit"
+	APISpecTag            = "api"
+	APIKeyTag             = "apk"
+	APIMethodTag          = "mth"
+	ClientTag             = "cli"
+	ConnectionTag         = "cxn"
+	DataCategoryTag       = "dct"
+	GraphTag              = "gph"
+	IdentityTag           = "idt"
+	InvalidTag            = "xxx"
+	LearnSessionTag       = "lrn"
+	MessageTag            = "msg"
+	OrganizationTag       = "org"
+	OutboundRequestTag    = "obr"
+	ProjectTag            = "prj"
+	RequestTag            = "req"
+	RuleTag               = "rul"
+	ScheduleTag           = "sch"
+	ServiceClusterTag     = "scl"
+	ServiceTag            = "svc"
+	ShardAliasTag         = "sal"
+	ShardTag              = "shd"
+	UsageTrackingEventTag = "ute"
+	UserTag               = "usr"
+	WitnessTag            = "wit"
 )
 
 type tagToIDConstructor func(uuid.UUID) ID
 
 var idConstructorMap = map[string]tagToIDConstructor{
-	APISpecTag:         func(ID uuid.UUID) ID { return NewAPISpecID(ID) },
-	APIKeyTag:          func(ID uuid.UUID) ID { return NewAPIKeyID(ID) },
-	APIMethodTag:       func(ID uuid.UUID) ID { return NewAPIMethodID(ID) },
-	ClientTag:          func(ID uuid.UUID) ID { return NewClientID(ID) },
-	ConnectionTag:      func(ID uuid.UUID) ID { return NewConnectionID(ID) },
-	DataCategoryTag:    func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
-	IdentityTag:        func(ID uuid.UUID) ID { return NewIdentityID(ID) },
-	GraphTag:           func(ID uuid.UUID) ID { return NewGraphID(ID) },
-	LearnSessionTag:    func(ID uuid.UUID) ID { return NewLearnSessionID(ID) },
-	MessageTag:         func(ID uuid.UUID) ID { return NewMessageID(ID) },
-	OrganizationTag:    func(ID uuid.UUID) ID { return NewOrganizationID(ID) },
-	OutboundRequestTag: func(ID uuid.UUID) ID { return NewOutboundRequestID(ID) },
-	ProjectTag:         func(ID uuid.UUID) ID { return NewProjectID(ID) },
-	RequestTag:         func(ID uuid.UUID) ID { return NewRequestID(ID) },
-	RuleTag:            func(ID uuid.UUID) ID { return NewRuleID(ID) },
-	ScheduleTag:        func(ID uuid.UUID) ID { return NewScheduleID(ID) },
-	ServiceClusterTag:  func(ID uuid.UUID) ID { return NewServiceClusterID(ID) },
-	ServiceTag:         func(ID uuid.UUID) ID { return NewServiceID(ID) },
-	ShardAliasTag:      func(ID uuid.UUID) ID { return NewShardAliasID(ID) },
-	ShardTag:           func(ID uuid.UUID) ID { return NewShardID(ID) },
-	UserTag:            func(ID uuid.UUID) ID { return NewUserID(ID) },
-	WitnessTag:         func(ID uuid.UUID) ID { return NewWitnessID(ID) },
+	APISpecTag:            func(ID uuid.UUID) ID { return NewAPISpecID(ID) },
+	APIKeyTag:             func(ID uuid.UUID) ID { return NewAPIKeyID(ID) },
+	APIMethodTag:          func(ID uuid.UUID) ID { return NewAPIMethodID(ID) },
+	ClientTag:             func(ID uuid.UUID) ID { return NewClientID(ID) },
+	ConnectionTag:         func(ID uuid.UUID) ID { return NewConnectionID(ID) },
+	DataCategoryTag:       func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
+	IdentityTag:           func(ID uuid.UUID) ID { return NewIdentityID(ID) },
+	GraphTag:              func(ID uuid.UUID) ID { return NewGraphID(ID) },
+	LearnSessionTag:       func(ID uuid.UUID) ID { return NewLearnSessionID(ID) },
+	MessageTag:            func(ID uuid.UUID) ID { return NewMessageID(ID) },
+	OrganizationTag:       func(ID uuid.UUID) ID { return NewOrganizationID(ID) },
+	OutboundRequestTag:    func(ID uuid.UUID) ID { return NewOutboundRequestID(ID) },
+	ProjectTag:            func(ID uuid.UUID) ID { return NewProjectID(ID) },
+	RequestTag:            func(ID uuid.UUID) ID { return NewRequestID(ID) },
+	RuleTag:               func(ID uuid.UUID) ID { return NewRuleID(ID) },
+	ScheduleTag:           func(ID uuid.UUID) ID { return NewScheduleID(ID) },
+	ServiceClusterTag:     func(ID uuid.UUID) ID { return NewServiceClusterID(ID) },
+	ServiceTag:            func(ID uuid.UUID) ID { return NewServiceID(ID) },
+	ShardAliasTag:         func(ID uuid.UUID) ID { return NewShardAliasID(ID) },
+	ShardTag:              func(ID uuid.UUID) ID { return NewShardID(ID) },
+	UsageTrackingEventTag: func(ID uuid.UUID) ID { return NewUsageTrackingEventID(ID) },
+	UserTag:               func(ID uuid.UUID) ID { return NewUserID(ID) },
+	WitnessTag:            func(ID uuid.UUID) ID { return NewWitnessID(ID) },
 }
 
 var (
@@ -709,5 +711,35 @@ func (id RuleID) MarshalText() ([]byte, error) {
 }
 
 func (id *RuleID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// UsageTrackingEventIDs
+
+type UsageTrackingEventID struct {
+	baseID
+}
+
+func (UsageTrackingEventID) GetType() string {
+	return UsageTrackingEventTag
+}
+
+func (id UsageTrackingEventID) String() string {
+	return String(id)
+}
+
+func NewUsageTrackingEventID(ID uuid.UUID) UsageTrackingEventID {
+	return UsageTrackingEventID{baseID(ID)}
+}
+
+func GenerateUsageTrackingEventID() UsageTrackingEventID {
+	return NewUsageTrackingEventID(uuid.New())
+}
+
+func (id UsageTrackingEventID) MarshallText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id UsageTrackingEventID) UnmarshallText(data []byte) error {
 	return fromText(id, data)
 }
