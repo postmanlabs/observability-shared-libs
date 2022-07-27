@@ -19,6 +19,7 @@ const (
 	InvalidTag            = "xxx"
 	LearnSessionTag       = "lrn"
 	MessageTag            = "msg"
+	MonitorTag            = "mtr"
 	OrganizationTag       = "org"
 	OutboundRequestTag    = "obr"
 	ProjectTag            = "prj"
@@ -47,6 +48,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	GraphTag:              func(ID uuid.UUID) ID { return NewGraphID(ID) },
 	LearnSessionTag:       func(ID uuid.UUID) ID { return NewLearnSessionID(ID) },
 	MessageTag:            func(ID uuid.UUID) ID { return NewMessageID(ID) },
+	MonitorTag:            func(ID uuid.UUID) ID { return NewMonitorID(ID) },
 	OrganizationTag:       func(ID uuid.UUID) ID { return NewOrganizationID(ID) },
 	OutboundRequestTag:    func(ID uuid.UUID) ID { return NewOutboundRequestID(ID) },
 	ProjectTag:            func(ID uuid.UUID) ID { return NewProjectID(ID) },
@@ -595,6 +597,35 @@ func (id MessageID) MarshalText() ([]byte, error) {
 }
 
 func (id *MessageID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// MonitorIDs
+type MonitorID struct {
+	baseID
+}
+
+func (MonitorID) GetType() string {
+	return MonitorTag
+}
+
+func (id MonitorID) String() string {
+	return String(id)
+}
+
+func NewMonitorID(ID uuid.UUID) MonitorID {
+	return MonitorID{baseID(ID)}
+}
+
+func GenerateMonitorID() MonitorID {
+	return NewMonitorID(uuid.New())
+}
+
+func (id MonitorID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *MonitorID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
 
