@@ -131,7 +131,7 @@ func (v *specSummaryVisitor) LeaveData(self interface{}, context vis.SpecVisitor
 				return fmt.Sprintf("[%s] %s", reflect.TypeOf(e.AncestorNode), e.OutEdge)
 			}), " . "))
 		}
-		if s, ok := d.Value.(*pb.Data_Struct); ok {
+		if s, ok := d.GetValue().(*pb.Data_Struct); ok && s != nil {
 			for k := range s.Struct.GetFields() {
 				v.methodSummary.DirectedFilters.Increment(direction, PropertyFilter, k)
 			}
