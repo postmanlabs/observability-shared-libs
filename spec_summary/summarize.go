@@ -2,12 +2,15 @@ package spec_summary
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/spec_util"
 	. "github.com/akitasoftware/akita-libs/visitors"
 	vis "github.com/akitasoftware/akita-libs/visitors/http_rest"
+	"github.com/akitasoftware/go-utils/slices"
+	"github.com/golang/glog"
 )
 
 // See SummarizeWithFilters.
@@ -123,7 +126,12 @@ func (v *specSummaryVisitor) LeaveData(self interface{}, context vis.SpecVisitor
 	} else if meta := spec_util.HTTPCookieFromData(d); meta != nil {
 		v.methodSummary.DirectedFilters.Increment(direction, ParamFilter, meta.Key)
 	} else {
-		if s, ok := d.Value.(*pb.Data_Struct); ok {
+		if d == nil {
+			glog.Errorf("[SPEC_SUMMARY_VISITOR_BUG] Context of nil data: %v", strings.Join(slices.Map(context.GetPath(), func(e ContextPathElement) string {
+				return fmt.Sprintf("[%s] %s", reflect.TypeOf(e.AncestorNode), e.OutEdge)
+			}), " . "))
+		}
+		if s, ok := d.GetValue().(*pb.Data_Struct); ok && s != nil {
 			for k := range s.Struct.GetFields() {
 				v.methodSummary.DirectedFilters.Increment(direction, PropertyFilter, k)
 			}
