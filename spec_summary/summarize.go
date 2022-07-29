@@ -127,7 +127,7 @@ func (v *specSummaryVisitor) LeaveData(self interface{}, context vis.SpecVisitor
 		v.methodSummary.DirectedFilters.Increment(direction, ParamFilter, meta.Key)
 	} else {
 		if d == nil {
-			glog.Errorf("Context of nil data: %v", strings.Join(slices.Map(context.GetPath(), func(e ContextPathElement) string {
+			glog.Errorf("[SPEC_SUMMARY_VISITOR_BUG] Context of nil data: %v", strings.Join(slices.Map(context.GetPath(), func(e ContextPathElement) string {
 				return fmt.Sprintf("[%s] %s", reflect.TypeOf(e.AncestorNode), e.OutEdge)
 			}), " . "))
 		}
