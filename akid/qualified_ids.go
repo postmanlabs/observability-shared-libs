@@ -20,6 +20,11 @@ func (serviceID QualifiedServiceID) QualifyLearnSessionID(learnSessionID LearnSe
 	return MakeQualifiedLearnSessionID(serviceID.OrganizationID, serviceID.ServiceID, learnSessionID)
 }
 
+// Qualifies the given deployment with this service ID.
+func (serviceID QualifiedServiceID) QualifyDeployment(deployment string) QualifiedDeploymentID {
+	return MakeQualifiedDeploymentID(serviceID.OrganizationID, serviceID.ServiceID, deployment)
+}
+
 func (serviceID QualifiedServiceID) String() string {
 	return fmt.Sprintf("%s/%s", serviceID.OrganizationID, serviceID.ServiceID)
 }
@@ -39,4 +44,38 @@ func MakeQualifiedLearnSessionID(organizationID OrganizationID, serviceID Servic
 
 func (sessionID QualifiedLearnSessionID) String() string {
 	return fmt.Sprintf("%s/%s", sessionID.QualifiedServiceID, sessionID.LearnSessionID)
+}
+
+// A deployment paired with its service ID and organization ID.
+type QualifiedDeploymentID struct {
+	QualifiedServiceID
+	Deployment string `json:"deployment"`
+}
+
+func MakeQualifiedDeploymentID(organizationID OrganizationID, serviceID ServiceID, deployment string) QualifiedDeploymentID {
+	return QualifiedDeploymentID{
+		QualifiedServiceID: MakeQualifiedServiceID(organizationID, serviceID),
+		Deployment:         deployment,
+	}
+}
+
+func (d QualifiedDeploymentID) String() string {
+	return fmt.Sprintf("%s/%s", d.QualifiedServiceID, d.Deployment)
+}
+
+// A deployment paired with its service ID but not its organization ID.
+type ServiceDeploymentID struct {
+	ServiceID  ServiceID `json:"service_id"`
+	Deployment string    `json:"deployment"`
+}
+
+func MakeServiceDeploymentID(serviceID ServiceID, deployment string) ServiceDeploymentID {
+	return ServiceDeploymentID{
+		ServiceID:  serviceID,
+		Deployment: deployment,
+	}
+}
+
+func (d ServiceDeploymentID) String() string {
+	return fmt.Sprintf("%s/%s", d.ServiceID, d.Deployment)
 }
