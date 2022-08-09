@@ -63,19 +63,3 @@ func (d QualifiedDeploymentID) String() string {
 	return fmt.Sprintf("%s/%s", d.QualifiedServiceID, d.Deployment)
 }
 
-// A deployment paired with its service ID but not its organization ID.
-type ServiceDeploymentID struct {
-	ServiceID  ServiceID `json:"service_id"`
-	Deployment string    `json:"deployment"`
-}
-
-func MakeServiceDeploymentID(serviceID ServiceID, deployment string) ServiceDeploymentID {
-	return ServiceDeploymentID{
-		ServiceID:  serviceID,
-		Deployment: deployment,
-	}
-}
-
-func (d ServiceDeploymentID) String() string {
-	return fmt.Sprintf("%s/%s", d.ServiceID, d.Deployment)
-}
