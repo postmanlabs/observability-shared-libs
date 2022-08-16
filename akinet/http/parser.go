@@ -21,22 +21,35 @@ var (
 	MaximumHTTPLength int64 = 1024 * 1024
 )
 
-// Implements TCPParser
+// Parses a single HTTP request or response.
+//
+// Internally, this uses Go's HTTP parser. Go's parser is a synchronous one; we
+// convert it into an asynchronous one by running it in a goroutine.
 type httpParser struct {
+	// For sending incoming bytes to the parser goroutine.
 	w *io.PipeWriter
 
+	// Tracks all bytes sent to this parser.
 	allInput memview.MemView
 
-	// Signal that read side of the pipe has closed.
+	// When anything is written to this channel, it indicates that the parser
+	// goroutine is done. The value written is the resulting error, if any.
 	readClosed chan error
 
+	// When anything is written to this channel, it indicates that the parser
+	// goroutine is done. The value written is the result of the parsing: an HTTP
+	// request or response.
 	resultChan chan akinet.ParsedNetworkContent
-	isRequest  bool
 
-	// Maximum length of HTTP protocol unit supported; larger requests
-	// or responses may be truncated.
+	// Indicates whether this parser is for a request or a response.
+	isRequest bool
+
+	// Maximum length of HTTP request or response supported; larger requests or
+	// responses may be truncated.
 	maxHttpLength int64
 }
+
+var _ akinet.TCPParser = (*httpParser)(nil)
 
 func (p *httpParser) Name() string {
 	if p.isRequest {
@@ -107,6 +120,8 @@ func newHTTPParser(isRequest bool, bidiID akinet.TCPBidiID, seq, ack reassembly.
 	// Unfortunately, go's http request parser blocks. So we need to run it in a
 	// separate goroutine. This needs to be addressed as part of
 	// https://app.clubhouse.io/akita-software/story/600
+
+	// The channel on which the parsed HTTP request or response is sent.
 	resultChan := make(chan akinet.ParsedNetworkContent)
 	readClosed := make(chan error, 1)
 	r, w := io.Pipe()
