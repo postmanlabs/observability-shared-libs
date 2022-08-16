@@ -203,6 +203,10 @@ func readSingleHTTPRequest(r *bufio.Reader) (*http.Request, []byte, error) {
 // form the responseand its body, but there may be unused bytes left in the
 // bufio.Reader's buffer.
 func readSingleHTTPResponse(r *bufio.Reader) (*http.Response, []byte, error) {
+	// XXX BUG Because a nil http.Request is provided to ReadResponse, the http
+	// library assumes a GET request. If this is actually a response to a HEAD
+	// request and the Content-Length header is present, the library will treat
+	// the bytes after the end of the response as a response body.
 	resp, err := http.ReadResponse(r, nil)
 	if err != nil {
 		return nil, nil, err
