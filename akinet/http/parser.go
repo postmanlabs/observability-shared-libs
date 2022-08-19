@@ -29,8 +29,8 @@ type httpParser struct {
 	// For sending incoming bytes to the parser goroutine.
 	w *io.PipeWriter
 
-	// Tracks all bytes sent to this parser.
-	allInput memview.MemView
+	// The total number of bytes consumed from the stream being parsed.
+	totalBytesConsumed int64
 
 	// When anything is written to this channel, it indicates that the parser
 	// goroutine is done. The value written is the resulting error, if any.
@@ -58,9 +58,11 @@ func (p *httpParser) Name() string {
 	return "HTTP/1.x Response Parser"
 }
 
-func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, err error) {
+func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, totalBytesConsumed int64, err error) {
 	var consumedBytes int64
 	defer func() {
+		totalBytesConsumed = p.totalBytesConsumed
+
 		if err == nil {
 			return
 		}
@@ -70,16 +72,16 @@ func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.Par
 		case httpPipeReaderDone:
 			result = <-p.resultChan
 			unused = input.SubView(consumedBytes-int64(e), input.Len())
+			totalBytesConsumed -= unused.Len()
 			err = nil
 		case httpPipeReaderError:
-			unused = p.allInput
 			err = e.err
 		default:
 			err = errors.Wrap(err, "encountered unknown HTTP pipe reader error")
 		}
 	}()
 
-	p.allInput.Append(input)
+	p.totalBytesConsumed += input.Len()
 
 	// The PipeWriter blocks until the reader is done consuming all the bytes.
 	consumedBytes, err = io.Copy(p.w, input.CreateReader())
@@ -100,15 +102,12 @@ func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.Par
 	// If the reader has not closed yet, tell it we have no more input. This case
 	// happens if there's no content-length and we're reading until connection
 	// close.
-	if isEnd {
-		p.w.Close()
-		err = <-p.readClosed
-	}
-
-	// If the HTTP request or response is longer than our maximum length, close the pipe
-	// anyway. This will leave the input stream in a state where it probably can't find
-	// the next header until the accumulated data in the reassembly buffer is all skipped.
-	if p.allInput.Len() > p.maxHttpLength {
+	//
+	// Also, if the HTTP request or response is longer than our maximum length,
+	// close the pipe anyway. This will leave the input stream in a state where it
+	// probably can't find the next header until the accumulated data in the
+	// reassembly buffer is all skipped.
+	if isEnd || p.totalBytesConsumed > p.maxHttpLength {
 		p.w.Close()
 		err = <-p.readClosed
 	}
