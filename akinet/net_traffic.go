@@ -1,6 +1,7 @@
 package akinet
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/akitasoftware/akita-libs/akid"
-	"github.com/akitasoftware/akita-libs/memview"
 )
 
 // Represents a generic network traffic that has been parsed from the wire.
@@ -38,12 +38,12 @@ type ParsedNetworkContent interface {
 	implParsedNetworkContent()
 }
 
-type RawBytes memview.MemView
+type DroppedBytes int64
 
-func (RawBytes) implParsedNetworkContent() {}
+func (DroppedBytes) implParsedNetworkContent() {}
 
-func (rb RawBytes) String() string {
-	return memview.MemView(rb).String()
+func (db DroppedBytes) String() string {
+	return fmt.Sprintf("dropped %d bytes", db)
 }
 
 // Represents metadata from an observed TCP packet.
