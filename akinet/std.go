@@ -1,15 +1,15 @@
 package akinet
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/akitasoftware/akita-libs/buffer_pool"
 	"github.com/google/uuid"
 )
 
-func FromStdRequest(streamID uuid.UUID, seq int, src *http.Request, body []byte) HTTPRequest {
+func FromStdRequest(streamID uuid.UUID, seq int, src *http.Request, body buffer_pool.Buffer) HTTPRequest {
 	return HTTPRequest{
 		StreamID:   streamID,
 		Seq:        seq,
@@ -19,7 +19,9 @@ func FromStdRequest(streamID uuid.UUID, seq int, src *http.Request, body []byte)
 		URL:        src.URL,
 		Host:       src.Host,
 		Header:     src.Header,
-		Body:       body,
+		Body:       body.Bytes(),
+
+		buffer: body,
 	}
 }
 
@@ -32,8 +34,8 @@ func (r HTTPRequest) ToStdRequest() *http.Request {
 		ProtoMinor:    r.ProtoMinor,
 		Host:          r.Host,
 		Header:        r.Header,
-		ContentLength: int64(len(r.Body)),
-		Body:          ioutil.NopCloser(bytes.NewReader(r.Body)),
+		ContentLength: int64(r.Body.Len()),
+		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
 
 	for _, c := range r.Cookies {
@@ -42,7 +44,7 @@ func (r HTTPRequest) ToStdRequest() *http.Request {
 	return result
 }
 
-func FromStdResponse(streamID uuid.UUID, seq int, src *http.Response, body []byte) HTTPResponse {
+func FromStdResponse(streamID uuid.UUID, seq int, src *http.Response, body buffer_pool.Buffer) HTTPResponse {
 	return HTTPResponse{
 		StreamID:   streamID,
 		Seq:        seq,
@@ -50,7 +52,9 @@ func FromStdResponse(streamID uuid.UUID, seq int, src *http.Response, body []byt
 		ProtoMajor: src.ProtoMajor,
 		ProtoMinor: src.ProtoMinor,
 		Header:     src.Header,
-		Body:       body,
+		Body:       body.Bytes(),
+
+		buffer: body,
 	}
 }
 
@@ -62,7 +66,7 @@ func (r HTTPResponse) ToStdResponse() *http.Response {
 		ProtoMajor:    r.ProtoMajor,
 		ProtoMinor:    r.ProtoMinor,
 		Header:        r.Header,
-		ContentLength: int64(len(r.Body)),
-		Body:          ioutil.NopCloser(bytes.NewReader(r.Body)),
+		ContentLength: int64(r.Body.Len()),
+		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
 }

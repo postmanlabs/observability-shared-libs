@@ -563,3 +563,37 @@ func (r *MemViewReader) WriteTo(dst io.Writer) (int64, error) {
 	}
 	return bytesWritten, nil
 }
+
+func (left MemView) Equal(right MemView) bool {
+	if left.length != right.length {
+		return false
+	}
+
+	leftBufIdx := 0
+	leftBufOffset := 0
+	rightBufIdx := 0
+	rightBufOffset := 0
+	for idx := int64(0); idx < left.length; idx++ {
+		// Assume both MemViews are internally consistent, so we don't need to do
+		// any bounds checks on left.buf and right.buf.
+
+		// Seek through the buffers on each side until we find the next byte.
+		for leftBufOffset >= len(left.buf[leftBufIdx]) {
+			leftBufIdx++
+			leftBufOffset = 0
+		}
+		for rightBufOffset >= len(right.buf[rightBufIdx]) {
+			rightBufIdx++
+			rightBufOffset = 0
+		}
+
+		if left.buf[leftBufIdx][leftBufOffset] != right.buf[rightBufIdx][rightBufOffset] {
+			return false
+		}
+
+		leftBufOffset++
+		rightBufOffset++
+	}
+
+	return true
+}
