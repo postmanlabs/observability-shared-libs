@@ -52,6 +52,9 @@ func (pool bufferPool) NewBuffer() Buffer {
 func (pool bufferPool) getChunk() []byte {
 	select {
 	case result := <-pool.chunks:
+		for i := range result {
+			result[i] = 0
+		}
 		return result
 	default:
 		return nil
