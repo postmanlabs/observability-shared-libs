@@ -7,6 +7,10 @@ import (
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
+// Controls whether representation invariants are checked in buffer.repOk. When
+// enabled, a panic occurs when an invariant is found to be violated.
+var CheckInvariants = false
+
 // A variable-sized buffer whose backing storage is drawn from a fixed-sized
 // pool. Clients must return the backing storage to the pool by calling Release.
 //
@@ -49,7 +53,7 @@ type buffer struct {
 	// Contents of the buffer start at chunks[0][readOffset] (inclusive) and end
 	// at chunks[len(chunks)-1][writeOffset] (exclusive).
 	//
-	// Invariants:
+	// Invariants, checked by repOk:
 	//   - this is empty when the buffer is empty.
 	//   - all elements have length and capacity pool.chunkSize_bytes.
 	chunks [][]byte
@@ -57,7 +61,7 @@ type buffer struct {
 	// Contents of the buffer start at chunks[0][readOffset] (inclusive). This is
 	// where to start reading from.
 	//
-	// Invariants:
+	// Invariants, checked by repOk:
 	//   - readOffset == 0 when len(chunks) == 0.
 	//   - readOffset < pool.chunkSize_bytes when len(chunks) > 0.
 	//   - readOffset < writeOffset when len(chunks) == 1.
@@ -69,7 +73,7 @@ type buffer struct {
 	// Contents of the buffer end at chunks[len(chunks)-1][writeOffset]
 	// (exclusive). This is where to start writing to.
 	//
-	// Invariants:
+	// Invariants, checked by repOk:
 	//   - writeOffset > 0 when len(chunks) > 0.
 	//   - readOffset < writeOffset when len(chunks) == 1.
 	writeOffset int
@@ -82,6 +86,47 @@ func newBuffer(pool bufferPool) Buffer {
 }
 
 var _ Buffer = (*buffer)(nil)
+
+// Checks representation invariants. Panics if any invariant is broken.
+func (buf *buffer) repOk() {
+	if !CheckInvariants {
+		return
+	}
+
+	assert := func(b bool) {
+		if !b {
+			panic("broken invariant")
+		}
+	}
+
+	// Invariants on chunks. See documentation on chunks.
+	//
+	// We don't check that `chunks` is empty when the buffer is empty, since we
+	// don't have any other way of seeing whether the buffer is empty.
+	for _, chunk := range buf.chunks {
+		assert(len(chunk) == buf.pool.chunkSize_bytes)
+		assert(cap(chunk) == buf.pool.chunkSize_bytes)
+	}
+
+	// Invariants on readOffset. See documentation on readOffset.
+	if len(buf.chunks) == 0 {
+		assert(buf.readOffset == 0)
+	}
+	if len(buf.chunks) > 0 {
+		assert(buf.readOffset < buf.pool.chunkSize_bytes)
+	}
+	if len(buf.chunks) == 1 {
+		assert(buf.readOffset < buf.writeOffset)
+	}
+
+	// Invariants on writeOffset. See documentation on writeOffset.
+	if len(buf.chunks) > 0 {
+		assert(buf.writeOffset > 0)
+	}
+	if len(buf.chunks) == 1 {
+		assert(buf.readOffset < buf.writeOffset)
+	}
+}
 
 func (buf *buffer) Bytes() memview.MemView {
 	result := memview.MemView{}
@@ -118,6 +163,7 @@ func (buf *buffer) Release() {
 		return
 	}
 
+	buf.repOk()
 	buf.pool.release(buf.chunks)
 	buf.chunks = nil
 	buf.readOffset = 0
@@ -172,6 +218,8 @@ func (buf *buffer) grow(n int) (chunkIdx, offset, availableBytes int) {
 }
 
 func (buf *buffer) Write(p []byte) (n int, err error) {
+	defer buf.repOk()
+
 	if len(p) == 0 {
 		return 0, nil
 	}
@@ -203,6 +251,8 @@ func (buf *buffer) Write(p []byte) (n int, err error) {
 }
 
 func (buf *buffer) ReadFrom(r io.Reader) (totalBytesCopied int64, err error) {
+	defer buf.repOk()
+
 	defer func() {
 		numChunks := len(buf.chunks)
 		if numChunks == 0 {
