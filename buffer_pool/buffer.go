@@ -41,6 +41,18 @@ type Buffer interface {
 	// stopped early.
 	io.Writer
 
+	// ReadFrom(r) copies the contents of the io.Reader r into the buffer until
+	// EOF or an error is encountered. Additional storage is obtained from the
+	// pool as needed.
+	//
+	// Returns the number of bytes copied. Any error except EOF encountered during
+	// the read is also returned.
+	//
+	// EmptyPool is returned if additional storage is needed, but the buffer pool
+	// is empty. It is possible for this to happen even when all of r is copied:
+	// if the end of r coincides exactly with the end of the buffer's allocated
+	// storage, ReadFrom will try to obtain additional storage from the pool
+	// before reading the EOF from r.
 	io.ReaderFrom
 }
 
