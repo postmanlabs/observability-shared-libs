@@ -60,6 +60,16 @@ func TestMakeBufferPool(t *testing.T) {
 	}
 }
 
+// Tests the behaviour of buffer.ReadFrom, buffer.Read, and buffer.Write.
+func TestReadWrite(t *testing.T) {
+	// Enable invariant-checking.
+	CheckInvariants = true
+
+	for _, testCase := range readWriteTests {
+		testCase.run(t)
+	}
+}
+
 // Each test case creates some buffers from a pool and performs a sequence of
 // writes to those buffers. After each write, the contents of each buffer is
 // compared with that of a reference implementation.
@@ -81,6 +91,84 @@ type writeSpec struct {
 
 	// Expected error if writing with ReadFrom.
 	expectedReadFromError error
+}
+
+func (testCase testCase) run(t *testing.T) {
+	// Run the test case once using buffer.Write and again with buffer.ReadFrom.
+	for _, writeMode := range []string{"Write", "ReadFrom"} {
+		// Seed the PRNG so that the test is deterministic.
+		rand.Seed(0)
+
+		// Create the buffer pool.
+		pool, err := MakeBufferPool(testCase.maxPoolSize_bytes, testCase.chunkSize_bytes)
+		assert.NoError(t, err, testCase.name)
+
+		// Create buffers. Each buffer has a corresponding instance of bytes.Buffer
+		// that will contain the expected contents of that buffer.
+		buffers := make([]Buffer, testCase.numBuffers)
+		expectedBuffers := make([]*bytes.Buffer, testCase.numBuffers)
+		for idx := range buffers {
+			buffers[idx] = pool.NewBuffer()
+			expectedBuffers[idx] = &bytes.Buffer{}
+		}
+
+		// Write to the buffers and check the resulting contents of the buffer.
+		for writeIdx, write := range testCase.writes {
+			writeNum := writeIdx + 1
+
+			// Create a randomized payload to be written.
+			payload := make([]byte, write.amountToWrite)
+			for i := range payload {
+				payload[i] = byte(rand.Int())
+			}
+
+			// Write to the chosen buffer.
+			var n int64
+			var err, expectedError error
+			buf := buffers[write.bufferIdx]
+			switch writeMode {
+			case "Write":
+				nWritten, writeErr := buf.Write(payload)
+				n = int64(nWritten)
+				err = writeErr
+				expectedError = write.expectedWriteError
+			case "ReadFrom":
+				payloadMemView := memview.New(payload)
+				n, err = buf.ReadFrom(payloadMemView.CreateReader())
+				expectedError = write.expectedReadFromError
+			}
+			assert.Equalf(t, int64(write.expectedWriteAmount), n, "%s, %s #%d", testCase.name, writeMode, writeNum)
+			assert.Equalf(t, expectedError, err, "%s, %s #%d", testCase.name, writeMode, writeNum)
+
+			// Write to the corresponding bytes.Buffer.
+			expectedBuf := expectedBuffers[write.bufferIdx]
+			actualWrite, err := expectedBuf.Write(payload[:n])
+			assert.Equalf(t, write.expectedWriteAmount, actualWrite, "%s, write #%d to bytes.Buffer", testCase.name, writeNum)
+			assert.NoErrorf(t, err, "%s, write #%d to bytes.Buffer", testCase.name, writeNum)
+
+			// Compare the contents of each buffer with its corresponding
+			// bytes.Buffer.
+			for idx := range buffers {
+				buf := buffers[idx]
+				expectedBuf := expectedBuffers[idx]
+				bufMemView := buf.Bytes()
+				var expectedMemView memview.MemView
+				if expectedBuf.Len() > 0 {
+					expectedMemView = memview.New(expectedBuf.Bytes())
+				}
+
+				diff := cmp.Diff(expectedMemView, bufMemView)
+				if diff != "" {
+					t.Errorf("%s, after %s #%d, comparing buffers[%d], found diff: %s", testCase.name, writeMode, writeNum, idx, diff)
+				}
+			}
+		}
+
+		// Release the buffers.
+		for _, buf := range buffers {
+			buf.Release()
+		}
+	}
 }
 
 // Test cases for testing reading and writing.
@@ -300,87 +388,4 @@ var readWriteTests = []testCase{
 			},
 		},
 	},
-}
-
-// Tests the behaviour of buffer.ReadFrom, buffer.Read, and buffer.Write.
-func TestReadWrite(t *testing.T) {
-	// Enable invariant-checking.
-	CheckInvariants = true
-
-	for _, writeMode := range []string{"Write", "ReadFrom"} {
-		for _, testCase := range readWriteTests {
-			// Seed the PRNG so that the test is deterministic.
-			rand.Seed(0)
-
-			// Create the buffer pool.
-			pool, err := MakeBufferPool(testCase.maxPoolSize_bytes, testCase.chunkSize_bytes)
-			assert.NoError(t, err, testCase.name)
-
-			// Create buffers. Each buffer has a corresponding instance of
-			// bytes.Buffer that will contain the expected contents of that buffer.
-			buffers := make([]Buffer, testCase.numBuffers)
-			expectedBuffers := make([]*bytes.Buffer, testCase.numBuffers)
-			for idx := range buffers {
-				buffers[idx] = pool.NewBuffer()
-				expectedBuffers[idx] = &bytes.Buffer{}
-			}
-
-			// Write to the buffers and check the resulting contents of the buffer.
-			for writeIdx, write := range testCase.writes {
-				writeNum := writeIdx + 1
-
-				// Create a randomized payload to be written.
-				payload := make([]byte, write.amountToWrite)
-				for i := range payload {
-					payload[i] = byte(rand.Int())
-				}
-
-				// Write to the chosen buffer.
-				var n int64
-				var err, expectedError error
-				buf := buffers[write.bufferIdx]
-				switch writeMode {
-				case "Write":
-					nWritten, writeErr := buf.Write(payload)
-					n = int64(nWritten)
-					err = writeErr
-					expectedError = write.expectedWriteError
-				case "ReadFrom":
-					payloadMemView := memview.New(payload)
-					n, err = buf.ReadFrom(payloadMemView.CreateReader())
-					expectedError = write.expectedReadFromError
-				}
-				assert.Equalf(t, int64(write.expectedWriteAmount), n, "%s, %s #%d", testCase.name, writeMode, writeNum)
-				assert.Equalf(t, expectedError, err, "%s, %s #%d", testCase.name, writeMode, writeNum)
-
-				// Write to the corresponding bytes.Buffer.
-				expectedBuf := expectedBuffers[write.bufferIdx]
-				actualWrite, err := expectedBuf.Write(payload[:n])
-				assert.Equalf(t, write.expectedWriteAmount, actualWrite, "%s, write #%d to bytes.Buffer", testCase.name, writeNum)
-				assert.NoErrorf(t, err, "%s, write #%d to bytes.Buffer", testCase.name, writeNum)
-
-				// Compare the contents of each buffer with its corresponding
-				// bytes.Buffer.
-				for idx := range buffers {
-					buf := buffers[idx]
-					expectedBuf := expectedBuffers[idx]
-					bufMemView := buf.Bytes()
-					var expectedMemView memview.MemView
-					if expectedBuf.Len() > 0 {
-						expectedMemView = memview.New(expectedBuf.Bytes())
-					}
-
-					diff := cmp.Diff(expectedMemView, bufMemView)
-					if diff != "" {
-						t.Errorf("%s, after %s #%d, comparing buffers[%d], found diff: %s", testCase.name, writeMode, writeNum, idx, diff)
-					}
-				}
-			}
-
-			// Release the buffers.
-			for _, buf := range buffers {
-				buf.Release()
-			}
-		}
-	}
 }
