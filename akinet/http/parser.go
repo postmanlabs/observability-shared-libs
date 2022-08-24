@@ -2,7 +2,6 @@ package http
 
 import (
 	"bufio"
-	"bytes"
 	"io"
 	"net/http"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/akitasoftware/akita-libs/akinet"
+	"github.com/akitasoftware/akita-libs/buffer_pool"
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
@@ -21,22 +21,35 @@ var (
 	MaximumHTTPLength int64 = 1024 * 1024
 )
 
-// Implements TCPParser
+// Parses a single HTTP request or response.
+//
+// Internally, this uses Go's HTTP parser. Go's parser is a synchronous one; we
+// convert it into an asynchronous one by running it in a goroutine.
 type httpParser struct {
+	// For sending incoming bytes to the parser goroutine.
 	w *io.PipeWriter
 
-	allInput memview.MemView
+	// The total number of bytes consumed from the stream being parsed.
+	totalBytesConsumed int64
 
-	// Signal that read side of the pipe has closed.
+	// When anything is written to this channel, it indicates that the parser
+	// goroutine is done. The value written is the resulting error, if any.
 	readClosed chan error
 
+	// When anything is written to this channel, it indicates that the parser
+	// goroutine is done. The value written is the result of the parsing: an HTTP
+	// request or response.
 	resultChan chan akinet.ParsedNetworkContent
-	isRequest  bool
 
-	// Maximum length of HTTP protocol unit supported; larger requests
-	// or responses may be truncated.
+	// Indicates whether this parser is for a request or a response.
+	isRequest bool
+
+	// Maximum length of HTTP request or response supported; larger requests or
+	// responses may be truncated.
 	maxHttpLength int64
 }
+
+var _ akinet.TCPParser = (*httpParser)(nil)
 
 func (p *httpParser) Name() string {
 	if p.isRequest {
@@ -45,9 +58,11 @@ func (p *httpParser) Name() string {
 	return "HTTP/1.x Response Parser"
 }
 
-func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, err error) {
+func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, totalBytesConsumed int64, err error) {
 	var consumedBytes int64
 	defer func() {
+		totalBytesConsumed = p.totalBytesConsumed
+
 		if err == nil {
 			return
 		}
@@ -57,16 +72,16 @@ func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.Par
 		case httpPipeReaderDone:
 			result = <-p.resultChan
 			unused = input.SubView(consumedBytes-int64(e), input.Len())
+			totalBytesConsumed -= unused.Len()
 			err = nil
 		case httpPipeReaderError:
-			unused = p.allInput
 			err = e.err
 		default:
 			err = errors.Wrap(err, "encountered unknown HTTP pipe reader error")
 		}
 	}()
 
-	p.allInput.Append(input)
+	p.totalBytesConsumed += input.Len()
 
 	// The PipeWriter blocks until the reader is done consuming all the bytes.
 	consumedBytes, err = io.Copy(p.w, input.CreateReader())
@@ -87,15 +102,12 @@ func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.Par
 	// If the reader has not closed yet, tell it we have no more input. This case
 	// happens if there's no content-length and we're reading until connection
 	// close.
-	if isEnd {
-		p.w.Close()
-		err = <-p.readClosed
-	}
-
-	// If the HTTP request or response is longer than our maximum length, close the pipe
-	// anyway. This will leave the input stream in a state where it probably can't find
-	// the next header until the accumulated data in the reassembly buffer is all skipped.
-	if p.allInput.Len() > p.maxHttpLength {
+	//
+	// Also, if the HTTP request or response is longer than our maximum length,
+	// close the pipe anyway. This will leave the input stream in a state where it
+	// probably can't find the next header until the accumulated data in the
+	// reassembly buffer is all skipped.
+	if isEnd || p.totalBytesConsumed > p.maxHttpLength {
 		p.w.Close()
 		err = <-p.readClosed
 	}
@@ -103,23 +115,32 @@ func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.Par
 	return
 }
 
-func newHTTPParser(isRequest bool, bidiID akinet.TCPBidiID, seq, ack reassembly.Sequence) *httpParser {
+func newHTTPParser(isRequest bool, bidiID akinet.TCPBidiID, seq, ack reassembly.Sequence, pool buffer_pool.BufferPool) *httpParser {
 	// Unfortunately, go's http request parser blocks. So we need to run it in a
 	// separate goroutine. This needs to be addressed as part of
 	// https://app.clubhouse.io/akita-software/story/600
+
+	// The channel on which the parsed HTTP request or response is sent.
 	resultChan := make(chan akinet.ParsedNetworkContent)
 	readClosed := make(chan error, 1)
 	r, w := io.Pipe()
 	go func() {
 		var req *http.Request
 		var resp *http.Response
-		var body []byte
 		var err error
 		br := bufio.NewReader(r)
+
+		// Create a buffer for the body.
+		//
+		// XXX This is used in a very non-local fashion. Consumers of the body are
+		// responsible for resetting the buffer, but there is no way to guarantee
+		// that this will happen.
+		body := pool.NewBuffer()
+
 		if isRequest {
-			req, body, err = readSingleHTTPRequest(br)
+			req, err = readSingleHTTPRequest(br, body)
 		} else {
-			resp, body, err = readSingleHTTPResponse(br)
+			resp, err = readSingleHTTPResponse(br, body)
 		}
 		if err != nil {
 			err = httpPipeReaderError{
@@ -128,6 +149,7 @@ func newHTTPParser(isRequest bool, bidiID akinet.TCPBidiID, seq, ack reassembly.
 			}
 			r.CloseWithError(err)
 			readClosed <- err
+			body.Release()
 			return
 		}
 
@@ -166,48 +188,64 @@ func newHTTPParser(isRequest bool, bidiID akinet.TCPBidiID, seq, ack reassembly.
 
 // Reads a single HTTP request, only consuming the exact number of bytes that
 // form the request and its body, but there may be unused bytes left in the
-// bufio.Reader's buffer.
-func readSingleHTTPRequest(r *bufio.Reader) (*http.Request, []byte, error) {
+// bufio.Reader's buffer. The request body is written into the given buffer.
+func readSingleHTTPRequest(r *bufio.Reader, body buffer_pool.Buffer) (*http.Request, error) {
 	req, err := http.ReadRequest(r)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if req.Body == nil {
-		return req, nil, nil
+		return req, nil
 	}
 
 	// Read the body to move the reader's position to the end of the body.
-	var body bytes.Buffer
-	_, bodyErr := io.Copy(&body, req.Body)
+	_, bodyErr := io.Copy(body, req.Body)
 	req.Body.Close()
-	return req, body.Bytes(), bodyErr
-}
 
-// Reads a single HTTP response, only consuming the exact number of bytes that
-// form the responseand its body, but there may be unused bytes left in the
-// bufio.Reader's buffer.
-func readSingleHTTPResponse(r *bufio.Reader) (*http.Response, []byte, error) {
-	resp, err := http.ReadResponse(r, nil)
-	if err != nil {
-		return nil, nil, err
-	}
+	switch {
+	case
+		errors.Is(bodyErr, io.ErrUnexpectedEOF),
+		errors.Is(bodyErr, buffer_pool.ErrEmptyPool):
 
-	if resp.Body == nil {
-		return resp, nil, nil
-	}
-
-	// Read the body to move the reader's position to the end of the body.
-	var body bytes.Buffer
-	_, bodyErr := io.Copy(&body, resp.Body)
-	resp.Body.Close()
-
-	if errors.Is(bodyErr, io.ErrUnexpectedEOF) {
 		// Let the next level try to handle a body that was truncated.
 		bodyErr = nil
 	}
 
-	return resp, body.Bytes(), bodyErr
+	return req, bodyErr
+}
+
+// Reads a single HTTP response, only consuming the exact number of bytes that
+// form the response and its body, but there may be unused bytes left in the
+// bufio.Reader's buffer. The response body is written into the given buffer.
+func readSingleHTTPResponse(r *bufio.Reader, body buffer_pool.Buffer) (*http.Response, error) {
+	// XXX BUG Because a nil http.Request is provided to ReadResponse, the http
+	// library assumes a GET request. If this is actually a response to a HEAD
+	// request and the Content-Length header is present, the library will treat
+	// the bytes after the end of the response as a response body.
+	resp, err := http.ReadResponse(r, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Body == nil {
+		return resp, nil
+	}
+
+	// Read the body to move the reader's position to the end of the body.
+	_, bodyErr := io.Copy(body, resp.Body)
+	resp.Body.Close()
+
+	switch {
+	case
+		errors.Is(bodyErr, io.ErrUnexpectedEOF),
+		errors.Is(bodyErr, buffer_pool.ErrEmptyPool):
+
+		// Let the next level try to handle a body that was truncated.
+		bodyErr = nil
+	}
+
+	return resp, bodyErr
 }
 
 // Indicates the pipe reader has successfully completed parsing. The integer

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/akitasoftware/akita-libs/akinet"
+	"github.com/akitasoftware/akita-libs/buffer_pool"
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
@@ -19,12 +20,12 @@ type acceptTestCase struct {
 	expectedDF       int64 // expected discard front
 }
 
-func runAcceptTest(isRequest bool, c acceptTestCase) error {
+func runAcceptTest(isRequest bool, c acceptTestCase, pool buffer_pool.BufferPool) error {
 	var fact akinet.TCPParserFactory
 	if isRequest {
-		fact = NewHTTPRequestParserFactory()
+		fact = NewHTTPRequestParserFactory(pool)
 	} else {
-		fact = NewHTTPResponseParserFactory()
+		fact = NewHTTPResponseParserFactory(pool)
 	}
 
 	var segments <-chan []memview.MemView
@@ -64,6 +65,11 @@ func runAcceptTest(isRequest bool, c acceptTestCase) error {
 }
 
 func TestHTTPRequestParserFactoryAccepts(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Error(err)
+	}
+
 	testCases := []acceptTestCase{
 		{
 			name:             "accept without body",
@@ -139,13 +145,18 @@ func TestHTTPRequestParserFactoryAccepts(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		if err := runAcceptTest(true, c); err != nil {
+		if err := runAcceptTest(true, c, pool); err != nil {
 			t.Error(err)
 		}
 	}
 }
 
 func TestHTTPResponseParserFactoryAccepts(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Error(err)
+	}
+
 	testCases := []acceptTestCase{
 		{
 			name:             "accept without body",
@@ -214,7 +225,7 @@ func TestHTTPResponseParserFactoryAccepts(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		if err := runAcceptTest(false, c); err != nil {
+		if err := runAcceptTest(false, c, pool); err != nil {
 			t.Error(err)
 		}
 	}

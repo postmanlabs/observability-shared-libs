@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/akitasoftware/akita-libs/memview"
 	"github.com/google/martian/v3/har"
 	"github.com/stretchr/testify/assert"
 )
@@ -78,7 +79,7 @@ func TestHTTPRequestFromHAR(t *testing.T) {
 			"Authorization": []string{"bearer 123"},
 			"Content-Type":  []string{"application/x-www-form-urlencoded"},
 		},
-		Body:             []byte(`bear=0&koala=1`),
+		Body:             memview.New([]byte(`bear=0&koala=1`)),
 		BodyDecompressed: true,
 		Cookies:          []*http.Cookie{},
 	}
@@ -100,7 +101,7 @@ func TestHTTPResponseFromHAR(t *testing.T) {
 			"Content-Length": []string{"22"},
 			"Content-Type":   []string{"application/json"},
 		},
-		Body:             []byte("{\n  \"hello\": \"world\"\n}"),
+		Body:             memview.New([]byte("{\n  \"hello\": \"world\"\n}")),
 		BodyDecompressed: true,
 	}
 	assert.Equal(t, expected, r)

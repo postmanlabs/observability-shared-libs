@@ -1,6 +1,7 @@
 package akinet
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/akitasoftware/akita-libs/akid"
+	"github.com/akitasoftware/akita-libs/buffer_pool"
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
@@ -36,14 +38,22 @@ type ParsedNetworkTraffic struct {
 // network.
 type ParsedNetworkContent interface {
 	implParsedNetworkContent()
+
+	// Releases back to their buffer pools the storage for any buffers held in
+	// this ParsedNetworkContent. Must be called before this ParsedNetworkContent
+	// becomes garbage.
+	ReleaseBuffers()
 }
 
-type RawBytes memview.MemView
+type DroppedBytes int64
 
-func (RawBytes) implParsedNetworkContent() {}
+var _ ParsedNetworkContent = (*DroppedBytes)(nil)
 
-func (rb RawBytes) String() string {
-	return memview.MemView(rb).String()
+func (DroppedBytes) implParsedNetworkContent() {}
+func (DroppedBytes) ReleaseBuffers()           {}
+
+func (db DroppedBytes) String() string {
+	return fmt.Sprintf("dropped %d bytes", db)
 }
 
 // Represents metadata from an observed TCP packet.
@@ -67,7 +77,10 @@ type TCPPacketMetadata struct {
 	PayloadLength_bytes int
 }
 
+var _ ParsedNetworkContent = (*TCPPacketMetadata)(nil)
+
 func (TCPPacketMetadata) implParsedNetworkContent() {}
+func (TCPPacketMetadata) ReleaseBuffers()           {}
 
 // Represents metadata from an observed TCP connection.
 type TCPConnectionMetadata struct {
@@ -81,7 +94,10 @@ type TCPConnectionMetadata struct {
 	EndState TCPConnectionEndState
 }
 
+var _ ParsedNetworkContent = (*TCPConnectionMetadata)(nil)
+
 func (TCPConnectionMetadata) implParsedNetworkContent() {}
+func (TCPConnectionMetadata) ReleaseBuffers()           {}
 
 // Identifies which of the two endpoints of a connection initiated that
 // connection.
@@ -122,12 +138,21 @@ type HTTPRequest struct {
 	URL              *url.URL
 	Host             string
 	Header           http.Header
-	Body             []byte // nil means no body
-	BodyDecompressed bool   // true if the body is already decompressed
+	Body             memview.MemView
+	BodyDecompressed bool // true if the body is already decompressed
 	Cookies          []*http.Cookie
+
+	// The buffer (if any) that owns the storage backing the request body.
+	buffer buffer_pool.Buffer
 }
 
+var _ ParsedNetworkContent = (*HTTPRequest)(nil)
+
 func (HTTPRequest) implParsedNetworkContent() {}
+
+func (r HTTPRequest) ReleaseBuffers() {
+	r.buffer.Release()
+}
 
 // Returns a string key that associates this request with its corresponding
 // response.
@@ -144,12 +169,21 @@ type HTTPResponse struct {
 	ProtoMajor       int // e.g. 1 in HTTP/1.0
 	ProtoMinor       int // e.g. 0 in HTTP/1.0
 	Header           http.Header
-	Body             []byte // nil means no body
-	BodyDecompressed bool   // true if the body is already decompressed
+	Body             memview.MemView
+	BodyDecompressed bool // true if the body is already decompressed
 	Cookies          []*http.Cookie
+
+	// The buffer (if any) that owns the storage backing the request body.
+	buffer buffer_pool.Buffer
 }
 
+var _ ParsedNetworkContent = (*HTTPResponse)(nil)
+
 func (HTTPResponse) implParsedNetworkContent() {}
+
+func (r HTTPResponse) ReleaseBuffers() {
+	r.buffer.Release()
+}
 
 // Returns a string key that associates this response with its corresponding
 // request.
@@ -170,7 +204,10 @@ type TLSClientHello struct {
 	SupportedProtocols []string
 }
 
+var _ ParsedNetworkContent = (*TLSClientHello)(nil)
+
 func (TLSClientHello) implParsedNetworkContent() {}
+func (TLSClientHello) ReleaseBuffers()           {}
 
 // Represents metadata from an observed TLS 1.2 or 1.3 Server Hello message.
 type TLSServerHello struct {
@@ -190,7 +227,10 @@ type TLSServerHello struct {
 	DNSNames []string
 }
 
+var _ ParsedNetworkContent = (*TLSServerHello)(nil)
+
 func (TLSServerHello) implParsedNetworkContent() {}
+func (TLSServerHello) ReleaseBuffers()           {}
 
 // Metadata from an observed TLS handshake.
 type TLSHandshakeMetadata struct {
@@ -219,7 +259,10 @@ type TLSHandshakeMetadata struct {
 	serverHandshakeSeen bool
 }
 
+var _ ParsedNetworkContent = (*TLSHandshakeMetadata)(nil)
+
 func (TLSHandshakeMetadata) implParsedNetworkContent() {}
+func (TLSHandshakeMetadata) ReleaseBuffers()           {}
 
 func (tls *TLSHandshakeMetadata) HandshakeComplete() bool {
 	return tls.clientHandshakeSeen && tls.serverHandshakeSeen
@@ -334,9 +377,15 @@ func (tls *TLSHandshakeMetadata) ApplicationLatencyMeasurable() bool {
 // For testing only.
 type AkitaPrince string
 
+var _ ParsedNetworkContent = (*AkitaPrince)(nil)
+
 func (AkitaPrince) implParsedNetworkContent() {}
+func (AkitaPrince) ReleaseBuffers()           {}
 
 // For testing only.
 type AkitaPineapple string
 
+var _ ParsedNetworkContent = (*AkitaPineapple)(nil)
+
 func (AkitaPineapple) implParsedNetworkContent() {}
+func (AkitaPineapple) ReleaseBuffers()           {}

@@ -28,25 +28,30 @@ func (*tlsServerHelloParser) Name() string {
 	return "TLS 1.2/1.3 Server-Hello Parser"
 }
 
-func (parser *tlsServerHelloParser) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, err error) {
-	result, numBytesConsumed, err := parser.parse(input, isEnd)
+func (parser *tlsServerHelloParser) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, totalBytesConsumed int64, err error) {
+	result, numBytesConsumed, err := parser.parse(input)
 	// It's an error if we're at the end and we don't yet have a result.
 	if isEnd && result == nil && err == nil {
 		// We never got the full TLS record. This is an error.
 		err = errors.New("incomplete TLS record for Server Hello")
 	}
 
-	// If we have an error, then cannot consume any input according to the
-	// contract for Parse.
+	totalBytesConsumed = parser.allInput.Len()
+
 	if err != nil {
-		numBytesConsumed = 0
+		return result, memview.MemView{}, totalBytesConsumed, err
 	}
 
-	unused = parser.allInput.SubView(numBytesConsumed, parser.allInput.Len())
-	return result, unused, err
+	if result != nil {
+		unused = parser.allInput.SubView(numBytesConsumed, parser.allInput.Len())
+		totalBytesConsumed -= unused.Len()
+		return result, unused, totalBytesConsumed, nil
+	}
+
+	return nil, memview.MemView{}, totalBytesConsumed, nil
 }
 
-func (parser *tlsServerHelloParser) parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, numBytesConsumed int64, err error) {
+func (parser *tlsServerHelloParser) parse(input memview.MemView) (result akinet.ParsedNetworkContent, numBytesConsumed int64, err error) {
 	// Add the incoming bytes to our buffer.
 	parser.allInput.Append(input)
 

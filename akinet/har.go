@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/akitasoftware/akita-libs/memview"
 	"github.com/google/martian/v3/har"
 	"github.com/pkg/errors"
 )
@@ -68,9 +69,9 @@ func (r *HTTPRequest) FromHAR(h *har.Request) error {
 			for _, p := range pd.Params {
 				vals.Add(p.Name, p.Value)
 			}
-			r.Body = []byte(vals.Encode())
+			r.Body = memview.New([]byte(vals.Encode()))
 		} else {
-			r.Body = []byte(pd.Text)
+			r.Body = memview.New([]byte(pd.Text))
 		}
 
 		// HAR records HTTP decoded body.
@@ -121,7 +122,7 @@ func (r *HTTPResponse) FromHAR(h *har.Response) error {
 			// See https://github.com/google/martian/pull/314
 			fallthrough
 		case "":
-			r.Body = c.Text
+			r.Body = memview.New(c.Text)
 		default:
 			return errors.Errorf("unsupported encoding %s", c.Encoding)
 		}

@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/akitasoftware/akita-libs/akinet"
+	"github.com/akitasoftware/akita-libs/buffer_pool"
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
@@ -67,7 +68,7 @@ type parseTestCase struct {
 	bytesRemaining int64 // num bytes from inputs expected to be left unconsumed
 }
 
-func runParseTestCase(isRequest bool, c parseTestCase) error {
+func runParseTestCase(isRequest bool, c parseTestCase, pool buffer_pool.BufferPool) error {
 	var segments <-chan []memview.MemView
 	if c.verbatimInput != nil {
 		s := make(chan []memview.MemView)
@@ -80,13 +81,18 @@ func runParseTestCase(isRequest bool, c parseTestCase) error {
 		segments = segment3(c.input)
 	}
 
-	var pnc akinet.ParsedNetworkContent
-	var unused memview.MemView
-	var err error
 	for inputs := range segments {
-		p := newHTTPParser(isRequest, testBidiID, 522, 1203)
+		var pnc akinet.ParsedNetworkContent
+		var unused memview.MemView
+		var totalBytesConsumed int64
+		var err error
+
+		inputSize := int64(0)
+		p := newHTTPParser(isRequest, testBidiID, 522, 1203, pool)
 		for i, input := range inputs {
-			pnc, unused, err = p.Parse(input, i == len(inputs)-1)
+			inputSize += input.Len()
+
+			pnc, unused, totalBytesConsumed, err = p.Parse(input, i == len(inputs)-1)
 			if err != nil {
 				break
 			} else if pnc != nil {
@@ -98,13 +104,15 @@ func runParseTestCase(isRequest bool, c parseTestCase) error {
 			if c.expectErr {
 				return fmt.Errorf("[%s] expected error, got none input=%s", c.name, dump(inputs))
 			} else {
-				if diff := cmp.Diff(c.expected, pnc, cmpopts.EquateEmpty()); diff != "" {
+				if diff := cmp.Diff(c.expected, pnc, cmpopts.EquateEmpty(), cmpopts.IgnoreUnexported(akinet.HTTPRequest{}, akinet.HTTPResponse{})); diff != "" {
 					return fmt.Errorf("[%s] found diff: %s input=%s", c.name, diff, dump(inputs))
 				}
 				if unused.Len() != c.bytesRemaining {
 					return fmt.Errorf("[%s] expected %d bytes remaining, got %d input=%s", c.name, c.bytesRemaining, unused.Len(), dump(inputs))
 				}
 			}
+
+			pnc.ReleaseBuffers()
 		} else if err != nil {
 			if !c.expectErr {
 				return fmt.Errorf("[%s] expected no error, got: %v input=%s", c.name, err, dump(inputs))
@@ -112,11 +120,24 @@ func runParseTestCase(isRequest bool, c parseTestCase) error {
 		} else {
 			return fmt.Errorf("[%s] parsing incomplete input=%s", c.name, dump(inputs))
 		}
+
+		expectedTotalBytesConsumed := inputSize
+		if err == nil {
+			expectedTotalBytesConsumed -= c.bytesRemaining
+		}
+		if totalBytesConsumed != expectedTotalBytesConsumed {
+			return fmt.Errorf("[%s] expected %d bytes consumed, got %d input=%s", c.name, expectedTotalBytesConsumed, totalBytesConsumed, dump(inputs))
+		}
 	}
 	return nil
 }
 
 func TestHTTPRequestParser(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Error(err)
+	}
+
 	testCases := []parseTestCase{
 		{
 			name:  "request line only",
@@ -159,8 +180,8 @@ func TestHTTPRequestParser(t *testing.T) {
 				ProtoMinor: 1,
 				URL:        &url.URL{Path: "/foo"},
 				Host:       "example.com",
-				Header:     map[string][]string{"Content-Length": []string{"9"}},
-				Body:       []byte("foobarbaz"),
+				Header:     map[string][]string{"Content-Length": {"9"}},
+				Body:       memview.New([]byte("foobarbaz")),
 			},
 		},
 		{
@@ -178,8 +199,8 @@ func TestHTTPRequestParser(t *testing.T) {
 				ProtoMinor: 1,
 				URL:        &url.URL{Path: "/foo"},
 				Host:       "example.com",
-				Header:     map[string][]string{"Content-Length": []string{"9"}},
-				Body:       []byte("foobarbaz"),
+				Header:     map[string][]string{"Content-Length": {"9"}},
+				Body:       memview.New([]byte("foobarbaz")),
 			},
 			bytesRemaining: int64(len(" thisshouldnotshowup")),
 		},
@@ -198,8 +219,8 @@ func TestHTTPRequestParser(t *testing.T) {
 				ProtoMinor: 1,
 				URL:        &url.URL{Path: "/foo"},
 				Host:       "example.com",
-				Header:     map[string][]string{"Content-Length": []string{"11"}},
-				Body:       []byte("foobar\r\nbaz"),
+				Header:     map[string][]string{"Content-Length": {"11"}},
+				Body:       memview.New([]byte("foobar\r\nbaz")),
 			},
 		},
 		{
@@ -209,7 +230,7 @@ func TestHTTPRequestParser(t *testing.T) {
 				"Host: example.com\r\n",
 				"Transfer-Encoding: chunked\r\n",
 				"\r\n",
-				string(chunkedBody.Bytes()),
+				chunkedBody.String(),
 			}, ""),
 			expected: akinet.HTTPRequest{
 				StreamID:   uuid.UUID(testBidiID),
@@ -219,7 +240,7 @@ func TestHTTPRequestParser(t *testing.T) {
 				ProtoMinor: 1,
 				URL:        &url.URL{Path: "/"},
 				Host:       "example.com",
-				Body:       []byte("hello this is chunked body"),
+				Body:       memview.New([]byte("hello this is chunked body")),
 			},
 		},
 		{
@@ -232,7 +253,7 @@ func TestHTTPRequestParser(t *testing.T) {
 				ProtoMajor: 1,
 				ProtoMinor: 1,
 				URL:        &url.URL{Path: "/"},
-				Header:     map[string][]string{"Content-Length": []string{"0"}},
+				Header:     map[string][]string{"Content-Length": {"0"}},
 			},
 		},
 		{
@@ -252,23 +273,28 @@ func TestHTTPRequestParser(t *testing.T) {
 				ProtoMinor: 1,
 				URL:        &url.URL{Path: "/"},
 				Header: map[string][]string{
-					"Content-Type":   []string{"multipart/form-data;boundary=b9580db"},
-					"Content-Length": []string{strconv.Itoa(len(multipartFormData))},
+					"Content-Type":   {"multipart/form-data;boundary=b9580db"},
+					"Content-Length": {strconv.Itoa(len(multipartFormData))},
 				},
-				Body: []byte(multipartFormData),
+				Body: memview.New([]byte(multipartFormData)),
 			},
 		},
 	}
 
 	for _, c := range testCases {
 		t.Logf(c.name)
-		if err := runParseTestCase(true, c); err != nil {
+		if err := runParseTestCase(true, c, pool); err != nil {
 			t.Error(err)
 		}
 	}
 }
 
 func TestHTTPResponseParser(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Error(err)
+	}
+
 	testCases := []parseTestCase{
 		{
 			name:  "status line only",
@@ -295,7 +321,7 @@ func TestHTTPResponseParser(t *testing.T) {
 				StatusCode: 204,
 				ProtoMajor: 1,
 				ProtoMinor: 1,
-				Header:     map[string][]string{"X-Akita-Dog": []string{"prince"}},
+				Header:     map[string][]string{"X-Akita-Dog": {"prince"}},
 			},
 		},
 		{
@@ -308,10 +334,10 @@ func TestHTTPResponseParser(t *testing.T) {
 				ProtoMajor: 1,
 				ProtoMinor: 1,
 				Header: map[string][]string{
-					"X-Akita-Dog":    []string{"prince"},
-					"Content-Length": []string{"9"},
+					"X-Akita-Dog":    {"prince"},
+					"Content-Length": {"9"},
 				},
-				Body: []byte("foobarbaz"),
+				Body: memview.New([]byte("foobarbaz")),
 			},
 		},
 		{
@@ -328,10 +354,10 @@ func TestHTTPResponseParser(t *testing.T) {
 				ProtoMajor: 1,
 				ProtoMinor: 1,
 				Header: map[string][]string{
-					"X-Akita-Dog":    []string{"prince"},
-					"Content-Length": []string{"9"},
+					"X-Akita-Dog":    {"prince"},
+					"Content-Length": {"9"},
 				},
-				Body: []byte("foobarbaz"),
+				Body: memview.New([]byte("foobarbaz")),
 			},
 			bytesRemaining: int64(len(" thisshouldnotshowup")),
 		},
@@ -344,8 +370,8 @@ func TestHTTPResponseParser(t *testing.T) {
 				ProtoMajor: 1,
 				ProtoMinor: 1,
 				StatusCode: 200,
-				Header:     map[string][]string{"Content-Length": []string{"11"}},
-				Body:       []byte("foobar\r\nbaz"),
+				Header:     map[string][]string{"Content-Length": {"11"}},
+				Body:       memview.New([]byte("foobar\r\nbaz")),
 			},
 		},
 		{
@@ -354,7 +380,7 @@ func TestHTTPResponseParser(t *testing.T) {
 				"HTTP/1.1 200 OK\r\n",
 				"Transfer-Encoding: chunked\r\n",
 				"\r\n",
-				string(chunkedBody.Bytes()),
+				chunkedBody.String(),
 			}, ""),
 			expected: akinet.HTTPResponse{
 				StreamID:   uuid.UUID(testBidiID),
@@ -362,7 +388,7 @@ func TestHTTPResponseParser(t *testing.T) {
 				ProtoMajor: 1,
 				ProtoMinor: 1,
 				StatusCode: 200,
-				Body:       []byte("hello this is chunked body"),
+				Body:       memview.New([]byte("hello this is chunked body")),
 			},
 		},
 		{
@@ -374,7 +400,7 @@ func TestHTTPResponseParser(t *testing.T) {
 				ProtoMajor: 1,
 				ProtoMinor: 1,
 				StatusCode: 200,
-				Header:     map[string][]string{"Content-Length": []string{"0"}},
+				Header:     map[string][]string{"Content-Length": {"0"}},
 			},
 		},
 		{
@@ -387,7 +413,7 @@ func TestHTTPResponseParser(t *testing.T) {
 				ProtoMajor: 1,
 				ProtoMinor: 0,
 				StatusCode: 200,
-				Body:       []byte("hello this is prince"),
+				Body:       memview.New([]byte("hello this is prince")),
 			},
 		},
 		{
@@ -396,7 +422,7 @@ func TestHTTPResponseParser(t *testing.T) {
 				"HTTP/1.1 200 OK\r\n",
 				"Content-Encoding: deflate\r\n",
 				"\r\n",
-				string(deflatedBody.Bytes()),
+				deflatedBody.String(),
 			}, ""),
 			expected: akinet.HTTPResponse{
 				StreamID:   uuid.UUID(testBidiID),
@@ -407,7 +433,7 @@ func TestHTTPResponseParser(t *testing.T) {
 				// We expect the body to not get inflated because this library does not
 				// handle content-encoding.
 				Header: map[string][]string{"Content-Encoding": {"deflate"}},
-				Body:   deflatedBody.Bytes(),
+				Body:   memview.New(deflatedBody.Bytes()),
 			},
 		},
 		{
@@ -419,7 +445,7 @@ func TestHTTPResponseParser(t *testing.T) {
 				"HTTP/1.1 200 OK\r\n",
 				"Transfer-Encoding: deflate\r\n",
 				"\r\n",
-				string(deflatedBody.Bytes()),
+				deflatedBody.String(),
 			}, ""),
 			expectErr: true,
 		},
@@ -439,22 +465,27 @@ func TestHTTPResponseParser(t *testing.T) {
 				ProtoMinor: 1,
 				StatusCode: 200,
 				Header: map[string][]string{
-					"Content-Type":   []string{"multipart/form-data;boundary=b9580db"},
-					"Content-Length": []string{strconv.Itoa(len(multipartFormData))},
+					"Content-Type":   {"multipart/form-data;boundary=b9580db"},
+					"Content-Length": {strconv.Itoa(len(multipartFormData))},
 				},
-				Body: []byte(multipartFormData),
+				Body: memview.New([]byte(multipartFormData)),
 			},
 		},
 	}
 
 	for _, c := range testCases {
-		if err := runParseTestCase(false, c); err != nil {
+		if err := runParseTestCase(false, c, pool); err != nil {
 			t.Error(err)
 		}
 	}
 }
 
 func TestOversizedResponse(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(10*1024*1024, 4*1024)
+	if err != nil {
+		t.Error(err)
+	}
+
 	packets := []string{
 		"HTTP/1.1 200 OK\r\nHost: example.com\r\n",
 		"Content-Length: 2000000\r\n\r\n",
@@ -473,13 +504,17 @@ func TestOversizedResponse(t *testing.T) {
 		memview.New(bigPayload[1800000:2000000]),
 	}
 
-	p := newHTTPParser(false, testBidiID, 522, 1203)
+	p := newHTTPParser(false, testBidiID, 522, 1203, pool)
 	var pnc akinet.ParsedNetworkContent
 	var unused memview.MemView
-	var err error
+	var totalBytesConsumed int64
+
+	expectedBytesConsumed := int64(0)
 
 	for _, i := range inputs {
-		pnc, unused, err = p.Parse(i, false)
+		expectedBytesConsumed += i.Len()
+
+		pnc, unused, totalBytesConsumed, err = p.Parse(i, false)
 		if err != nil {
 			t.Fatalf("Got error: %v", err)
 		}
@@ -487,6 +522,9 @@ func TestOversizedResponse(t *testing.T) {
 			break
 		}
 	}
+
+	defer pnc.ReleaseBuffers()
+
 	if pnc == nil {
 		t.Fatalf("didn't parse a packet")
 	}
@@ -496,7 +534,11 @@ func TestOversizedResponse(t *testing.T) {
 
 	response := pnc.(akinet.HTTPResponse)
 	// First payload larger than http limit
-	if len(response.Body) > 1200000 || len(response.Body) < 1000000 {
-		t.Errorf("got packet with body length %v", len(response.Body))
+	if response.Body.Len() > 1200000 || response.Body.Len() < 1000000 {
+		t.Errorf("got packet with body length %v", response.Body.Len())
+	}
+
+	if expectedBytesConsumed != totalBytesConsumed {
+		t.Errorf("expected %d bytes consumed, but actually consumed %d bytes", expectedBytesConsumed, totalBytesConsumed)
 	}
 }

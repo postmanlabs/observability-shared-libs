@@ -5,18 +5,29 @@ import (
 	"github.com/google/gopacket/reassembly"
 
 	"github.com/akitasoftware/akita-libs/akinet"
+	"github.com/akitasoftware/akita-libs/buffer_pool"
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
-func NewHTTPRequestParserFactory() akinet.TCPParserFactory {
-	return httpRequestParserFactory{}
+// Returns a factory for creating HTTP requests whose bodies will be allocated
+// from the given buffer pool.
+func NewHTTPRequestParserFactory(pool buffer_pool.BufferPool) akinet.TCPParserFactory {
+	return httpRequestParserFactory{
+		bufferPool: pool,
+	}
 }
 
-func NewHTTPResponseParserFactory() akinet.TCPParserFactory {
-	return httpResponseParserFactory{}
+// Returns a factory for creating HTTP responses whose bodies will be allocated
+// from the given buffer pool.
+func NewHTTPResponseParserFactory(pool buffer_pool.BufferPool) akinet.TCPParserFactory {
+	return httpResponseParserFactory{
+		bufferPool: pool,
+	}
 }
 
-type httpRequestParserFactory struct{}
+type httpRequestParserFactory struct {
+	bufferPool buffer_pool.BufferPool
+}
 
 func (httpRequestParserFactory) Name() string {
 	return "HTTP/1.x Request Parser Factory"
@@ -54,11 +65,13 @@ func (httpRequestParserFactory) Accepts(input memview.MemView, isEnd bool) (deci
 	return akinet.Reject, input.Len()
 }
 
-func (httpRequestParserFactory) CreateParser(id akinet.TCPBidiID, seq, ack reassembly.Sequence) akinet.TCPParser {
-	return newHTTPParser(true, id, seq, ack)
+func (f httpRequestParserFactory) CreateParser(id akinet.TCPBidiID, seq, ack reassembly.Sequence) akinet.TCPParser {
+	return newHTTPParser(true, id, seq, ack, f.bufferPool)
 }
 
-type httpResponseParserFactory struct{}
+type httpResponseParserFactory struct {
+	bufferPool buffer_pool.BufferPool
+}
 
 func (httpResponseParserFactory) Name() string {
 	return "HTTP/1.x Response Parser Factory"
@@ -89,8 +102,8 @@ func (httpResponseParserFactory) Accepts(input memview.MemView, isEnd bool) (dec
 	return akinet.Reject, input.Len()
 }
 
-func (httpResponseParserFactory) CreateParser(id akinet.TCPBidiID, seq, ack reassembly.Sequence) akinet.TCPParser {
-	return newHTTPParser(false, id, seq, ack)
+func (f httpResponseParserFactory) CreateParser(id akinet.TCPBidiID, seq, ack reassembly.Sequence) akinet.TCPParser {
+	return newHTTPParser(false, id, seq, ack, f.bufferPool)
 }
 
 // Checks whether there is a valid HTTP request line as defiend in RFC 2616
