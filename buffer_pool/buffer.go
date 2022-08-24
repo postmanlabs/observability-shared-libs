@@ -51,8 +51,8 @@ type Buffer interface {
 	// EmptyPool is returned if additional storage is needed, but the buffer pool
 	// is empty. It is possible for this to happen even when all of r is copied:
 	// if the end of r coincides exactly with the end of the buffer's allocated
-	// storage, ReadFrom will try to obtain additional storage from the pool
-	// before reading the EOF from r.
+	// storage, and r doesn't immediately report its EOF, ReadFrom will try to
+	// obtain additional storage from the pool before reading the EOF from r.
 	io.ReaderFrom
 }
 
