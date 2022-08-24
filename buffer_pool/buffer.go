@@ -163,10 +163,15 @@ func (buf *buffer) Release() {
 		return
 	}
 
+	// Check representation invariants for the buffer's chunks.
 	buf.repOk()
+
 	buf.pool.release(buf.chunks)
 	buf.chunks = nil
 	buf.readOffset = 0
+
+	// Check representation invariants for the resulting buffer.
+	buf.repOk()
 }
 
 // Grows the buffer to provide space for up to n more bytes. Returns the chunk
@@ -240,13 +245,14 @@ func (buf *buffer) Write(p []byte) (n int, err error) {
 		bytesWritten := copy(buf.chunks[chunkIdx][offset:], p[totalBytesWritten:])
 		totalBytesWritten += bytesWritten
 		chunkIdx++
-		offset = 0
 
 		if chunkIdx == len(buf.chunks) {
 			// Written the last chunk. Re-establish invariants and return.
-			buf.writeOffset = bytesWritten
+			buf.writeOffset = offset + bytesWritten
 			return totalBytesWritten, err
 		}
+
+		offset = 0
 	}
 }
 
