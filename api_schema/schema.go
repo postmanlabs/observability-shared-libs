@@ -451,6 +451,9 @@ type TimelineResponse struct {
 
 	// If incomplete due to limit, the first unreported start time
 	NextStartTime *time.Time `json:"next_start_time,omitempty"`
+
+	// Time spans that have incomplete data.
+	IncompleteSpans []time_span.HalfOpenInterval `json:"incomplete_spans,omitempty"`
 }
 
 // An HTTP request and response between two nodes in a graph.
