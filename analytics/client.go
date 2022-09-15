@@ -21,7 +21,7 @@ type clientImpl struct {
 	mixpanelClient mixpanel.Mixpanel
 }
 
-func NewClient(config Config, mixpanelClient mixpanel.Mixpanel) (Client, error) {
+func NewClient(config Config) (Client, error) {
 	analyticsConfig := analytics.Config{
 		DefaultContext: &analytics.Context{
 			App: config.AppInfo,
@@ -37,6 +37,11 @@ func NewClient(config Config, mixpanelClient mixpanel.Mixpanel) (Client, error) 
 	segmentClient, err := analytics.NewWithConfig(config.WriteKey, analyticsConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create segment client")
+	}
+
+	mixpanelClient, err := newMixpanelClient(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create mixpanel client")
 	}
 
 	return &clientImpl{
@@ -81,6 +86,31 @@ func (c clientImpl) Track(distinctID string, event *Event) error {
 		event.name,
 		distinctID,
 	)
+}
+
+func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
+	if config.IsMixpanelEnabled {
+		return nil, nil
+	}
+
+	const (
+		defaultUrl = "https://api.mixpanel.com"
+	)
+
+	if config.MixpanelToken == "" {
+		return nil, errors.New("unable to construct new mixpanel client. token cannot be empty")
+	}
+
+	mixpanelURL := config.MixpanelEndpoint
+	if mixpanelURL == "" {
+		mixpanelURL = defaultUrl
+	}
+
+	if config.MixpanelSecret != "" {
+		return mixpanel.NewWithSecret(config.MixpanelToken, config.MixpanelSecret, mixpanelURL), nil
+	}
+
+	return mixpanel.New(config.MixpanelToken, mixpanelURL), nil
 }
 
 // Returns the logger to use for the segment client if logging is enabled. Otherwise, returns nil.
