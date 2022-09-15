@@ -10,7 +10,7 @@ type Config struct {
 	SegmentEndpoint string `yaml:"segment_endpoint"`
 
 	// Data pertaining to the application such as name, version, and build
-	// If set the specified values will globally be to the event context
+	// If set, the specified values will globally be added each event context
 	AppInfo analytics.AppInfo `yaml:"app"`
 
 	// Toggle for logging sent events
