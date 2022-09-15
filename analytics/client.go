@@ -9,6 +9,7 @@ import (
 )
 
 type Client interface {
+	// Sends the given tracking event to Segment and Mixpanel (if enabled).
 	Track(distinctID string, event *Event) error
 }
 
