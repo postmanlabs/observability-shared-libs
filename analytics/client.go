@@ -77,7 +77,7 @@ func (c clientImpl) Track(distinctID string, event *Event) error {
 
 	return errors.Wrapf(
 		err,
-		"failed to send analytics tracking event '%s' for distinct id '%s'",
+		"failed to send analytics tracking event '%s' for distinct id %s",
 		event.name,
 		distinctID,
 	)
