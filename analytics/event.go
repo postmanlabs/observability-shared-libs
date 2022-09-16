@@ -4,6 +4,9 @@ import "time"
 
 // Holds the name and properties of an analytics event.
 type Event struct {
+	// The value used to uniquely identify the user who triggered the event.
+	distinctID string
+
 	// The name of the event.
 	name string
 
@@ -15,8 +18,9 @@ type Event struct {
 }
 
 // Returns a new event with the given name and properties. The timestamp is set to the current time.
-func NewEvent(name string, properties map[string]any) *Event {
+func NewEvent(distinctID string, name string, properties map[string]any) *Event {
 	return &Event{
+		distinctID: distinctID,
 		name:       name,
 		properties: properties,
 		timestamp:  time.Now(),

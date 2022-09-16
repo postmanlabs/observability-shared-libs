@@ -10,9 +10,9 @@ import (
 
 type Client interface {
 	// Sends the given tracking event to Segment and Mixpanel (if enabled).
-	TrackEvent(distinctID string, event *Event) error
+	TrackEvent(event *Event) error
 
-	// A shorthand wrapper method for TrackEvent that sends a tracking event with the given name and properties.
+	// A shorthand wrapper method for TrackEvent that sends a tracking event with the given distinct id, name and properties.
 	Track(distinctID string, name string, properties map[string]any) error
 }
 
@@ -54,12 +54,12 @@ func NewClient(config Config) (Client, error) {
 	}, nil
 }
 
-func (c clientImpl) TrackEvent(distinctID string, event *Event) error {
+func (c clientImpl) TrackEvent(event *Event) error {
 	var err error
 
 	segmentErr := c.segmentClient.Enqueue(
 		segment.Track{
-			UserId:     distinctID,
+			UserId:     event.distinctID,
 			Event:      event.name,
 			Properties: event.properties,
 			Timestamp:  event.timestamp,
@@ -73,7 +73,7 @@ func (c clientImpl) TrackEvent(distinctID string, event *Event) error {
 	// TODO: Remove Mixpanel once we've fully migrated to Segment.
 	if c.config.IsMixpanelEnabled && c.mixpanelClient != nil {
 		mixpanelErr := c.mixpanelClient.Track(
-			distinctID, event.name, &mixpanel.Event{
+			event.distinctID, event.name, &mixpanel.Event{
 				Properties: event.properties,
 				Timestamp:  &event.timestamp,
 			},
@@ -87,12 +87,12 @@ func (c clientImpl) TrackEvent(distinctID string, event *Event) error {
 		err,
 		"failed to send analytics tracking event '%s' for distinct id %s",
 		event.name,
-		distinctID,
+		event.distinctID,
 	)
 }
 
 func (c clientImpl) Track(distinctID string, name string, properties map[string]any) error {
-	return c.TrackEvent(distinctID, NewEvent(name, properties))
+	return c.TrackEvent(NewEvent(distinctID, name, properties))
 }
 
 func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
