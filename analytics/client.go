@@ -89,7 +89,7 @@ func (c clientImpl) Track(distinctID string, event *Event) error {
 }
 
 func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
-	if config.IsMixpanelEnabled {
+	if !config.IsMixpanelEnabled {
 		return nil, nil
 	}
 
