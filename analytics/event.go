@@ -7,7 +7,7 @@ type Event struct {
 	// The name of the event.
 	name string
 
-	// The timestamp of the event. Set to nil to use the current time.
+	// The timestamp of the event.
 	timestamp time.Time
 
 	// Custom properties of the event.
