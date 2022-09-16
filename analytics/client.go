@@ -5,7 +5,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
-	"github.com/segmentio/analytics-go/v3"
+	segment "github.com/segmentio/analytics-go/v3"
 )
 
 type Client interface {
@@ -18,15 +18,15 @@ type Client interface {
 
 type clientImpl struct {
 	config        Config
-	segmentClient analytics.Client
+	segmentClient segment.Client
 
 	// TODO: Remove Mixpanel once we've confirmed that Segment is working.
 	mixpanelClient mixpanel.Mixpanel
 }
 
 func NewClient(config Config) (Client, error) {
-	analyticsConfig := analytics.Config{
-		DefaultContext: &analytics.Context{
+	analyticsConfig := segment.Config{
+		DefaultContext: &segment.Context{
 			App: config.AppInfo,
 		},
 		Endpoint: provideSegmentEndpoint(config.SegmentEndpoint),
@@ -37,7 +37,7 @@ func NewClient(config Config) (Client, error) {
 		return nil, errors.New("unable to construct new analytics client. write key cannot be empty")
 	}
 
-	segmentClient, err := analytics.NewWithConfig(config.WriteKey, analyticsConfig)
+	segmentClient, err := segment.NewWithConfig(config.WriteKey, analyticsConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create segment client")
 	}
@@ -58,7 +58,7 @@ func (c clientImpl) TrackEvent(distinctID string, event *Event) error {
 	var err error
 
 	segmentErr := c.segmentClient.Enqueue(
-		analytics.Track{
+		segment.Track{
 			UserId:     distinctID,
 			Event:      event.name,
 			Properties: event.properties,
@@ -132,7 +132,7 @@ func provideLogger(isLoggingEnabled bool) *analyticsLogger {
 // Returns the input endpoint given it is not empty. Otherwise, returns the default endpoint for segment.
 func provideSegmentEndpoint(endpoint string) string {
 	if endpoint == "" {
-		return analytics.DefaultEndpoint
+		return segment.DefaultEndpoint
 	}
 
 	return endpoint
