@@ -14,18 +14,17 @@ type Event struct {
 	properties map[string]any
 }
 
-// Returns a new event with the given name, properties, and timestamp. Given no timestamp is provided, the current time is used.
-func NewEvent(name string, properties map[string]any, timestamp ...time.Time) *Event {
-	var eventTime time.Time
-	if len(timestamp) > 0 {
-		eventTime = timestamp[0]
-	} else {
-		eventTime = time.Now()
-	}
-
+// Returns a new event with the given name and properties. The timestamp is set to the current time.
+func NewEvent(name string, properties map[string]any) *Event {
 	return &Event{
 		name:       name,
 		properties: properties,
-		timestamp:  eventTime,
+		timestamp:  time.Now(),
 	}
+}
+
+// Sets the event timestamp to the input time and returns the event.
+func (e *Event) SetTime(t time.Time) *Event {
+	e.timestamp = t
+	return e
 }
