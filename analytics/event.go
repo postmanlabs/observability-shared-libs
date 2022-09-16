@@ -14,7 +14,7 @@ type Event struct {
 	properties map[string]any
 }
 
-// Returns a new event with the given name, properties, and timestamp. Given no timestamp is provided, the current time is used.
+// Returns a new event with the given name, properties, and timestamp. If no timestamp is provided, the current time is used.
 func NewEvent(name string, properties map[string]any, timestamp ...time.Time) *Event {
 	var eventTime time.Time
 	if len(timestamp) > 0 {
