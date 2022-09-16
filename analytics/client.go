@@ -10,7 +10,10 @@ import (
 
 type Client interface {
 	// Sends the given tracking event to Segment and Mixpanel (if enabled).
-	Track(distinctID string, event *Event) error
+	TrackEvent(distinctID string, event *Event) error
+
+	// A shorthand wrapper method for TrackEvent that sends a tracking event with the given name and properties.
+	Track(distinctID string, name string, properties map[string]any) error
 }
 
 type clientImpl struct {
@@ -51,7 +54,7 @@ func NewClient(config Config) (Client, error) {
 	}, nil
 }
 
-func (c clientImpl) Track(distinctID string, event *Event) error {
+func (c clientImpl) TrackEvent(distinctID string, event *Event) error {
 	var err error
 
 	segmentErr := c.segmentClient.Enqueue(
@@ -86,6 +89,10 @@ func (c clientImpl) Track(distinctID string, event *Event) error {
 		event.name,
 		distinctID,
 	)
+}
+
+func (c clientImpl) Track(distinctID string, name string, properties map[string]any) error {
+	return c.TrackEvent(distinctID, NewEvent(name, properties))
 }
 
 func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
