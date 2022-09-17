@@ -1,7 +1,5 @@
 package analytics
 
-import "github.com/segmentio/analytics-go/v3"
-
 type Config struct {
 	// The key used to identify the Segment source to use
 	WriteKey string `yaml:"segment_write_key"`
@@ -9,9 +7,7 @@ type Config struct {
 	// The endpoint to which the segment client connects to send events
 	SegmentEndpoint string `yaml:"segment_endpoint"`
 
-	// Data pertaining to the application such as name, version, and build
-	// If set, the specified values will be added globally to each event context
-	AppInfo analytics.AppInfo `yaml:"app"`
+	App AppInfo `yaml:"app"`
 
 	// Toggle for logging sent events
 	IsLoggingEnabled bool `yaml:"logging_enabled"`
@@ -29,4 +25,13 @@ type Config struct {
 	// If present, adds a Basic authentication header with secret as the
 	// username and the empty string as the password.
 	MixpanelSecret string `yaml:"mixpanel_secret"`
+}
+
+// Data pertaining to the application such as name, version, and build
+// If set, the specified values will be added globally to each event context
+type AppInfo struct {
+	Name      string `yaml:"name"`
+	Version   string `yaml:"version"`
+	Build     string `yaml:"build"`
+	Namespace string `yaml:"namespace"`
 }
