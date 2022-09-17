@@ -25,9 +25,16 @@ type clientImpl struct {
 }
 
 func NewClient(config Config) (Client, error) {
+	appInfo := segment.AppInfo{
+		Name:      config.App.Name,
+		Version:   config.App.Version,
+		Build:     config.App.Build,
+		Namespace: config.App.Namespace,
+	}
+
 	analyticsConfig := segment.Config{
 		DefaultContext: &segment.Context{
-			App: config.AppInfo,
+			App: appInfo,
 		},
 		Endpoint: provideSegmentEndpoint(config.SegmentEndpoint),
 		Logger:   provideLogger(config.IsLoggingEnabled),
