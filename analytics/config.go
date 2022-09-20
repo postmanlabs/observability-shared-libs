@@ -25,6 +25,9 @@ type Config struct {
 	// If present, adds a Basic authentication header with secret as the
 	// username and the empty string as the password.
 	MixpanelSecret string `yaml:"mixpanel_secret"`
+
+	// Disable batching (used for CLI) by setting this parameter to 1
+	BatchSize int `yaml:"batch_size"`
 }
 
 // Data pertaining to the application such as name, version, and build

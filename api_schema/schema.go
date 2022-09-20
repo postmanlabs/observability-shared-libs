@@ -527,3 +527,12 @@ type PostClientPacketCaptureStatsRequest struct {
 	// started but not yet concluded.
 	PacketCountSummary *client_telemetry.PacketCountSummary `json:"packet_count_summary,omitempty"`
 }
+
+type UserResponse struct {
+	ID             akid.UserID         `json:"id"`
+	OrganizationID akid.OrganizationID `json:"organization_id"`
+	Name           string              `json:"name"`
+	Email          string              `json:"email"`
+	CreatedAt      time.Time           `json:"created_at"`
+	TOSAcceptedAt  time.Time           `json:"tos_accepted_at"`
+}
