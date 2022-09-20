@@ -3,7 +3,7 @@ package analytics
 import (
 	"github.com/dukex/mixpanel"
 	"github.com/golang/glog"
-	"github.com/hashicorp/go-multierror"
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	segment "github.com/segmentio/analytics-go/v3"
 )
@@ -14,6 +14,8 @@ type Client interface {
 
 	// A shorthand wrapper method for TrackEvent that sends a tracking event with the given distinct id, name and properties.
 	Track(distinctID string, name string, properties map[string]any) error
+
+	Close() error
 }
 
 type clientImpl struct {
@@ -38,6 +40,10 @@ func NewClient(config Config) (Client, error) {
 		},
 		Endpoint: provideSegmentEndpoint(config.SegmentEndpoint),
 		Logger:   provideLogger(config.IsLoggingEnabled),
+	}
+
+	if config.BatchSize > 0 {
+		analyticsConfig.BatchSize = config.BatchSize
 	}
 
 	if config.WriteKey == "" {
@@ -100,6 +106,10 @@ func (c clientImpl) TrackEvent(event *Event) error {
 
 func (c clientImpl) Track(distinctID string, name string, properties map[string]any) error {
 	return c.TrackEvent(NewEvent(distinctID, name, properties))
+}
+
+func (c clientImpl) Close() error {
+	return c.segmentClient.Close()
 }
 
 func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
