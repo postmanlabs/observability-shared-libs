@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/akitasoftware/akita-ir v0.0.0-20211111012430-2a7dcb20a144
+	github.com/akitasoftware/akita-ir v0.0.0-20220630210013-8926783978fe
 	github.com/akitasoftware/go-utils v0.0.0-20220521045242-cabe4c63daed
 	github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
@@ -20,13 +20,15 @@ require (
 	google.golang.org/protobuf v1.27.1
 )
 
+require github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/hashicorp/errwrap v1.0.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/segmentio/analytics-go/v3 v3.2.1 // indirect
 	github.com/dukex/mixpanel v1.0.1
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/segmentio/analytics-go/v3 v3.2.1
 	github.com/segmentio/backo-go v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
