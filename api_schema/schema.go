@@ -518,6 +518,19 @@ func (g *GraphResponse) IsEmpty() bool {
 	return g.NumEdges() == 0
 }
 
+type ApidumpErrorType string
+
+const (
+	// We'd like to report on "service not found", or permissions errors, but
+	// without a working service ID we can't access the telemetry endpoint.
+	// We'll have to rely on Segment telemetry for those.
+
+	ApidumpError_PCAPPermission ApidumpErrorType = "PCAP permission failure" // Cannot obtain permission for packet capture
+	ApidumpError_InvalidFilters ApidumpErrorType = "Invalid filters"         // Error parsing filters
+	ApidumpError_TraceCreation  ApidumpErrorType = "Trace creation failure"  // Can't create learn session
+	ApidumpError_Other          ApidumpErrorType = "Other error"
+)
+
 type PostClientPacketCaptureStatsRequest struct {
 	ClientID                  akid.ClientID `json:"client_id"`
 	ObservedStartingAt        time.Time     `json:"observed_starting_at"`
@@ -526,6 +539,10 @@ type PostClientPacketCaptureStatsRequest struct {
 	// If PacketCountSummary is absent, then this observation period has
 	// started but not yet concluded.
 	PacketCountSummary *client_telemetry.PacketCountSummary `json:"packet_count_summary,omitempty"`
+
+	// Report on any errors encounted during apidump that should be shown to the user.
+	ApidumpError     ApidumpErrorType `json:"apidump_error,omitempty"`
+	ApidumpErrorText string           `json:"apidump_error_text,omitempty"`
 }
 
 type UserResponse struct {
