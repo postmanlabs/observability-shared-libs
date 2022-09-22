@@ -128,12 +128,12 @@ func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
 }
 
 // Returns the logger to use for the segment client if logging is enabled. Otherwise, returns nil.
-func provideLogger(isLoggingEnabled bool) *analyticsLogger {
+func provideLogger(isLoggingEnabled bool) segment.Logger {
 	if isLoggingEnabled {
 		return &analyticsLogger{}
 	}
 
-	return nil
+	return &disabledLogger{}
 }
 
 // Returns the input endpoint given it is not empty. Otherwise, returns the default endpoint for segment.
@@ -154,4 +154,16 @@ func (d analyticsLogger) Logf(format string, args ...any) {
 
 func (d analyticsLogger) Errorf(format string, args ...interface{}) {
 	glog.Errorf(format, args...)
+}
+
+// A custom segment logger that does nothing.
+//This is used when logging is disabled as the segment client requires a logger (the client uses its own default logger even when none is specified).
+type disabledLogger struct{}
+
+func (d disabledLogger) Logf(format string, args ...any) {
+	// Do nothing.
+}
+
+func (d disabledLogger) Errorf(format string, args ...interface{}) {
+	// Do nothing.
 }
