@@ -18,6 +18,7 @@ func FromStdRequest(streamID uuid.UUID, seq int, src *http.Request, body buffer_
 		ProtoMinor: src.ProtoMinor,
 		URL:        src.URL,
 		Host:       src.Host,
+		Cookies:    src.Cookies(),
 		Header:     src.Header,
 		Body:       body.Bytes(),
 
@@ -51,6 +52,7 @@ func FromStdResponse(streamID uuid.UUID, seq int, src *http.Response, body buffe
 		StatusCode: src.StatusCode,
 		ProtoMajor: src.ProtoMajor,
 		ProtoMinor: src.ProtoMinor,
+		Cookies:    src.Cookies(),
 		Header:     src.Header,
 		Body:       body.Bytes(),
 
@@ -59,7 +61,7 @@ func FromStdResponse(streamID uuid.UUID, seq int, src *http.Response, body buffe
 }
 
 func (r HTTPResponse) ToStdResponse() *http.Response {
-	return &http.Response{
+	response := &http.Response{
 		Status:        http.StatusText(r.StatusCode),
 		StatusCode:    r.StatusCode,
 		Proto:         fmt.Sprintf("HTTP/%d.%d", r.ProtoMajor, r.ProtoMinor),
@@ -69,4 +71,12 @@ func (r HTTPResponse) ToStdResponse() *http.Response {
 		ContentLength: int64(r.Body.Len()),
 		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
+
+	for _, c := range r.Cookies {
+		if v := c.String(); v != "" {
+			response.Header.Add("Set-Cookie", v)
+		}
+	}
+
+	return response
 }

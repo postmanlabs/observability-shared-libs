@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"fmt"
+	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strconv"
@@ -279,6 +280,26 @@ func TestHTTPRequestParser(t *testing.T) {
 				Body: memview.New([]byte(multipartFormData)),
 			},
 		},
+		{
+			name:  "simple request with cookies",
+			input: "GET / HTTP/1.1\r\nHost: example.com\r\nCookie: c1=1;c2=2\r\n\r\n",
+			expected: akinet.HTTPRequest{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        1203,
+				Method:     "GET",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				URL:        &url.URL{Path: "/"},
+				Host:       "example.com",
+				Cookies: []*http.Cookie{
+					{Name: "c1", Value: "1"},
+					{Name: "c2", Value: "2"},
+				},
+				Header: map[string][]string{
+					"Cookie": {"c1=1;c2=2"},
+				},
+			},
+		},
 	}
 
 	for _, c := range testCases {
@@ -469,6 +490,24 @@ func TestHTTPResponseParser(t *testing.T) {
 					"Content-Length": {strconv.Itoa(len(multipartFormData))},
 				},
 				Body: memview.New([]byte(multipartFormData)),
+			},
+		},
+		{
+			name:  "simple response with set cookie",
+			input: "HTTP/1.1 204 No Content\r\nX-Akita-Dog: prince\r\nSet-Cookie: c1=1\r\n\r\n",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				StatusCode: 204,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				Cookies: []*http.Cookie{
+					{Name: "c1", Value: "1", Raw: "c1=1"},
+				},
+				Header: map[string][]string{
+					"Set-Cookie":  {"c1=1"},
+					"X-Akita-Dog": {"prince"},
+				},
 			},
 		},
 	}
