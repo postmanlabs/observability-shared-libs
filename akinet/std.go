@@ -2,11 +2,12 @@ package akinet
 
 import (
 	"fmt"
+	"github.com/akitasoftware/akita-libs/buffer_pool"
+	"github.com/akitasoftware/go-utils/sets"
+	"github.com/akitasoftware/go-utils/slices"
+	"github.com/google/uuid"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/akitasoftware/akita-libs/buffer_pool"
-	"github.com/google/uuid"
 )
 
 func FromStdRequest(streamID uuid.UUID, seq int, src *http.Request, body buffer_pool.Buffer) HTTPRequest {
@@ -39,9 +40,16 @@ func (r HTTPRequest) ToStdRequest() *http.Request {
 		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
 
+	existingCookies := sets.NewSet[string](slices.Map(result.Cookies(), func(c *http.Cookie) string {
+		return c.String()
+	})...)
 	for _, c := range r.Cookies {
-		result.AddCookie(c)
+		if v := c.String(); !existingCookies.Contains(v) {
+			result.AddCookie(c)
+			existingCookies.Insert(v)
+		}
 	}
+
 	return result
 }
 
@@ -72,9 +80,13 @@ func (r HTTPResponse) ToStdResponse() *http.Response {
 		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
 
+	existingCookies := sets.NewSet[string](slices.Map(response.Cookies(), func(c *http.Cookie) string {
+		return c.String()
+	})...)
 	for _, c := range r.Cookies {
-		if v := c.String(); v != "" {
+		if v := c.String(); v != "" && !existingCookies.Contains(v) {
 			response.Header.Add("Set-Cookie", v)
+			existingCookies.Insert(v)
 		}
 	}
 
