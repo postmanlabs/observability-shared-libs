@@ -2,12 +2,13 @@ package akinet
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/akitasoftware/akita-libs/buffer_pool"
 	"github.com/akitasoftware/go-utils/sets"
 	"github.com/akitasoftware/go-utils/slices"
 	"github.com/google/uuid"
-	"io/ioutil"
-	"net/http"
 )
 
 func FromStdRequest(streamID uuid.UUID, seq int, src *http.Request, body buffer_pool.Buffer) HTTPRequest {
@@ -40,6 +41,7 @@ func (r HTTPRequest) ToStdRequest() *http.Request {
 		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
 
+	// Add any cookies in r.Cookies not already in r.Header.
 	existingCookies := sets.NewSet[string](slices.Map(result.Cookies(), func(c *http.Cookie) string {
 		return c.String()
 	})...)
@@ -80,6 +82,7 @@ func (r HTTPResponse) ToStdResponse() *http.Response {
 		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
 
+	// Add any cookies in r.Cookies not already in r.Header.
 	existingCookies := sets.NewSet[string](slices.Map(response.Cookies(), func(c *http.Cookie) string {
 		return c.String()
 	})...)
