@@ -32,3 +32,11 @@ func (e *Event) SetTime(t time.Time) *Event {
 	e.timestamp = t
 	return e
 }
+
+func (e *Event) DistinctID() string {
+	return e.distinctID
+}
+
+func (e *Event) Name() string {
+	return e.name
+}
