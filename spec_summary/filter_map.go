@@ -10,9 +10,9 @@ import (
 // For example, if the supported filter kinds are operation and path, then the
 // method set {"GET /", "PUT /"} is represented as follows:
 //
-//   operation -> "GET" -> "GET /"
-//                "PUT" -> "PUT /"
-//   path -> "/" -> "GET /", "PUT /"
+//	operation -> "GET" -> "GET /"
+//	             "PUT" -> "PUT /"
+//	path -> "/" -> "GET /", "PUT /"
 type FiltersToMethods[MethodID comparable] struct {
 	// For non-directional filters.
 	filterMap FilterMap[MethodID]
@@ -32,6 +32,8 @@ func NewFiltersToMethods[MethodID comparable]() *FiltersToMethods[MethodID] {
 	}
 }
 
+// Registers the given method as having the given value for the given filter
+// kind.
 func (fm *FiltersToMethods[MethodID]) InsertNondirectionalFilter(filter FilterKind, value string, method MethodID) {
 	if fm.filterMap == nil {
 		fm.filterMap = make(FilterMap[MethodID])
@@ -69,7 +71,7 @@ func (fm *FiltersToMethods[MethodID]) InsertDirectionalFilter(direction Directio
 // of methods with a 404 response code and a GET http method, whereas the count
 // for paths=/ will be the number of methods with a 200 response code, a GET
 // http method, and path "/".
-func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filters) (*SummaryByDirection, Set[MethodID]) {
+func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filters) (summary *SummaryByDirection, numMethodsMatchingFilters int) {
 	// For each filter kind in applied filters, compute the set of methods
 	// matching any of the filter's values.  These are the methods that match just
 	// this filter.
@@ -124,7 +126,7 @@ func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filter
 	// kind/value with the intersection of the method sets of all other
 	// filter kinds.  This is the set of methods that match this filter as
 	// well as all the applied filters having a different kind.
-	summary := NewSummaryByDirection()
+	summary = NewSummaryByDirection()
 
 	// Process nondirected filters.
 	for filter, byValue := range fm.filterMap {
@@ -156,7 +158,7 @@ func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filter
 		}
 	}
 
-	return summary, allFilteredMethods
+	return summary, len(allFilteredMethods)
 }
 
 // Filter kind -> filter value -> method set.
