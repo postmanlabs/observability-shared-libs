@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/akitasoftware/akita-libs/akid"
-	"github.com/akitasoftware/go-utils/sets"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,9 +22,9 @@ func TestFiltersToMethods(t *testing.T) {
 	fm.filterMap.Insert(HttpMethodFilter, "POST", m2)
 
 	// No filters.
-	directedSummary, methods := fm.SummarizeWithFilters(nil)
+	directedSummary, numMethods := fm.SummarizeWithFilters(nil)
 
-	assert.Equal(t, sets.NewSet(m1, m2), methods)
+	assert.Equal(t, 2, numMethods)
 	assert.Equal(t, 2, directedSummary.NondirectedFilters[HostFilter]["example.com"], "directed: example")
 	assert.Equal(t, 1, directedSummary.NondirectedFilters[HttpMethodFilter]["GET"], "directed: get")
 	assert.Equal(t, 2, directedSummary.DirectedFilters[RequestDirection][AuthFilter]["None"], "directed: auth")
@@ -36,11 +35,11 @@ func TestFiltersToMethods(t *testing.T) {
 	assert.Equal(t, 1, summary.HTTPMethods["GET"], "get")
 
 	// With filters.
-	directedSummary, methods = fm.SummarizeWithFilters(Filters{
+	directedSummary, numMethods = fm.SummarizeWithFilters(Filters{
 		HttpMethodFilter: {"GET"},
 	})
 
-	assert.Equal(t, sets.NewSet(m1), methods)
+	assert.Equal(t, 1, numMethods)
 	assert.Equal(t, 1, directedSummary.NondirectedFilters[HostFilter]["example.com"], "directed: example")
 	assert.Equal(t, 1, directedSummary.NondirectedFilters[HttpMethodFilter]["GET"], "directed: get")
 	assert.Equal(t, 0, directedSummary.NondirectedFilters[HttpMethodFilter]["PUT"], "directed: put")
