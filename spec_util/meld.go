@@ -10,6 +10,7 @@ import (
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
 	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
+	"github.com/akitasoftware/go-utils/sets"
 )
 
 type dataAndHash struct {
@@ -20,12 +21,39 @@ type dataAndHash struct {
 // Meld top-level args or responses map, where the keys are the hashes of the
 // data. This means that we need to compare DataMeta to determine if we should
 // meld two Data.
-func meldTopLevelDataMap(dst, src map[string]*pb.Data) error {
+func meldTopLevelDataMap(dst, src map[string]*pb.Data, opts MeldOptions) (numCookiesDiscarded int, err error) {
+	// The names of all cookies in dst.
+	cookies := sets.NewSet[string]()
+
+	// The names of all cookies that are discarded.
+	cookiesDiscarded := sets.NewSet[string]()
+
+	// Index the destination's Data objects by the hash of their DataMeta objects.
+	// Count the number of cookies already in the destination. If it is over the
+	// limit, discard the excess cookies.
 	dstByMetaHash := map[string]dataAndHash{}
 	for k, d := range dst {
 		if d.Meta == nil {
-			return fmt.Errorf("missing Meta in top-level dst Data %q", k)
+			return numCookiesDiscarded, fmt.Errorf("missing Meta in top-level dst Data %q", k)
 		}
+
+		// Track the names of the cookies in dst. If dst has too many cookies,
+		// discard the extras.
+		if cookie := d.GetMeta().GetHttp().GetCookie(); cookie != nil {
+			cookieName := cookie.Key
+			isNewCookie := !cookies.Contains(cookieName)
+			if isNewCookie {
+				if maxNumCookies, exists := opts.MaxNumCookies.Get(); exists && len(cookies) >= maxNumCookies {
+					// Dest has too many cookies. Remove and skip this cookie.
+					cookiesDiscarded.Insert(cookieName)
+					delete(dst, k)
+					continue
+				}
+
+				cookies.Insert(cookieName)
+			}
+		}
+
 		h := ir_hash.HashDataMetaToString(d.Meta)
 		dstByMetaHash[h] = dataAndHash{hash: k, data: d}
 	}
@@ -33,15 +61,15 @@ func meldTopLevelDataMap(dst, src map[string]*pb.Data) error {
 	results := make(map[string]*pb.Data, len(dstByMetaHash))
 	for k, s := range src {
 		if s.Meta == nil {
-			return fmt.Errorf("missing Meta in top-level src Data %q", k)
+			return numCookiesDiscarded, fmt.Errorf("missing Meta in top-level src Data %q", k)
 		}
 		h := ir_hash.HashDataMetaToString(s.Meta)
 
 		if d, ok := dstByMetaHash[h]; ok {
-			// d and s have the same DataMeta, meaning that they are refering to the
+			// d and s have the same DataMeta, meaning that they are referring to the
 			// same HTTP field. Meld them.
 			if err := MeldData(d.data, s); err != nil {
-				return err
+				return len(cookiesDiscarded), err
 			}
 
 			// Rehash because the proto has changed.
@@ -50,7 +78,20 @@ func meldTopLevelDataMap(dst, src map[string]*pb.Data) error {
 
 			delete(dstByMetaHash, h)
 		} else {
-			// The meld is additive - any new argument or response field is included.
+			// The meld is additive - any new argument or response field is included,
+			// but we need to discard excess cookies.
+			if cookie := s.GetMeta().GetHttp().GetCookie(); cookie != nil {
+				cookieName := cookie.Key
+				isNewCookie := !cookies.Contains(cookieName)
+				if isNewCookie {
+					if maxNumCookies, exists := opts.MaxNumCookies.Get(); exists && len(cookies) >= maxNumCookies {
+						// Too many cookies.
+						cookiesDiscarded.Insert(cookieName)
+						continue
+					}
+				}
+			}
+
 			results[k] = s
 		}
 	}
@@ -68,7 +109,7 @@ func meldTopLevelDataMap(dst, src map[string]*pb.Data) error {
 		dst[k] = v
 	}
 
-	return nil
+	return len(cookiesDiscarded), nil
 }
 
 func isOptional(d *pb.Data) bool {
