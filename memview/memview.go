@@ -36,6 +36,14 @@ func New(data []byte) MemView {
 	}
 }
 
+// Make an empty memview
+func Empty() MemView {
+	return MemView{
+		buf:    [][]byte{},
+		length: 0,
+	}
+}
+
 func (dst *MemView) Append(src MemView) {
 	dst.buf = append(dst.buf, src.buf...)
 	dst.length += src.length
