@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/akitasoftware/akita-libs/buffer_pool"
+	"github.com/akitasoftware/go-utils/sets"
+	"github.com/akitasoftware/go-utils/slices"
 	"github.com/google/uuid"
 )
 
@@ -18,6 +20,7 @@ func FromStdRequest(streamID uuid.UUID, seq int, src *http.Request, body buffer_
 		ProtoMinor: src.ProtoMinor,
 		URL:        src.URL,
 		Host:       src.Host,
+		Cookies:    src.Cookies(),
 		Header:     src.Header,
 		Body:       body.Bytes(),
 
@@ -38,9 +41,17 @@ func (r HTTPRequest) ToStdRequest() *http.Request {
 		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
 
+	// Add any cookies in r.Cookies not already in r.Header.
+	existingCookies := sets.NewSet[string](slices.Map(result.Cookies(), func(c *http.Cookie) string {
+		return c.String()
+	})...)
 	for _, c := range r.Cookies {
-		result.AddCookie(c)
+		if v := c.String(); !existingCookies.Contains(v) {
+			result.AddCookie(c)
+			existingCookies.Insert(v)
+		}
 	}
+
 	return result
 }
 
@@ -51,6 +62,7 @@ func FromStdResponse(streamID uuid.UUID, seq int, src *http.Response, body buffe
 		StatusCode: src.StatusCode,
 		ProtoMajor: src.ProtoMajor,
 		ProtoMinor: src.ProtoMinor,
+		Cookies:    src.Cookies(),
 		Header:     src.Header,
 		Body:       body.Bytes(),
 
@@ -59,7 +71,7 @@ func FromStdResponse(streamID uuid.UUID, seq int, src *http.Response, body buffe
 }
 
 func (r HTTPResponse) ToStdResponse() *http.Response {
-	return &http.Response{
+	response := &http.Response{
 		Status:        http.StatusText(r.StatusCode),
 		StatusCode:    r.StatusCode,
 		Proto:         fmt.Sprintf("HTTP/%d.%d", r.ProtoMajor, r.ProtoMinor),
@@ -69,4 +81,17 @@ func (r HTTPResponse) ToStdResponse() *http.Response {
 		ContentLength: int64(r.Body.Len()),
 		Body:          ioutil.NopCloser(r.Body.CreateReader()),
 	}
+
+	// Add any cookies in r.Cookies not already in r.Header.
+	existingCookies := sets.NewSet[string](slices.Map(response.Cookies(), func(c *http.Cookie) string {
+		return c.String()
+	})...)
+	for _, c := range r.Cookies {
+		if v := c.String(); v != "" && !existingCookies.Contains(v) {
+			response.Header.Add("Set-Cookie", v)
+			existingCookies.Insert(v)
+		}
+	}
+
+	return response
 }

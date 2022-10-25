@@ -2,6 +2,7 @@ package spec_util
 
 import (
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/akitasoftware/go-utils/optionals"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 )
@@ -26,7 +27,7 @@ type MeldedMethod interface {
 	//   - Otherwise, if src contains only 4xx responses, then its requests are ignored.
 	//   - Otherwise, if this contains only 4xx responses, then its requests are replaced with requests from src.
 	//   - Otherwise, neither src nor this contain only 4xx responses, and requests are melded.
-	Meld(src MeldedMethod) error
+	Meld(src MeldedMethod, opts MeldOptions) error
 }
 
 type meldedMethod struct {
@@ -80,7 +81,7 @@ func (m *meldedMethod) Clone() MeldedMethod {
 	}
 }
 
-func (dst *meldedMethod) Meld(src MeldedMethod) error {
+func (dst *meldedMethod) Meld(src MeldedMethod, opts MeldOptions) error {
 	if !src.Has4xxOnly() && dst.has4xxOnly {
 		// Replace dst requests with src requests.
 		dst.method.Args = src.GetArgs()
@@ -91,7 +92,7 @@ func (dst *meldedMethod) Meld(src MeldedMethod) error {
 		// Meld requests.
 		if dst.method.Args == nil {
 			dst.method.Args = src.GetArgs()
-		} else if err := meldTopLevelDataMap(dst.method.Args, src.GetArgs()); err != nil {
+		} else if _, err := meldTopLevelDataMap(dst.method.Args, src.GetArgs(), opts); err != nil {
 			return errors.Wrap(err, "failed to meld arg map")
 		}
 		dst.has4xxOnly = dst.has4xxOnly && src.Has4xxOnly()
@@ -100,11 +101,17 @@ func (dst *meldedMethod) Meld(src MeldedMethod) error {
 	// Meld responses.
 	if dst.method.Responses == nil {
 		dst.method.Responses = src.GetResponses()
-	} else if err := meldTopLevelDataMap(dst.method.Responses, src.GetResponses()); err != nil {
+	} else if _, err := meldTopLevelDataMap(dst.method.Responses, src.GetResponses(), opts); err != nil {
 		return errors.Wrap(err, "failed to meld response map")
 	}
 
 	return nil
+}
+
+type MeldOptions struct {
+	// Controls the maximum number of cookies that may be present in a meld
+	// result. Any extra cookies are discarded.
+	MaxNumCookies optionals.Optional[int]
 }
 
 // Determines whether a given method has only 4xx response codes. Returns true if the method has at least one response and all response codes are 4xx.

@@ -15,6 +15,7 @@ import (
 type testData struct {
 	name                string
 	witnessFiles        []string
+	opts                MeldOptions
 	expectedWitnessFile string
 }
 
@@ -25,6 +26,7 @@ var tests = []testData{
 			"testdata/meld/meld_no_data_formats.pb.txt",
 			"testdata/meld/meld_data_formats_1.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_no_data_formats.pb.txt",
 	},
 	{
@@ -33,6 +35,7 @@ var tests = []testData{
 			"testdata/meld/meld_data_formats_1.pb.txt",
 			"testdata/meld/meld_data_formats_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_data_formats_3.pb.txt",
 	},
 	{
@@ -41,6 +44,7 @@ var tests = []testData{
 			"testdata/meld/meld_conflict_1.pb.txt",
 			"testdata/meld/meld_conflict_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_conflict_expected.pb.txt",
 	},
 	{
@@ -51,6 +55,7 @@ var tests = []testData{
 			"testdata/meld/meld_data_formats_1.pb.txt",
 			"testdata/meld/meld_data_formats_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_data_formats_3.pb.txt",
 	},
 	{
@@ -61,6 +66,7 @@ var tests = []testData{
 			"testdata/meld/meld_data_kind_1.pb.txt",
 			"testdata/meld/meld_data_kind_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_data_kind_expected.pb.txt",
 	},
 	{
@@ -69,6 +75,7 @@ var tests = []testData{
 			"testdata/meld/meld_with_existing_conflict_1.pb.txt",
 			"testdata/meld/meld_with_existing_conflict_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_with_existing_conflict_expected.pb.txt",
 	},
 	{
@@ -77,6 +84,7 @@ var tests = []testData{
 			"testdata/meld/meld_suppress_none_conflict_1.pb.txt",
 			"testdata/meld/meld_suppress_none_conflict_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_suppress_none_conflict_expected.pb.txt",
 	},
 	{
@@ -86,6 +94,7 @@ var tests = []testData{
 			"testdata/meld/meld_suppress_none_conflict_2.pb.txt",
 			"testdata/meld/meld_suppress_none_conflict_1.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_suppress_none_conflict_expected.pb.txt",
 	},
 	{
@@ -95,6 +104,7 @@ var tests = []testData{
 			"testdata/meld/meld_optional_required_1.pb.txt",
 			"testdata/meld/meld_optional_required_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_optional_required_2.pb.txt",
 	},
 	{
@@ -104,6 +114,7 @@ var tests = []testData{
 			"testdata/meld/meld_additive_oneof_1.pb.txt",
 			"testdata/meld/meld_additive_oneof_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_additive_oneof_expected.pb.txt",
 	},
 	{
@@ -113,6 +124,7 @@ var tests = []testData{
 			"testdata/meld/meld_oneof_with_primitive_1.pb.txt",
 			"testdata/meld/meld_oneof_with_primitive_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_oneof_with_primitive_expected.pb.txt",
 	},
 	{
@@ -121,6 +133,7 @@ var tests = []testData{
 			"testdata/meld/meld_oneof_with_oneof_1.pb.txt",
 			"testdata/meld/meld_oneof_with_oneof_1.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_oneof_with_oneof_1.pb.txt",
 	},
 	{
@@ -131,6 +144,7 @@ var tests = []testData{
 			"testdata/meld/meld_oneof_with_oneof_1.pb.txt",
 			"testdata/meld/meld_oneof_with_oneof_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_oneof_with_oneof_expected.pb.txt",
 	},
 	{
@@ -139,6 +153,7 @@ var tests = []testData{
 			"testdata/meld/meld_struct_1.pb.txt",
 			"testdata/meld/meld_struct_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_struct_2.pb.txt",
 	},
 	{
@@ -147,6 +162,7 @@ var tests = []testData{
 			"testdata/meld/meld_list_1.pb.txt",
 			"testdata/meld/meld_list_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_list_2.pb.txt",
 	},
 	{
@@ -155,6 +171,7 @@ var tests = []testData{
 			"testdata/meld/meld_examples_1.pb.txt",
 			"testdata/meld/meld_examples_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_examples_3.pb.txt",
 	},
 	{
@@ -163,6 +180,7 @@ var tests = []testData{
 			"testdata/meld/meld_examples_big_1.pb.txt",
 			"testdata/meld/meld_examples_big_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_examples_big_3.pb.txt",
 	},
 	{
@@ -171,6 +189,7 @@ var tests = []testData{
 			"testdata/meld/meld_no_examples_1.pb.txt",
 			"testdata/meld/meld_no_examples_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_no_examples_3.pb.txt",
 	},
 	{
@@ -179,6 +198,7 @@ var tests = []testData{
 			"testdata/meld/meld_optional_1.pb.txt",
 			"testdata/meld/meld_optional_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_optional_expected.pb.txt",
 	},
 	// Test melding non-4xx with 4xx.
@@ -188,6 +208,7 @@ var tests = []testData{
 			"testdata/meld/meld_examples_1.pb.txt",
 			"testdata/meld/meld_examples_4xx_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_non_4xx_with_4xx_expected.pb.txt",
 	},
 	// Test melding 4xx with 4xx.
@@ -197,6 +218,7 @@ var tests = []testData{
 			"testdata/meld/meld_examples_4xx_1.pb.txt",
 			"testdata/meld/meld_examples_4xx_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_4xx_expected.pb.txt",
 	},
 	// Test melding request-only with 4xx. We should get the request from the first, paired with the response from the second.
@@ -206,6 +228,7 @@ var tests = []testData{
 			"testdata/meld/meld_no_response.pb.txt",
 			"testdata/meld/meld_examples_4xx_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_no_response_4xx_expected.pb.txt",
 	},
 	// Test melding request-only with 4xx with 4xx and non-4xx. We should get the requests from the first and third, paired with both responses.
@@ -216,6 +239,7 @@ var tests = []testData{
 			"testdata/meld/meld_examples_4xx_2.pb.txt",
 			"testdata/meld/meld_examples_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_no_response_4xx_non_4xx_expected.pb.txt",
 	},
 	// Test conversion of structs into maps.
@@ -225,6 +249,7 @@ var tests = []testData{
 			"testdata/meld/meld_map_1.pb.txt",
 			"testdata/meld/meld_map_2.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_map_1_map_2_expected.pb.txt",
 	},
 	// Test conversion of structs into maps with an optional none
@@ -234,6 +259,7 @@ var tests = []testData{
 			"testdata/meld/meld_map_1.pb.txt",
 			"testdata/meld/meld_map_3.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_map_1_map_2_expected.pb.txt",
 	},
 	{
@@ -242,6 +268,7 @@ var tests = []testData{
 			"testdata/meld/meld_map_4.pb.txt",
 			"testdata/meld/meld_map_5.pb.txt",
 		},
+		MeldOptions{},
 		"testdata/meld/meld_map_4_map_5_expected.pb.txt",
 	},
 }
@@ -255,7 +282,7 @@ func TestMeldWithFormats(t *testing.T) {
 			result := NewMeldedMethod(test.LoadWitnessFromFileOrDile(testData.witnessFiles[0]).Method)
 			for i := 1; i < len(testData.witnessFiles); i++ {
 				newWitness := test.LoadWitnessFromFileOrDile(testData.witnessFiles[i])
-				assert.NoError(t, result.Meld(NewMeldedMethod(newWitness.Method)))
+				assert.NoError(t, result.Meld(NewMeldedMethod(newWitness.Method), testData.opts))
 			}
 			if diff := cmp.Diff(expected, result.GetMethod(), cmp.Comparer(proto.Equal)); diff != "" {
 				t.Errorf("[%s] right merged to left\n%v", testData.name, diff)
@@ -269,7 +296,7 @@ func TestMeldWithFormats(t *testing.T) {
 			result := NewMeldedMethod(test.LoadWitnessFromFileOrDile(testData.witnessFiles[l-1]).Method)
 			for i := l - 2; i >= 0; i-- {
 				newWitness := test.LoadWitnessFromFileOrDile(testData.witnessFiles[i])
-				assert.NoError(t, result.Meld(NewMeldedMethod(newWitness.Method)))
+				assert.NoError(t, result.Meld(NewMeldedMethod(newWitness.Method), testData.opts))
 			}
 			if diff := cmp.Diff(expected, result.GetMethod(), cmp.Comparer(proto.Equal)); diff != "" {
 				t.Errorf("[%s] left merged to right\n%v", testData.name, diff)

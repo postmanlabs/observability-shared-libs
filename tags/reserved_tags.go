@@ -16,6 +16,9 @@ const (
 
 	// The original filesystem path of an uploaded trace.
 	XAkitaTraceLocalPath Key = "x-akita-trace-local-path"
+	
+	// The type of scheduled model, if XAkitaCreatedBy == CreatedBySchedule.
+	XAkitaScheduledModelType Key = "x-akita-scheduled-model-type"
 
 	// The version of the service(s) under observation, as defined by the
 	// user.
