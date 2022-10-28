@@ -86,8 +86,9 @@ func (s *http2Sink) Parse(input memview.MemView, isEnd bool) (result akinet.Pars
 		return akinet.HTTP2ConnectionPreface{}, memview.Empty(), input.Len(), nil
 	}
 
-	// The interface documentation says we must return a non-nil result or error at isEnd.
-	// I am violating that by returning nil, but the code in stream.go can handle that, I believe.
+	// The interface documentation says we must return a non-nil result or an
+	// error when isEnd is true. I am violating that by returning nil, but the
+	// code in stream.go can handle that, I believe.
 	s.totalBytesConsumed += input.Len()
 	return nil, memview.Empty(), s.totalBytesConsumed, nil
 }
