@@ -13,8 +13,8 @@ type PacketCounts struct {
 	HTTPRequests  int `json:"http_requests"`
 	HTTPResponses int `json:"http_responses"`
 	TLSHello      int `json:"tls_hello"`
-	HTTP2Preface  int `json:"http2_preface"`
-	QUICHandshake int `json:"quic_handshake"`
+	HTTP2Prefaces  int `json:"http2_prefaces"`
+	QUICHandshakes int `json:"quic_handshakes"`
 	Unparsed      int `json:"unparsed"`
 }
 
