@@ -9,13 +9,13 @@ type PacketCounts struct {
 	DstPort   int    `json:"dst_port"`
 
 	// Number of events
-	TCPPackets    int `json:"tcp_packets"`
-	HTTPRequests  int `json:"http_requests"`
-	HTTPResponses int `json:"http_responses"`
-	TLSHello      int `json:"tls_hello"`
+	TCPPackets     int `json:"tcp_packets"`
+	HTTPRequests   int `json:"http_requests"`
+	HTTPResponses  int `json:"http_responses"`
+	TLSHello       int `json:"tls_hello"`
 	HTTP2Prefaces  int `json:"http2_prefaces"`
 	QUICHandshakes int `json:"quic_handshakes"`
-	Unparsed      int `json:"unparsed"`
+	Unparsed       int `json:"unparsed"`
 }
 
 func (c *PacketCounts) Add(d PacketCounts) {
@@ -23,8 +23,8 @@ func (c *PacketCounts) Add(d PacketCounts) {
 	c.HTTPRequests += d.HTTPRequests
 	c.HTTPResponses += d.HTTPResponses
 	c.TLSHello += d.TLSHello
-	c.HTTP2Preface += d.HTTP2Preface
-	c.QUICHandshake += d.QUICHandshake
+	c.HTTP2Prefaces += d.HTTP2Prefaces
+	c.QUICHandshakes += d.QUICHandshakes
 	c.Unparsed += d.Unparsed
 }
 
