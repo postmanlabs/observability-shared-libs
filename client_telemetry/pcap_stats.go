@@ -9,11 +9,13 @@ type PacketCounts struct {
 	DstPort   int    `json:"dst_port"`
 
 	// Number of events
-	TCPPackets    int `json:"tcp_packets"`
-	HTTPRequests  int `json:"http_requests"`
-	HTTPResponses int `json:"http_responses"`
-	TLSHello      int `json:"tls_hello"`
-	Unparsed      int `json:"unparsed"`
+	TCPPackets     int `json:"tcp_packets"`
+	HTTPRequests   int `json:"http_requests"`
+	HTTPResponses  int `json:"http_responses"`
+	TLSHello       int `json:"tls_hello"`
+	HTTP2Prefaces  int `json:"http2_prefaces"`
+	QUICHandshakes int `json:"quic_handshakes"`
+	Unparsed       int `json:"unparsed"`
 }
 
 func (c *PacketCounts) Add(d PacketCounts) {
@@ -21,6 +23,8 @@ func (c *PacketCounts) Add(d PacketCounts) {
 	c.HTTPRequests += d.HTTPRequests
 	c.HTTPResponses += d.HTTPResponses
 	c.TLSHello += d.TLSHello
+	c.HTTP2Prefaces += d.HTTP2Prefaces
+	c.QUICHandshakes += d.QUICHandshakes
 	c.Unparsed += d.Unparsed
 }
 
@@ -35,7 +39,7 @@ func (c *PacketCounts) Copy() *PacketCounts {
 // Reflects the version of the JSON encoding.  Increase the minor version
 // number for backwards-compatible changes and the major number for non-
 // backwards compatible changes.
-const Version = "v0.1"
+const Version = "v0.2"
 
 type PacketCountSummary struct {
 	Version        string                   `json:"version"`

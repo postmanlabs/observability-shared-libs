@@ -374,6 +374,23 @@ func (tls *TLSHandshakeMetadata) ApplicationLatencyMeasurable() bool {
 	return *tls.SelectedProtocol == "http/1.1"
 }
 
+// Represents an observed HTTP/2 connection preface; no data from it
+// is stored.
+type HTTP2ConnectionPreface struct {
+}
+
+func (HTTP2ConnectionPreface) implParsedNetworkContent() {}
+func (HTTP2ConnectionPreface) ReleaseBuffers()           {}
+
+// Represents an observed QUIC handshake (initial packet).
+// Currently empty because we're only interested in the presence
+// of QUIC traffic, not its payload.
+type QUICHandshakeMetadata struct {
+}
+
+func (QUICHandshakeMetadata) implParsedNetworkContent() {}
+func (QUICHandshakeMetadata) ReleaseBuffers()           {}
+
 // For testing only.
 type AkitaPrince string
 

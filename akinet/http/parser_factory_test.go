@@ -18,6 +18,9 @@ type acceptTestCase struct {
 	verbatimInput    []memview.MemView
 	expectedDecision akinet.AcceptDecision
 	expectedDF       int64 // expected discard front
+
+	// Don't signal end of the stream for this test case
+	dontMarkEnd bool
 }
 
 func runAcceptTest(isRequest bool, c acceptTestCase, pool buffer_pool.BufferPool) error {
@@ -48,7 +51,8 @@ func runAcceptTest(isRequest bool, c acceptTestCase, pool buffer_pool.BufferPool
 			totalLen += mv.Len()
 			input.Append(mv)
 
-			d, df := fact.Accepts(input, i == len(mvs)-1)
+			atEnd := (i == len(mvs)-1) && !c.dontMarkEnd
+			d, df := fact.Accepts(input, atEnd)
 			decision = d
 			input = input.SubView(df, input.Len())
 		}
@@ -220,8 +224,34 @@ func TestHTTPResponseParserFactoryAccepts(t *testing.T) {
 			name:             "accept after discarding stray leading bytes",
 			input:            "OKHTTP/1.1 200 OK\r\n",
 			expectedDecision: akinet.Accept,
-			expectedDF:       int64(int64(len("OK"))),
+			expectedDF:       int64(len("OK")),
 		},
+		/*
+			// Currently failing -- does not look for response that spans the end of
+			// what is available.
+			{
+				name:             "more data needed after discarding stray leading bytes",
+				input:            "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nHTTP/",
+				expectedDecision: akinet.NeedMoreData,
+				expectedDF:       27,
+				dontMarkEnd:      true,
+			},
+			{
+				name:             "more data needed in reason phrase",
+				input:            "xxxxxxxxxxxxxxxxxxxxxxxxxx\nHTTP/1.1 200 Everything is tip-top",
+				expectedDecision: akinet.NeedMoreData,
+				expectedDF:       27,
+				dontMarkEnd:      true,
+			},
+			// Some segmentations work for this one, others fail
+			{
+				name:             "complete reason phrase after many stray leading bytes",
+				input:            "xxxxxxxxxxxxxxxxxxxxxxxxxx\nHTTP/1.1 200 Everything is tip-top\r\n",
+				expectedDecision: akinet.Accept,
+				expectedDF:       27,
+				dontMarkEnd:      true,
+			},
+		*/
 	}
 
 	for _, c := range testCases {
