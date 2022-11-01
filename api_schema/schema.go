@@ -296,19 +296,6 @@ type SpecInfo struct {
 
 	Name string `json:"name,omitempty"`
 
-	// Whether the spec was LEARNED or LEARNED_WITH_EDITS.
-	CreationMode LearnMode `json:"creation_mode"`
-
-	// If the spec was created from a learn session, the session's ID is included.
-	// Deprecated: use learn_session_ids instead.
-	LearnSessionID *akid.LearnSessionID `json:"learn_session_id,omitempty"`
-
-	LearnSessionIDs []akid.LearnSessionID `json:"learn_session_ids,omitempty"`
-
-	// Deprecated: for old specs, tags are inherited from learn sessions.
-	// Use Tags field instead.
-	LearnSessionTags []LearnSessionTag `json:"learn_session_tags,omitempty"`
-
 	// Deprecated in favor of TagsSet, which supports multiple values
 	// per tag.
 	Tags    tags.SingletonTags `json:"tags,omitempty"`
@@ -319,8 +306,6 @@ type SpecInfo struct {
 	CreationTime time.Time    `json:"creation_time"`
 	EditTime     time.Time    `json:"edit_time"`
 	State        APISpecState `json:"state"`
-
-	PRStatus string `json:"pr_status,omitempty"`
 
 	// Model and trace statistics
 	// Number of endpoints.
@@ -333,6 +318,10 @@ type SpecInfo struct {
 
 type ListSpecsResponse struct {
 	Specs []SpecInfo `json:"specs"`
+
+	// Indicates whether this is the last page of results. Always true when the
+	// results are not paginated.
+	LastPage bool `json:"last_page"`
 }
 
 type TimelineAggregation string
