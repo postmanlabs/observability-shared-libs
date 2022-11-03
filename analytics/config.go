@@ -31,7 +31,7 @@ type Config struct {
 
 	// Sets the default destination types that events will be sent to.
 	// If not set, events will be sent to all destinations.
-	DefaultIntegrations map[string]any `yaml:"default_integrations"`
+	DefaultIntegrations map[string]bool `yaml:"default_integrations"`
 }
 
 // Data pertaining to the application such as name, version, and build

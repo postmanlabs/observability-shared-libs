@@ -19,8 +19,12 @@ type Client interface {
 }
 
 type clientImpl struct {
-	config              Config
-	segmentClient       segment.Client
+	// The analytics client configuration.
+	config Config
+	// The internal client used to send events to Segment.
+	segmentClient segment.Client
+	// The default integrations to use for all events sent to Segment.
+	// This controls which destinations the events are sent to.
 	defaultIntegrations segment.Integrations
 
 	// TODO: Remove Mixpanel once we've confirmed that Segment is working.
@@ -61,15 +65,10 @@ func NewClient(config Config) (Client, error) {
 		return nil, errors.Wrap(err, "failed to create mixpanel client")
 	}
 
-	defaultIntegrations := segment.NewIntegrations().EnableAll()
-	if len(config.DefaultIntegrations) != 0 {
-		defaultIntegrations = config.DefaultIntegrations
-	}
-
 	return &clientImpl{
 		config:              config,
 		segmentClient:       segmentClient,
-		defaultIntegrations: defaultIntegrations,
+		defaultIntegrations: provideDefaultIntegrations(config),
 		mixpanelClient:      mixpanelClient,
 	}, nil
 }
@@ -148,6 +147,22 @@ func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
 	}
 
 	return mixpanel.New(config.MixpanelToken, mixpanelURL), nil
+}
+
+// Returns the default integrations to use for the analytics client based on the default integrations set in the input config.
+// If the config does not specify any default integrations, then all integrations are enabled by default.
+func provideDefaultIntegrations(config Config) segment.Integrations {
+	if len(config.DefaultIntegrations) == 0 {
+		return segment.NewIntegrations().EnableAll()
+	}
+
+	integrations := segment.NewIntegrations()
+
+	for integrationName, enabled := range config.DefaultIntegrations {
+		integrations = integrations.Set(integrationName, enabled)
+	}
+
+	return integrations
 }
 
 // Returns the logger to use for the segment client if logging is enabled. Otherwise, returns nil.
