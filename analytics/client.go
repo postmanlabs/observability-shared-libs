@@ -72,10 +72,11 @@ func (c clientImpl) TrackEvent(event *Event) error {
 
 	segmentErr := c.segmentClient.Enqueue(
 		segment.Track{
-			UserId:     event.distinctID,
-			Event:      event.name,
-			Properties: event.properties,
-			Timestamp:  event.timestamp,
+			UserId:       event.distinctID,
+			Event:        event.name,
+			Properties:   event.properties,
+			Timestamp:    event.timestamp,
+			Integrations: event.integrations,
 		},
 	)
 
@@ -167,7 +168,7 @@ func (d analyticsLogger) Errorf(format string, args ...interface{}) {
 }
 
 // A custom segment logger that does nothing.
-//This is used when logging is disabled as the segment client requires a logger (the client uses its own default logger even when none is specified).
+// This is used when logging is disabled as the segment client requires a logger (the client uses its own default logger even when none is specified).
 type disabledLogger struct{}
 
 func (d disabledLogger) Logf(format string, args ...any) {
