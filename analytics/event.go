@@ -20,7 +20,8 @@ type Event struct {
 	// Custom properties of the event.
 	properties map[string]any
 
-	// Integrations
+	// The integrations that the event should be sent to.
+	//This will override any default integrations passed to the Analytics client.
 	integrationsOverride optionals.Optional[segment.Integrations]
 }
 
