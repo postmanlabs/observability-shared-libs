@@ -19,8 +19,13 @@ type Client interface {
 }
 
 type clientImpl struct {
-	config        Config
+	// The analytics client configuration.
+	config Config
+	// The internal client used to send events to Segment.
 	segmentClient segment.Client
+	// The default integrations to use for all events sent to Segment.
+	// This controls which destinations the events are sent to.
+	defaultIntegrations segment.Integrations
 
 	// TODO: Remove Mixpanel once we've confirmed that Segment is working.
 	mixpanelClient mixpanel.Mixpanel
@@ -61,21 +66,28 @@ func NewClient(config Config) (Client, error) {
 	}
 
 	return &clientImpl{
-		config:         config,
-		segmentClient:  segmentClient,
-		mixpanelClient: mixpanelClient,
+		config:              config,
+		segmentClient:       segmentClient,
+		defaultIntegrations: provideDefaultIntegrations(config),
+		mixpanelClient:      mixpanelClient,
 	}, nil
 }
 
 func (c clientImpl) TrackEvent(event *Event) error {
 	var err error
 
+	integrations := c.defaultIntegrations
+	if integrationsOverride, ok := event.integrationsOverride.Get(); ok {
+		integrations = integrationsOverride
+	}
+
 	segmentErr := c.segmentClient.Enqueue(
 		segment.Track{
-			UserId:     event.distinctID,
-			Event:      event.name,
-			Properties: event.properties,
-			Timestamp:  event.timestamp,
+			UserId:       event.distinctID,
+			Event:        event.name,
+			Properties:   event.properties,
+			Timestamp:    event.timestamp,
+			Integrations: integrations,
 		},
 	)
 
@@ -137,6 +149,22 @@ func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
 	return mixpanel.New(config.MixpanelToken, mixpanelURL), nil
 }
 
+// Returns the default integrations to use for the analytics client based on the default integrations set in the input config.
+// If the config does not specify any default integrations, then all integrations are enabled by default.
+func provideDefaultIntegrations(config Config) segment.Integrations {
+	if len(config.DefaultIntegrations) == 0 {
+		return segment.NewIntegrations().EnableAll()
+	}
+
+	integrations := segment.NewIntegrations()
+
+	for integrationName, enabled := range config.DefaultIntegrations {
+		integrations = integrations.Set(integrationName, enabled)
+	}
+
+	return integrations
+}
+
 // Returns the logger to use for the segment client if logging is enabled. Otherwise, returns nil.
 func provideLogger(isLoggingEnabled bool) segment.Logger {
 	if isLoggingEnabled {
@@ -167,7 +195,7 @@ func (d analyticsLogger) Errorf(format string, args ...interface{}) {
 }
 
 // A custom segment logger that does nothing.
-//This is used when logging is disabled as the segment client requires a logger (the client uses its own default logger even when none is specified).
+// This is used when logging is disabled as the segment client requires a logger (the client uses its own default logger even when none is specified).
 type disabledLogger struct{}
 
 func (d disabledLogger) Logf(format string, args ...any) {

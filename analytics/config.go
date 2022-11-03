@@ -28,6 +28,10 @@ type Config struct {
 
 	// Disable batching (used for CLI) by setting this parameter to 1
 	BatchSize int `yaml:"batch_size"`
+
+	// Sets the default destination types that events will be sent to.
+	// If not set, events will be sent to all destinations.
+	DefaultIntegrations map[string]bool `yaml:"default_integrations"`
 }
 
 // Data pertaining to the application such as name, version, and build
