@@ -19,8 +19,9 @@ type Client interface {
 }
 
 type clientImpl struct {
-	config        Config
-	segmentClient segment.Client
+	config              Config
+	segmentClient       segment.Client
+	defaultIntegrations segment.Integrations
 
 	// TODO: Remove Mixpanel once we've confirmed that Segment is working.
 	mixpanelClient mixpanel.Mixpanel
@@ -60,15 +61,26 @@ func NewClient(config Config) (Client, error) {
 		return nil, errors.Wrap(err, "failed to create mixpanel client")
 	}
 
+	defaultIntegrations := segment.NewIntegrations().EnableAll()
+	if len(config.DefaultIntegrations) != 0 {
+		defaultIntegrations = config.DefaultIntegrations
+	}
+
 	return &clientImpl{
-		config:         config,
-		segmentClient:  segmentClient,
-		mixpanelClient: mixpanelClient,
+		config:              config,
+		segmentClient:       segmentClient,
+		defaultIntegrations: defaultIntegrations,
+		mixpanelClient:      mixpanelClient,
 	}, nil
 }
 
 func (c clientImpl) TrackEvent(event *Event) error {
 	var err error
+
+	integrations := c.defaultIntegrations
+	if integrationsOverride, ok := event.integrationsOverride.Get(); ok {
+		integrations = integrationsOverride
+	}
 
 	segmentErr := c.segmentClient.Enqueue(
 		segment.Track{
@@ -76,7 +88,7 @@ func (c clientImpl) TrackEvent(event *Event) error {
 			Event:        event.name,
 			Properties:   event.properties,
 			Timestamp:    event.timestamp,
-			Integrations: event.integrations,
+			Integrations: integrations,
 		},
 	)
 
