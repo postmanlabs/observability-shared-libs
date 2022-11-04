@@ -71,13 +71,13 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 	if meta := spec_util.HTTPMetaFromMethod(m); meta != nil {
 		methodName := strings.ToUpper(meta.GetMethod())
 		v.summary.NondirectedFilters.Increment(HttpMethodFilter, methodName)
-		v.filtersToMethods.InsertNondirectionalFilter("http_methods", methodName, m)
+		v.filtersToMethods.InsertNondirectionalFilter("http_methods", methodName, m, sets.NewSet(m))
 
 		v.summary.NondirectedFilters.Increment(PathFilter, meta.GetPathTemplate())
-		v.filtersToMethods.InsertNondirectionalFilter("paths", meta.GetPathTemplate(), m)
+		v.filtersToMethods.InsertNondirectionalFilter("paths", meta.GetPathTemplate(), m, sets.NewSet(m))
 
 		v.summary.NondirectedFilters.Increment(HostFilter, meta.GetHost())
-		v.filtersToMethods.InsertNondirectionalFilter("hosts", meta.GetHost(), m)
+		v.filtersToMethods.InsertNondirectionalFilter("hosts", meta.GetHost(), m, sets.NewSet(m))
 	}
 
 	// If this method has no authentications, increment Authentications["None"].
@@ -91,7 +91,7 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 	v.methodSummary.NondirectedFilters.ForEach(func(kind FilterKind, value FilterValue, count int) bool {
 		if count > 0 {
 			v.summary.NondirectedFilters.Increment(kind, value)
-			v.filtersToMethods.InsertNondirectionalFilter(kind, value, m)
+			v.filtersToMethods.InsertNondirectionalFilter(kind, value, m, sets.NewSet(m))
 		}
 		return true
 	})

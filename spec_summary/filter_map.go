@@ -37,18 +37,27 @@ func NewFiltersToMethods[MethodID comparable]() *FiltersToMethods[MethodID] {
 	}
 }
 
-// Registers the given method as having the given value for the given filter
-// kind.
-func (fm *FiltersToMethods[MethodID]) InsertNondirectionalFilter(filter FilterKind, value string, method MethodID) {
+// Registers the given filter and value in the map. These are also associated
+// with the method ID if it exists in the given set of allowed methods.
+func (fm *FiltersToMethods[MethodID]) InsertNondirectionalFilter(filter FilterKind, value string, method MethodID, allowedMethods sets.Set[MethodID]) {
 	if fm.filterMap == nil {
 		fm.filterMap = make(FilterMap[MethodID])
 	}
-	fm.filterMap.Insert(filter, value, optionals.Some(method))
 
-	if fm.allMethods == nil {
-		fm.allMethods = make(Set[MethodID])
+	var method_opt optionals.Optional[MethodID]
+	if allowedMethods.Contains(method) {
+		method_opt = optionals.Some(method)
 	}
-	fm.allMethods.Insert(method)
+
+	fm.filterMap.Insert(filter, value, method_opt)
+
+	// Register the method itself only when the method has not been filtered out.
+	if allowedMethods.Contains(method) {
+		if fm.allMethods == nil {
+			fm.allMethods = make(Set[MethodID])
+		}
+		fm.allMethods.Insert(method)
+	}
 }
 
 // Registers the given direction, filter, and value in the map. These are also
