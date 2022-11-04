@@ -9,6 +9,7 @@ import (
 	"github.com/akitasoftware/akita-libs/spec_util"
 	. "github.com/akitasoftware/akita-libs/visitors"
 	vis "github.com/akitasoftware/akita-libs/visitors/http_rest"
+	"github.com/akitasoftware/go-utils/sets"
 	"github.com/akitasoftware/go-utils/slices"
 	"github.com/golang/glog"
 )
@@ -82,7 +83,7 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 	// If this method has no authentications, increment Authentications["None"].
 	if v.methodSummary.DirectedFilters.GetCountsByValue(RequestDirection, AuthFilter) == nil {
 		v.summary.DirectedFilters.Increment(RequestDirection, AuthFilter, "None")
-		v.filtersToMethods.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m)
+		v.filtersToMethods.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m, sets.NewSet(m))
 	}
 
 	// For each term that occurs at least once in this method, increment the
@@ -97,7 +98,7 @@ func (v *specSummaryVisitor) LeaveMethod(self interface{}, _ vis.SpecVisitorCont
 	v.methodSummary.DirectedFilters.ForEach(func(direction Direction, kind FilterKind, value FilterValue, count int) bool {
 		if count > 0 {
 			v.summary.DirectedFilters.Increment(direction, kind, value)
-			v.filtersToMethods.InsertDirectionalFilter(direction, kind, value, m)
+			v.filtersToMethods.InsertDirectionalFilter(direction, kind, value, m, sets.NewSet(m))
 		}
 		return true
 	})

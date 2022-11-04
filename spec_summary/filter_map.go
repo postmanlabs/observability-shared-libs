@@ -1,18 +1,23 @@
 package spec_summary
 
 import (
+	"github.com/akitasoftware/go-utils/optionals"
+	"github.com/akitasoftware/go-utils/sets"
 	. "github.com/akitasoftware/go-utils/sets"
 )
 
 // Maps all supported filter kinds to the methods that match them. The methods
 // for each filter kind are indexed by the filter's value for each method.
 //
+// A filter's value is mapped to an empty set when the value only occurs in
+// methods that have been filtered out.
+//
 // For example, if the supported filter kinds are operation and path, then the
 // method set {"GET /", "PUT /"} is represented as follows:
 //
-//	operation -> "GET" -> "GET /"
-//	             "PUT" -> "PUT /"
-//	path -> "/" -> "GET /", "PUT /"
+//	operation -> "GET" -> {"GET /"}
+//	             "PUT" -> {"PUT /"}
+//	path      -> "/"   -> {"GET /", "PUT /"}
 type FiltersToMethods[MethodID comparable] struct {
 	// For non-directional filters.
 	filterMap FilterMap[MethodID]
@@ -38,7 +43,7 @@ func (fm *FiltersToMethods[MethodID]) InsertNondirectionalFilter(filter FilterKi
 	if fm.filterMap == nil {
 		fm.filterMap = make(FilterMap[MethodID])
 	}
-	fm.filterMap.Insert(filter, value, method)
+	fm.filterMap.Insert(filter, value, optionals.Some(method))
 
 	if fm.allMethods == nil {
 		fm.allMethods = make(Set[MethodID])
@@ -46,16 +51,27 @@ func (fm *FiltersToMethods[MethodID]) InsertNondirectionalFilter(filter FilterKi
 	fm.allMethods.Insert(method)
 }
 
-func (fm *FiltersToMethods[MethodID]) InsertDirectionalFilter(direction Direction, filter FilterKind, value string, method MethodID) {
+// Registers the given direction, filter, and value in the map. These are also
+// associated with the method ID, if it exists in the given set of allowed
+// methods.
+func (fm *FiltersToMethods[MethodID]) InsertDirectionalFilter(direction Direction, filter FilterKind, value string, method MethodID, allowedMethods sets.Set[MethodID]) {
 	if fm.filterMapByDirection == nil {
 		fm.filterMapByDirection = make(FilterMapByDirection[MethodID])
 	}
-	fm.filterMapByDirection.Insert(direction, filter, value, method)
 
-	if fm.allMethods == nil {
-		fm.allMethods = make(Set[MethodID])
+	var method_opt optionals.Optional[MethodID]
+	if allowedMethods.Contains(method) {
+		method_opt = optionals.Some(method)
 	}
-	fm.allMethods.Insert(method)
+	fm.filterMapByDirection.Insert(direction, filter, value, method_opt)
+
+	// Register the method itself only when the method has not been filtered out.
+	if allowedMethods.Contains(method) {
+		if fm.allMethods == nil {
+			fm.allMethods = make(Set[MethodID])
+		}
+		fm.allMethods.Insert(method)
+	}
 }
 
 // Returns a summary of the effect of adding an additional filter to a set of
@@ -164,7 +180,9 @@ func (fm *FiltersToMethods[MethodID]) SummarizeWithFilters(appliedFilters Filter
 // Filter kind -> filter value -> method set.
 type FilterMap[MethodID comparable] map[FilterKind]map[FilterValue]Set[MethodID]
 
-func (fm FilterMap[MethodID]) Insert(filterKind FilterKind, filterValue string, method MethodID) {
+// Registers the given filter kind and value in the FilterMap, and associates
+// them with the method ID, if given.
+func (fm FilterMap[MethodID]) Insert(filterKind FilterKind, filterValue string, method_opt optionals.Optional[MethodID]) {
 	methodsByFilterValue, ok := fm[filterKind]
 	if !ok {
 		methodsByFilterValue = make(map[string]Set[MethodID])
@@ -177,7 +195,9 @@ func (fm FilterMap[MethodID]) Insert(filterKind FilterKind, filterValue string, 
 		methodsByFilterValue[filterValue] = methods
 	}
 
-	methods.Insert(method)
+	if method, exists := method_opt.Get(); exists {
+		methods.Insert(method)
+	}
 }
 
 // Returns the method set for kind, value or nil if the pair doesn't exist
@@ -205,7 +225,9 @@ func (fmd FilterMapByDirection[MethodID]) Get(direction Direction, kind FilterKi
 	return byVal[value]
 }
 
-func (fmd FilterMapByDirection[MethodID]) Insert(direction Direction, kind FilterKind, value string, method MethodID) {
+// Adds the given direction, filter kind, and value to the map. These are also
+// associated with the method ID, if one is given.
+func (fmd FilterMapByDirection[MethodID]) Insert(direction Direction, kind FilterKind, value string, method_opt optionals.Optional[MethodID]) {
 	// Get or create the FilterMap for direction.
 	fm, ok := fmd[direction]
 	if !ok {
@@ -213,5 +235,5 @@ func (fmd FilterMapByDirection[MethodID]) Insert(direction Direction, kind Filte
 		fmd[direction] = fm
 	}
 
-	fm.Insert(kind, value, method)
+	fm.Insert(kind, value, method_opt)
 }

@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/akitasoftware/akita-libs/akid"
+	"github.com/akitasoftware/go-utils/optionals"
+	"github.com/akitasoftware/go-utils/sets"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,14 +14,15 @@ func TestFiltersToMethods(t *testing.T) {
 
 	m1 := akid.GenerateAPIMethodID().GetUUID().String()
 	m2 := akid.GenerateAPIMethodID().GetUUID().String()
+	ms := sets.NewSet(m1, m2)
 
 	fm.InsertNondirectionalFilter(HostFilter, "example.com", m1)
 	fm.InsertNondirectionalFilter(HostFilter, "example.com", m2)
-	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m1)
-	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m2)
+	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m1, ms)
+	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m2, ms)
 
-	fm.filterMap.Insert(HttpMethodFilter, "GET", m1)
-	fm.filterMap.Insert(HttpMethodFilter, "POST", m2)
+	fm.filterMap.Insert(HttpMethodFilter, "GET", optionals.Some(m1))
+	fm.filterMap.Insert(HttpMethodFilter, "POST", optionals.Some(m2))
 
 	// No filters.
 	directedSummary, numMethods := fm.SummarizeWithFilters(nil)
