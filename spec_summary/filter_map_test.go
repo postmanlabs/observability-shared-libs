@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/akitasoftware/akita-libs/akid"
+	"github.com/akitasoftware/go-utils/optionals"
+	"github.com/akitasoftware/go-utils/sets"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,14 +14,17 @@ func TestFiltersToMethods(t *testing.T) {
 
 	m1 := akid.GenerateAPIMethodID().GetUUID().String()
 	m2 := akid.GenerateAPIMethodID().GetUUID().String()
+	m3 := akid.GenerateAPIMethodID().GetUUID().String()
+	ms := sets.NewSet(m1, m2)
 
 	fm.InsertNondirectionalFilter(HostFilter, "example.com", m1)
 	fm.InsertNondirectionalFilter(HostFilter, "example.com", m2)
-	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m1)
-	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m2)
+	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m1, ms)
+	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m2, ms)
+	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "Basic", m3, ms)
 
-	fm.filterMap.Insert(HttpMethodFilter, "GET", m1)
-	fm.filterMap.Insert(HttpMethodFilter, "POST", m2)
+	fm.filterMap.Insert(HttpMethodFilter, "GET", optionals.Some(m1))
+	fm.filterMap.Insert(HttpMethodFilter, "POST", optionals.Some(m2))
 
 	// No filters.
 	directedSummary, numMethods := fm.SummarizeWithFilters(nil)
@@ -28,6 +33,13 @@ func TestFiltersToMethods(t *testing.T) {
 	assert.Equal(t, 2, directedSummary.NondirectedFilters[HostFilter]["example.com"], "directed: example")
 	assert.Equal(t, 1, directedSummary.NondirectedFilters[HttpMethodFilter]["GET"], "directed: get")
 	assert.Equal(t, 2, directedSummary.DirectedFilters[RequestDirection][AuthFilter]["None"], "directed: auth")
+
+	basicCount, basicExists := directedSummary.DirectedFilters[RequestDirection][AuthFilter]["Basic"]
+	assert.Equal(t, 0, basicCount, "directed: basic")
+	assert.True(t, basicExists, "directed: basic")
+
+	_, bearerExists := directedSummary.DirectedFilters[RequestDirection][AuthFilter]["Bearer"]
+	assert.False(t, bearerExists, "directed: bearer")
 
 	summary := directedSummary.ToSummary()
 
