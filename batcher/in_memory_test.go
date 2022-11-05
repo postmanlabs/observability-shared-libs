@@ -5,10 +5,29 @@ import (
 	"time"
 )
 
+type testBuffer struct {
+	items    []int
+	bufSize  int
+	consumer func([]int)
+}
+
+var _ Buffer[int] = (*testBuffer)(nil)
+
+func (buf *testBuffer) Add(val int) (bool, error) {
+	buf.items = append(buf.items, val)
+	return len(buf.items) >= buf.bufSize, nil
+}
+
+func (buf *testBuffer) Flush() error {
+	buf.consumer(buf.items)
+	buf.items = buf.items[:0]
+	return nil
+}
+
 func TestInMemoryBatcherFlushOnBatchSize(t *testing.T) {
 	count := 0
 	procCount := 0
-	proc := func(batch []interface{}) {
+	proc := func(batch []int) {
 		procCount += 1
 		count += len(batch)
 	}
@@ -16,7 +35,13 @@ func TestInMemoryBatcherFlushOnBatchSize(t *testing.T) {
 	// Set the flush duration to a long time we test the flush happening due to
 	// full buffer.
 	bufSize := 10
-	b := NewInMemory(proc, bufSize, 999*time.Minute)
+	b := NewInMemory[int](
+		&testBuffer{
+			bufSize:  bufSize,
+			consumer: proc,
+		},
+		999*time.Minute,
+	)
 	defer b.Close()
 
 	expectedItemCount := 2 * bufSize
@@ -37,7 +62,7 @@ func TestInMemoryBatcherFlushOnBatchSize(t *testing.T) {
 func TestInMemoryBatcherFlushOnClose(t *testing.T) {
 	count := 0
 	procCount := 0
-	proc := func(batch []interface{}) {
+	proc := func(batch []int) {
 		procCount += 1
 		count += len(batch)
 	}
@@ -45,7 +70,13 @@ func TestInMemoryBatcherFlushOnClose(t *testing.T) {
 	// Set the flush duration to a long time we test the flush happening due to
 	// full buffer.
 	bufSize := 10
-	b := NewInMemory(proc, bufSize, 999*time.Minute)
+	b := NewInMemory[int](
+		&testBuffer{
+			bufSize:  bufSize,
+			consumer: proc,
+		},
+		999*time.Minute,
+	)
 
 	// Make the number of items not divisible by bufSize.
 	expectedItemCount := 2*bufSize + 1
@@ -68,13 +99,19 @@ func TestInMemoryBatcherFlushOnClose(t *testing.T) {
 
 func TestInMemoryBatcherPeriodicFlush(t *testing.T) {
 	count := 0
-	proc := func(batch []interface{}) {
+	proc := func(batch []int) {
 		count += len(batch)
 	}
 
 	// Set the buffer size to something huge so we're forced to rely on periodic
 	// flush.
-	b := NewInMemory(proc, 999999, 5*time.Millisecond)
+	b := NewInMemory[int](
+		&testBuffer{
+			bufSize:  999999,
+			consumer: proc,
+		},
+		5*time.Millisecond,
+	)
 	defer b.Close()
 	expectedItemCount := 21
 	for i := 0; i < expectedItemCount; i++ {

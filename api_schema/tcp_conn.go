@@ -31,3 +31,17 @@ type TCPConnectionReport struct {
 func (report TCPConnectionReport) GetID() akid.ID {
 	return report.ID
 }
+
+// Returns an approximation of the size of this report.
+func (report *TCPConnectionReport) SizeInBytes() int {
+	result := 26                     // ID
+	result += len("255.255.255.255") // SrcAddr
+	result += len("65535")           // SrcPort
+	result += len("255.255.255.255") // DstAddr
+	result += len("65535")           // DstAddr
+	result += len(time.RFC3339Nano)  // FirstObserved
+	result += len(time.RFC3339Nano)  // LastObserved
+	result += len("false")           // InitiatorKnown
+	result += len(report.EndState)   // EndState
+	return result
+}

@@ -27,3 +27,24 @@ type TLSHandshakeReport struct {
 	// encrypted in TLS 1.3, so this is only populated for TLS 1.2 connections.
 	SubjectAlternativeNames []string
 }
+
+// Returns an approximation of the size of this report.
+func (report *TLSHandshakeReport) SizeInBytes() int {
+	result := 26 // ID
+	if report.Version != nil {
+		result += len(*report.Version)
+	}
+	if report.SNIHostname != nil {
+		result += len(*report.SNIHostname)
+	}
+	for _, proto := range report.SupportedProtocols {
+		result += len(proto)
+	}
+	if report.SelectedProtocol != nil {
+		result += len(*report.SelectedProtocol)
+	}
+	for _, san := range report.SubjectAlternativeNames {
+		result += len(san)
+	}
+	return result
+}
