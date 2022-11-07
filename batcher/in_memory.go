@@ -8,19 +8,19 @@ import (
 )
 
 // A wrapper around a Buffer[Item] that manages thread-safety and flushing.
-type InMemory[Item any, Buf Buffer[Item]] struct {
-	buf Buf // protected by mu
+type InMemory[Item any] struct {
+	buf Buffer[Item] // protected by mu
 
 	signalClose                chan struct{} // closed when the batcher is closed
 	signalPeriodicFlushStopped chan struct{} // closed when we stopped periodic flushing
 	mu                         sync.Mutex
 }
 
-func NewInMemory[Item any, Buf Buffer[Item]](
-	buf Buf,
+func NewInMemory[Item any](
+	buf Buffer[Item],
 	flushDuration time.Duration,
-) *InMemory[Item, Buf] {
-	m := &InMemory[Item, Buf]{
+) *InMemory[Item] {
+	m := &InMemory[Item]{
 		buf:                        buf,
 		signalClose:                make(chan struct{}),
 		signalPeriodicFlushStopped: make(chan struct{}),
@@ -45,7 +45,7 @@ func NewInMemory[Item any, Buf Buffer[Item]](
 	return m
 }
 
-func (m *InMemory[Item, _]) Add(items ...Item) error {
+func (m *InMemory[Item]) Add(items ...Item) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -63,7 +63,7 @@ func (m *InMemory[Item, _]) Add(items ...Item) error {
 	return nil
 }
 
-func (m *InMemory[_, _]) Close() {
+func (m *InMemory[_]) Close() {
 	// Stop the periodic flusher.
 	close(m.signalClose)
 	<-m.signalPeriodicFlushStopped
