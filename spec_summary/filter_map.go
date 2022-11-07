@@ -2,7 +2,6 @@ package spec_summary
 
 import (
 	"github.com/akitasoftware/go-utils/optionals"
-	"github.com/akitasoftware/go-utils/sets"
 	. "github.com/akitasoftware/go-utils/sets"
 )
 
@@ -38,21 +37,16 @@ func NewFiltersToMethods[MethodID comparable]() *FiltersToMethods[MethodID] {
 }
 
 // Registers the given filter and value in the map. These are also associated
-// with the method ID if it exists in the given set of allowed methods.
-func (fm *FiltersToMethods[MethodID]) InsertNondirectionalFilter(filter FilterKind, value string, method MethodID, allowedMethods sets.Set[MethodID]) {
+// with the given method ID, if provided.
+func (fm *FiltersToMethods[MethodID]) InsertNondirectionalFilter(filter FilterKind, value string, method_opt optionals.Optional[MethodID]) {
 	if fm.filterMap == nil {
 		fm.filterMap = make(FilterMap[MethodID])
 	}
 
-	var method_opt optionals.Optional[MethodID]
-	if allowedMethods.Contains(method) {
-		method_opt = optionals.Some(method)
-	}
-
 	fm.filterMap.Insert(filter, value, method_opt)
 
-	// Register the method itself only when the method has not been filtered out.
-	if allowedMethods.Contains(method) {
+	// Register the method if one was given.
+	if method, exists := method_opt.Get(); exists {
 		if fm.allMethods == nil {
 			fm.allMethods = make(Set[MethodID])
 		}
@@ -61,21 +55,16 @@ func (fm *FiltersToMethods[MethodID]) InsertNondirectionalFilter(filter FilterKi
 }
 
 // Registers the given direction, filter, and value in the map. These are also
-// associated with the method ID, if it exists in the given set of allowed
-// methods.
-func (fm *FiltersToMethods[MethodID]) InsertDirectionalFilter(direction Direction, filter FilterKind, value string, method MethodID, allowedMethods sets.Set[MethodID]) {
+// associated with the given method ID, if provided.
+func (fm *FiltersToMethods[MethodID]) InsertDirectionalFilter(direction Direction, filter FilterKind, value string, method_opt optionals.Optional[MethodID]) {
 	if fm.filterMapByDirection == nil {
 		fm.filterMapByDirection = make(FilterMapByDirection[MethodID])
 	}
 
-	var method_opt optionals.Optional[MethodID]
-	if allowedMethods.Contains(method) {
-		method_opt = optionals.Some(method)
-	}
 	fm.filterMapByDirection.Insert(direction, filter, value, method_opt)
 
-	// Register the method itself only when the method has not been filtered out.
-	if allowedMethods.Contains(method) {
+	// Register the method if one was given.
+	if method, exists := method_opt.Get(); exists {
 		if fm.allMethods == nil {
 			fm.allMethods = make(Set[MethodID])
 		}

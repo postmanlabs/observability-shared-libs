@@ -5,7 +5,6 @@ import (
 
 	"github.com/akitasoftware/akita-libs/akid"
 	"github.com/akitasoftware/go-utils/optionals"
-	"github.com/akitasoftware/go-utils/sets"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,15 +13,13 @@ func TestFiltersToMethods(t *testing.T) {
 
 	m1 := akid.GenerateAPIMethodID().GetUUID().String()
 	m2 := akid.GenerateAPIMethodID().GetUUID().String()
-	m3 := akid.GenerateAPIMethodID().GetUUID().String()
-	ms := sets.NewSet(m1, m2)
 
-	fm.InsertNondirectionalFilter(HostFilter, "example.com", m1, ms)
-	fm.InsertNondirectionalFilter(HostFilter, "example.com", m2, ms)
-	fm.InsertNondirectionalFilter(HostFilter, "example.org", m3, ms)
-	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m1, ms)
-	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", m2, ms)
-	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "Basic", m3, ms)
+	fm.InsertNondirectionalFilter(HostFilter, "example.com", optionals.Some(m1))
+	fm.InsertNondirectionalFilter(HostFilter, "example.com", optionals.Some(m2))
+	fm.InsertNondirectionalFilter(HostFilter, "example.org", optionals.None[string]())
+	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", optionals.Some(m1))
+	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "None", optionals.Some(m2))
+	fm.InsertDirectionalFilter(RequestDirection, AuthFilter, "Basic", optionals.None[string]())
 
 	fm.filterMap.Insert(HttpMethodFilter, "GET", optionals.Some(m1))
 	fm.filterMap.Insert(HttpMethodFilter, "POST", optionals.Some(m2))
