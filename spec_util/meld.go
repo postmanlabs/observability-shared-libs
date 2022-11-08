@@ -690,21 +690,18 @@ func (m *melder) meldOneOf(dst, src *pb.OneOf) error {
 
 // Melds a variant into a one-of.
 func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb.Data) error {
-	// Make sure the meta field of srcVariant is cleared. For HTTP specs, OneOf
+	// Make sure the meta and nullable fields of srcVariant are cleared. For HTTP specs, OneOf
 	// variants all have the same metadata, recorded in the Data.Meta field of the
-	// containing Data.
-	if srcVariant.Meta != nil {
+	// containing Data.  The nullable bit was copied to the dst Data object in meldData
+	// before calling meldOneOfVariant.
+	if srcVariant.Meta != nil || srcVariant.Nullable {
 		srcVariant = proto.Clone(srcVariant).(*pb.Data)
 		srcVariant.Meta = nil
+		srcVariant.Nullable = false
 
 		// We'll recompute the hash.
 		srcHash = nil
 	}
-
-	// Clear the nullable bit from srcVariant.  The nullable bit was
-	// copied to the dst Data object in meldData before calling
-	// meldOneOfVariant.
-	srcVariant.Nullable = false
 
 	// Hash if needed.
 	if srcHash == nil {
