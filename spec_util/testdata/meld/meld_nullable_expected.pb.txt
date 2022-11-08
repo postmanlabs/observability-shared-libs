@@ -5,7 +5,7 @@ method {
     api_type: HTTP_REST
   }
   responses {
-    key: "cbT4JSrOsvE="
+    key: "YGcK4tB-s6I="
     value {
       struct {
         fields {
@@ -13,6 +13,19 @@ method {
           value {
             primitive {
               int64_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "left_present_right_not_present"
+          value {
+            optional: {
+              data: {
+                primitive {
+                  int64_value {
+                  }
+                }
               }
             }
           }
@@ -48,6 +61,20 @@ method {
           }
         }
         fields {
+          key: "left_nullable_right_not_present"
+          value {
+            nullable: true
+            optional {
+              data: {
+                primitive {
+                  string_value {
+                  }
+                }
+              }
+            }
+          }
+        }
+        fields {
           key: "left_nullable_right_none"
           value {
             nullable: true
@@ -68,11 +95,38 @@ method {
           }
         }
         fields {
+          key: "left_none_right_not_present"
+          value {
+            nullable: true
+            optional: {
+              data: {
+                optional: {
+                  none: {}
+                }
+              }
+            }
+          }
+        }
+        fields {
           key: "left_none_right_nullable"
           value {
             nullable: true
             primitive {
               string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "left_optional_string_right_nullable_string"
+          value {
+            nullable: true
+            optional {
+              data {
+                primitive {
+                  string_value {
+                  }
+                }
               }
             }
           }

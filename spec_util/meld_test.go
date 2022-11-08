@@ -261,7 +261,7 @@ var tests = []testData{
 			"testdata/meld/meld_map_3.pb.txt",
 		},
 		MeldOptions{},
-		"testdata/meld/meld_map_1_map_2_expected.pb.txt",
+		"testdata/meld/meld_map_1_map_3_expected.pb.txt",
 	},
 	{
 		"structs with number fields",
@@ -291,6 +291,15 @@ var tests = []testData{
 		},
 		MeldOptions{},
 		"testdata/meld/meld_optional_none_expected.pb.txt",
+	},
+	{
+		"test meld(oneof<T1, T2>, nullable<T1>) => nullable<oneof<T1, T2>>",
+		[]string{
+			"testdata/meld/meld_oneof_with_nullable_primitive_1.pb.txt",
+			"testdata/meld/meld_oneof_with_nullable_primitive_2.pb.txt",
+		},
+		MeldOptions{},
+		"testdata/meld/meld_oneof_with_nullable_primitive_expected.pb.txt",
 	},
 }
 

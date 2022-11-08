@@ -71,6 +71,16 @@ method {
             }
           }
         }
+        fields {
+          key: "left_optional_string_right_nullable_string"
+          value {
+            nullable: true
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
       }
       meta {
         http {

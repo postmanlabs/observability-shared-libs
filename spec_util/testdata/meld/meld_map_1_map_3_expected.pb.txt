@@ -1,0 +1,44 @@
+# api_spec.Witness proto
+
+method <
+  id: <
+    api_type: HTTP_REST
+  >
+  responses: <
+    key: "il-kmAwcSWw="
+    value: <
+      struct: <
+        map_type: <
+          key: <
+            primitive: <
+              string_value: <
+              >
+            >
+          >
+          value: <
+            nullable: true
+            primitive: <
+              string_value: <
+              >
+            >
+          >
+        >
+      >
+      meta: <
+        http: <
+          body: <
+            content_type: JSON
+          >
+          response_code: 200
+        >
+      >
+    >
+  >
+  meta: <
+    http: <
+      method: "GET"
+      path_template: "/t1"
+      host: "kafka"
+    >
+  >
+>

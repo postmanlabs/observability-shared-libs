@@ -151,15 +151,27 @@ func mergeExampleValues(dst, src *pb.Data) {
 	dst.ExampleValues = examples
 }
 
-// Makes given Data optional if it isn't already.
+// Makes given Data optional if it isn't already.  If it is pb.None,
+// make it Optional<None>, which reflects that this field may be
+// absent (optional) and that it may also accept null values (None).
 func makeOptional(d *pb.Data) {
-	if !isOptional(d) {
+	isNone := d.GetOptional().GetNone() != nil
+	if !isOptional(d) || isNone {
+		// Maintain the invariant that the outermost Data object (the outer
+		// Optional, in this case) holds the nullable bit.
+		//
+		// d retains its nullable bit, even as its value is changed
+		// to be optional.
 		d.Value = &pb.Data_Optional{
 			Optional: &pb.Optional{
 				Value: &pb.Optional_Data{
 					Data: &pb.Data{Value: d.Value},
 				},
 			},
+		}
+
+		if isNone {
+			d.Nullable = true
 		}
 	}
 }
@@ -191,6 +203,8 @@ type melder struct {
 //   - All other variants in the OneOf is a primitive.
 //
 // Assumes that dst.Meta == src.Meta.
+//
+//
 //
 // XXX: In some cases, this modifies src as well as dst :/
 func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
@@ -263,7 +277,16 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 		switch opt := v.Optional.Value.(type) {
 		case *pb.Optional_Data:
 			// Meld src with the non-optional version of dst.
-			return m.meldData(opt.Data, src)
+			err := m.meldData(opt.Data, src)
+			if err != nil {
+				return err
+			}
+
+			// Lift the nullable bit to dst from the updated child,
+			// and clear the bit from the child.
+			dst.Nullable = dst.Nullable || opt.Data.Nullable
+			opt.Data.Nullable = false
+			return err
 		case *pb.Optional_None:
 			// If dst is a none, replace dst with a nullable version of src.
 			dst.Nullable = true
@@ -673,6 +696,11 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb
 		// We'll recompute the hash.
 		srcHash = nil
 	}
+
+	// Clear the nullable bit from srcVariant.  The nullable bit was
+	// copied to the dst Data object in meldData before calling
+	// meldOneOfVariant.
+	srcVariant.Nullable = false
 
 	// Hash if needed.
 	if srcHash == nil {
