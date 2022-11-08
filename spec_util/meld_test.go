@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+
 	"github.com/akitasoftware/akita-libs/test"
 )
 
@@ -79,7 +80,7 @@ var tests = []testData{
 		"testdata/meld/meld_with_existing_conflict_expected.pb.txt",
 	},
 	{
-		"turn conflict with none into optional - order 1",
+		"turn conflict with none into nullable - order 1",
 		[]string{
 			"testdata/meld/meld_suppress_none_conflict_1.pb.txt",
 			"testdata/meld/meld_suppress_none_conflict_2.pb.txt",
@@ -270,6 +271,26 @@ var tests = []testData{
 		},
 		MeldOptions{},
 		"testdata/meld/meld_map_4_map_5_expected.pb.txt",
+	},
+	{
+		// Test meld(T, nullable<T>) => nullable<T>
+		"meld nullable and non-nullable versions of the same type",
+		[]string{
+			"testdata/meld/meld_nullable_1.pb.txt",
+			"testdata/meld/meld_nullable_2.pb.txt",
+		},
+		MeldOptions{},
+		"testdata/meld/meld_nullable_expected.pb.txt",
+	},
+	{
+		// Test meld(None, optional<T>) => nullable<optional<T>>
+		"meld none and optional string should be nullable optional string",
+		[]string{
+			"testdata/meld/meld_optional_none_1.pb.txt",
+			"testdata/meld/meld_optional_none_2.pb.txt",
+		},
+		MeldOptions{},
+		"testdata/meld/meld_optional_none_expected.pb.txt",
 	},
 }
 

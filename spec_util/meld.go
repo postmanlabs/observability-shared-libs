@@ -9,8 +9,9 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
-	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
 	"github.com/akitasoftware/go-utils/sets"
+
+	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
 )
 
 type dataAndHash struct {
@@ -203,6 +204,9 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 		}
 	}()
 
+	// If src or dst is nullable, then melded(dst, src) is too.
+	dst.Nullable = dst.Nullable || src.Nullable
+
 	// Check if src is already a oneof. This can happen if src is the collapsed
 	// element from a list originally containing elements with conflicting types.
 	if srcOf, ok := src.Value.(*pb.Data_Oneof); ok {
@@ -229,8 +233,8 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			makeOptional(dst)
 			return nil
 		case *pb.Optional_None:
-			// If src is a none, drop the none and mark the dst value as optional.
-			makeOptional(dst)
+			// If src is a none, drop the none and mark the dst value as nullable.
+			dst.Nullable = true
 			return nil
 		default:
 			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(srcOpt.Optional.Value).Name())
@@ -261,18 +265,9 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			// Meld src with the non-optional version of dst.
 			return m.meldData(opt.Data, src)
 		case *pb.Optional_None:
-			// If dst is a none, replace dst with an optional version of src.
-			if isOptional(src) {
-				dst.Value = src.Value
-			} else {
-				dst.Value = &pb.Data_Optional{
-					Optional: &pb.Optional{
-						Value: &pb.Optional_Data{
-							Data: &pb.Data{Value: src.Value},
-						},
-					},
-				}
-			}
+			// If dst is a none, replace dst with a nullable version of src.
+			dst.Nullable = true
+			dst.Value = src.Value
 			return nil
 		default:
 			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(v.Optional.Value).Name())
