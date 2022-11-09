@@ -1,0 +1,102 @@
+# api_spec.Witness proto
+
+method {
+  id {
+    api_type: HTTP_REST
+  }
+  responses {
+    key: "FiNRlcJh7SI="
+    value {
+      struct {
+        fields {
+          key: "left_present_right_present"
+          value {
+            primitive {
+              int64_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "left_present_right_none"
+          value {
+            optional {
+              none {}
+            }
+          }
+        }
+        fields {
+          key: "left_present_right_nullable"
+          value {
+            nullable: true
+            primitive {
+              int64_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "left_nullable_right_present"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "left_nullable_right_none"
+          value {
+            optional {
+              none {}
+            }
+          }
+        }
+        fields {
+          key: "left_none_right_present"
+          value {
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "left_none_right_nullable"
+          value {
+            nullable: true
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+        fields {
+          key: "left_optional_string_right_nullable_string"
+          value {
+            nullable: true
+            primitive {
+              string_value {
+              }
+            }
+          }
+        }
+      }
+      meta {
+        http {
+          body {
+            content_type: JSON
+          }
+          response_code: 200
+        }
+      }
+    }
+  }
+  meta {
+    http {
+      method: "GET"
+      path_template: "/t1"
+      host: "kafka"
+    }
+  }
+}

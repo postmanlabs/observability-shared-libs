@@ -9,8 +9,9 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
-	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
 	"github.com/akitasoftware/go-utils/sets"
+
+	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
 )
 
 type dataAndHash struct {
@@ -150,15 +151,27 @@ func mergeExampleValues(dst, src *pb.Data) {
 	dst.ExampleValues = examples
 }
 
-// Makes given Data optional if it isn't already.
+// Makes given Data optional if it isn't already.  If it is pb.None,
+// make it Optional<None>, which reflects that this field may be
+// absent (optional) and that it may also accept null values (None).
 func makeOptional(d *pb.Data) {
-	if !isOptional(d) {
+	isNone := d.GetOptional().GetNone() != nil
+	if !isOptional(d) || isNone {
+		// Maintain the invariant that the outermost Data object (the outer
+		// Optional, in this case) holds the nullable bit.
+		//
+		// d retains its nullable bit, even as its value is changed
+		// to be optional.
 		d.Value = &pb.Data_Optional{
 			Optional: &pb.Optional{
 				Value: &pb.Optional_Data{
 					Data: &pb.Data{Value: d.Value},
 				},
 			},
+		}
+
+		if isNone {
+			d.Nullable = true
 		}
 	}
 }
@@ -189,6 +202,12 @@ type melder struct {
 //   - At most one variant in the OneOf is a list.
 //   - All other variants in the OneOf is a primitive.
 //
+// If the given src and dst have the following invariant on all OneOfs and
+// Optionals, then this is preserved.
+//
+//   - If any children are nullable, then the nullable bit is set on
+//     the parent, not the children.
+//
 // Assumes that dst.Meta == src.Meta.
 //
 // XXX: In some cases, this modifies src as well as dst :/
@@ -202,6 +221,9 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			mergeExampleValues(dst, src)
 		}
 	}()
+
+	// If src or dst is nullable, then melded(dst, src) is too.
+	dst.Nullable = dst.Nullable || src.Nullable
 
 	// Check if src is already a oneof. This can happen if src is the collapsed
 	// element from a list originally containing elements with conflicting types.
@@ -229,8 +251,8 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			makeOptional(dst)
 			return nil
 		case *pb.Optional_None:
-			// If src is a none, drop the none and mark the dst value as optional.
-			makeOptional(dst)
+			// If src is a none, drop the none and mark the dst value as nullable.
+			dst.Nullable = true
 			return nil
 		default:
 			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(srcOpt.Optional.Value).Name())
@@ -259,20 +281,20 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 		switch opt := v.Optional.Value.(type) {
 		case *pb.Optional_Data:
 			// Meld src with the non-optional version of dst.
-			return m.meldData(opt.Data, src)
-		case *pb.Optional_None:
-			// If dst is a none, replace dst with an optional version of src.
-			if isOptional(src) {
-				dst.Value = src.Value
-			} else {
-				dst.Value = &pb.Data_Optional{
-					Optional: &pb.Optional{
-						Value: &pb.Optional_Data{
-							Data: &pb.Data{Value: src.Value},
-						},
-					},
-				}
+			err := m.meldData(opt.Data, src)
+			if err != nil {
+				return err
 			}
+
+			// Lift the nullable bit to dst from the updated child,
+			// and clear the bit from the child.
+			dst.Nullable = dst.Nullable || opt.Data.Nullable
+			opt.Data.Nullable = false
+			return err
+		case *pb.Optional_None:
+			// If dst is a none, replace dst with a nullable version of src.
+			dst.Nullable = true
+			dst.Value = src.Value
 			return nil
 		default:
 			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(v.Optional.Value).Name())
@@ -668,12 +690,14 @@ func (m *melder) meldOneOf(dst, src *pb.OneOf) error {
 
 // Melds a variant into a one-of.
 func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb.Data) error {
-	// Make sure the meta field of srcVariant is cleared. For HTTP specs, OneOf
+	// Make sure the meta and nullable fields of srcVariant are cleared. For HTTP specs, OneOf
 	// variants all have the same metadata, recorded in the Data.Meta field of the
-	// containing Data.
-	if srcVariant.Meta != nil {
+	// containing Data.  The nullable bit was copied to the dst Data object in meldData
+	// before calling meldOneOfVariant.
+	if srcVariant.Meta != nil || srcVariant.Nullable {
 		srcVariant = proto.Clone(srcVariant).(*pb.Data)
 		srcVariant.Meta = nil
+		srcVariant.Nullable = false
 
 		// We'll recompute the hash.
 		srcHash = nil

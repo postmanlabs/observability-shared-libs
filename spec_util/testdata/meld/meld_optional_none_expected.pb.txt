@@ -9,16 +9,18 @@ method: {
     }
   }
   responses: {
-    key: "-jQpCVnqeTk="
+    key: "75O6NQ_g5Io="
     value: {
       struct: {
         fields: {
           key: "name"
           value: {
             nullable: true
-            primitive: {
-              string_value: {
-                value: "foo"
+            optional: {
+              data: {
+                primitive: {
+                  string_value: {}
+                }
               }
             }
           }
