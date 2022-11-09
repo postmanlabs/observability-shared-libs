@@ -485,9 +485,16 @@ const (
 	// We'll have to rely on Segment telemetry for those.
 
 	ApidumpError_PCAPPermission ApidumpErrorType = "PCAP permission failure" // Cannot obtain permission for packet capture
-	ApidumpError_InvalidFilters ApidumpErrorType = "Invalid filters"         // Error parsing filters
-	ApidumpError_TraceCreation  ApidumpErrorType = "Trace creation failure"  // Can't create learn session
-	ApidumpError_Other          ApidumpErrorType = "Other error"
+
+	// Cannot access network interface due to "Function not implemented" error.
+	// Often indicates the agent was built for a different architecture and is
+	// running in a partially emulated environment.
+	ApidumpError_PCAPInterfaceNotImplemented ApidumpErrorType = "PCAP interface not implemented"
+
+	ApidumpError_PCAPInterfaceOther ApidumpErrorType = "Other PCAP interface failure" // Cannot access interface for packet capture
+	ApidumpError_InvalidFilters     ApidumpErrorType = "Invalid filters"              // Error parsing filters
+	ApidumpError_TraceCreation      ApidumpErrorType = "Trace creation failure"       // Can't create learn session
+	ApidumpError_Other              ApidumpErrorType = "Other error"
 )
 
 type PostClientPacketCaptureStatsRequest struct {
