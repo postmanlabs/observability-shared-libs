@@ -1,10 +1,12 @@
 package client_telemetry
 
-// We produce a set of packet counters indexed by interface and
+// We produce a set of packet counters indexed by interface, host and
 // port number (*either* source or destination.)
 type PacketCounts struct {
 	// Flow
 	Interface string `json:"interface"`
+	SrcHost   string `json:"src_host"`
+	DstHost   string `json:"dst_host"`
 	SrcPort   int    `json:"src_port"`
 	DstPort   int    `json:"dst_port"`
 
@@ -41,13 +43,25 @@ func (c *PacketCounts) Copy() *PacketCounts {
 // Reflects the version of the JSON encoding.  Increase the minor version
 // number for backwards-compatible changes and the major number for non-
 // backwards compatible changes.
-const Version = "v0.2"
+const Version = "v0.3"
 
 type PacketCountSummary struct {
 	Version        string                   `json:"version"`
 	Total          PacketCounts             `json:"total"`
 	TopByPort      map[int]*PacketCounts    `json:"top_by_port"`
 	TopByInterface map[string]*PacketCounts `json:"top_by_interface"`
+	TopByHost      map[string]*PacketCounts `json:"top_by_host"`
+
+	// Maximum number of elements allowed in the TopByX maps.
+	ByPortOverflowLimit      int `json:"by_port_overflow_limit"`
+	ByInterfaceOverflowLimit int `json:"by_interface_overflow_limit"`
+	ByHostOverflowLimit      int `json:"by_host_overflow_limit"`
+
+	// Counts for elements in excess of the overflow limits.  Nil means
+	// there was no overflow.
+	ByPortOverflow      *PacketCounts `json:"by_port_overflow,omitempty"`
+	ByInterfaceOverflow *PacketCounts `json:"by_interface_overflow,omitempty"`
+	ByHostOverflow      *PacketCounts `json:"by_host_overflow,omitempty"`
 }
 
 func NewPacketCountSummary() *PacketCountSummary {
