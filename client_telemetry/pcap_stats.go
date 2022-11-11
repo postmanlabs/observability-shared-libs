@@ -52,6 +52,7 @@ type PacketCountSummary struct {
 	TopByInterface map[string]*PacketCounts `json:"top_by_interface"`
 	TopByHost      map[string]*PacketCounts `json:"top_by_host"`
 
+	// Maximum number of elements allowed in the TopByX maps.
 	ByPortOverflowLimit      int `json:"by_port_overflow_limit"`
 	ByInterfaceOverflowLimit int `json:"by_interface_overflow_limit"`
 	ByHostOverflowLimit      int `json:"by_host_overflow_limit"`
