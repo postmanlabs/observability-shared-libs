@@ -511,7 +511,7 @@ type PostClientPacketCaptureStatsRequest struct {
 	ApidumpErrorText string           `json:"apidump_error_text,omitempty"`
 }
 
-type PostInitialClientTelemetry struct {
+type PostInitialClientTelemetryRequest struct {
 	ClientID                  akid.ClientID `json:"client_id"`
 	ObservedStartingAt        time.Time     `json:"observed_starting_at"`
 	ObservedDurationInSeconds int           `json:"observed_duration_in_seconds"`
