@@ -516,10 +516,6 @@ type PostInitialClientTelemetry struct {
 	ObservedStartingAt        time.Time     `json:"observed_starting_at"`
 	ObservedDurationInSeconds int           `json:"observed_duration_in_seconds"`
 
-	// Report on any errors encounted during apidump that should be shown to the user.
-	ApidumpError     ApidumpErrorType `json:"apidump_error,omitempty"`
-	ApidumpErrorText string           `json:"apidump_error_text,omitempty"`
-
 	CLIVersion    string `json:"cli_version"`
 	CLITargetArch string `json:"cli_target_arch"`
 
