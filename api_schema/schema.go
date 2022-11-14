@@ -519,8 +519,8 @@ type PostInitialClientTelemetryRequest struct {
 	CLIVersion    string `json:"cli_version"`
 	CLITargetArch string `json:"cli_target_arch"`
 
-	// True when the CLI is running in a Docker container we distributed, e.g.
-	// akitasoftware/cli:latest.
+	// True when the CLI is running in a Docker container distributed by Akita,
+	// e.g. akitasoftware/cli:latest on Docker Hub.
 	AkitaDockerRelease bool `json:"akita_docker_release"`
 
 	// True when the host.docker.internal DNS name resolves, which indicates the
