@@ -511,6 +511,23 @@ type PostClientPacketCaptureStatsRequest struct {
 	ApidumpErrorText string           `json:"apidump_error_text,omitempty"`
 }
 
+type PostInitialClientTelemetryRequest struct {
+	ClientID                  akid.ClientID `json:"client_id"`
+	ObservedStartingAt        time.Time     `json:"observed_starting_at"`
+	ObservedDurationInSeconds int           `json:"observed_duration_in_seconds"`
+
+	CLIVersion    string `json:"cli_version"`
+	CLITargetArch string `json:"cli_target_arch"`
+
+	// True when the CLI is running in a Docker container distributed by Akita,
+	// e.g. akitasoftware/cli:latest on Docker Hub.
+	AkitaDockerRelease bool `json:"akita_docker_release"`
+
+	// True when the host.docker.internal DNS name resolves, which indicates the
+	// CLI is running in a docker container hosted on Docker Desktop.
+	DockerDesktop bool `json:"docker_desktop"`
+}
+
 type UserResponse struct {
 	ID             akid.UserID         `json:"id"`
 	OrganizationID akid.OrganizationID `json:"organization_id"`
