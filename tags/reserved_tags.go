@@ -16,7 +16,7 @@ const (
 
 	// The original filesystem path of an uploaded trace.
 	XAkitaTraceLocalPath Key = "x-akita-trace-local-path"
-	
+
 	// The type of scheduled model, if XAkitaCreatedBy == CreatedBySchedule.
 	XAkitaScheduledModelType Key = "x-akita-scheduled-model-type"
 
@@ -116,6 +116,10 @@ const (
 // AWS deployment tags
 const (
 	XAkitaAWSRegion Key = "x-akita-aws-region"
+
+	// Task and service for agents deployed in ECS.
+	XAkitaECSTask    Key = "x-akita-ecs-task"
+	XAkitaECSService Key = "x-akita-ecs-service"
 )
 
 // Kubernetes deployment tags
