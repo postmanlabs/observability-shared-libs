@@ -8,15 +8,32 @@ import (
 
 // Summarizes a spec along different dimensions that can be used to filter for
 // parts of the spec.
+type Summary struct {
+	Hosts         map[FilterValue]int `json:"hosts"`
+	HTTPMethods   map[FilterValue]int `json:"http_methods"`
+	Paths         map[FilterValue]int `json:"paths"`
+	ResponseCodes map[FilterValue]int `json:"response_codes"`
+}
+
+func NewSummary() *Summary {
+	return &Summary{
+		Hosts:         make(map[FilterValue]int),
+		HTTPMethods:   make(map[FilterValue]int),
+		Paths:         make(map[FilterValue]int),
+		ResponseCodes: make(map[FilterValue]int),
+	}
+}
+
+// Summarizes a spec along different dimensions that can be used to filter for
+// parts of the spec. Extends `Summary` with filters that look at the bodies of
+// requests and responses.
 type DetailedSummary struct {
+	Summary
+
 	Authentications map[FilterValue]int `json:"authentications"`
 	Directions      map[FilterValue]int `json:"directions"`
-	Hosts           map[FilterValue]int `json:"hosts"`
-	HTTPMethods     map[FilterValue]int `json:"http_methods"`
-	Paths           map[FilterValue]int `json:"paths"`
 	Params          map[FilterValue]int `json:"params"`
 	Properties      map[FilterValue]int `json:"properties"`
-	ResponseCodes   map[FilterValue]int `json:"response_codes"`
 	DataFormats     map[FilterValue]int `json:"data_formats"`
 	DataKinds       map[FilterValue]int `json:"data_kinds"`
 	DataTypes       map[FilterValue]int `json:"data_types"`
@@ -24,14 +41,11 @@ type DetailedSummary struct {
 
 func NewDetailedSummary() *DetailedSummary {
 	return &DetailedSummary{
+		Summary:         *NewSummary(),
 		Authentications: make(map[FilterValue]int),
 		Directions:      make(map[FilterValue]int),
-		Hosts:           make(map[FilterValue]int),
-		HTTPMethods:     make(map[FilterValue]int),
-		Paths:           make(map[FilterValue]int),
 		Params:          make(map[FilterValue]int),
 		Properties:      make(map[FilterValue]int),
-		ResponseCodes:   make(map[FilterValue]int),
 		DataFormats:     make(map[FilterValue]int),
 		DataKinds:       make(map[FilterValue]int),
 		DataTypes:       make(map[FilterValue]int),
@@ -65,11 +79,18 @@ func (s *SummaryByDirection) ToSummary() *DetailedSummary {
 	}
 
 	return &DetailedSummary{
+		Summary: Summary{
+			// Non-directional properties.
+			Hosts:       s.NondirectedFilters[HostFilter],
+			HTTPMethods: s.NondirectedFilters[HttpMethodFilter],
+			Paths:       s.NondirectedFilters[PathFilter],
+
+			// Directional properties.
+			ResponseCodes: s.DirectedFilters.GetCountsByValue(ResponseDirection, ResponseCodeFilter),
+		},
+
 		// Non-directional properties.
-		Directions:  s.NondirectedFilters[DirectionFilter],
-		Hosts:       s.NondirectedFilters[HostFilter],
-		HTTPMethods: s.NondirectedFilters[HttpMethodFilter],
-		Paths:       s.NondirectedFilters[PathFilter],
+		Directions: s.NondirectedFilters[DirectionFilter],
 
 		// Directional properties.
 		Authentications: s.DirectedFilters.GetCountsByValue(RequestDirection, AuthFilter),
@@ -78,7 +99,6 @@ func (s *SummaryByDirection) ToSummary() *DetailedSummary {
 		DataTypes:       s.DirectedFilters.MergeAcrossDirections(DataTypeFilter),
 		Params:          s.DirectedFilters.MergeAcrossDirections(ParamFilter),
 		Properties:      s.DirectedFilters.MergeAcrossDirections(PropertyFilter),
-		ResponseCodes:   s.DirectedFilters.GetCountsByValue(ResponseDirection, ResponseCodeFilter),
 	}
 }
 
