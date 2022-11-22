@@ -14,13 +14,13 @@ func TestSummarize(t *testing.T) {
 		name     string
 		specFile string
 		filters  Filters
-		expected *Summary
+		expected *DetailedSummary
 	}{
 		{
 			name:     "summary without filters",
 			specFile: "testdata/spec1.pb.txt",
 			filters:  nil,
-			expected: &Summary{
+			expected: &DetailedSummary{
 				Authentications: map[string]int{
 					"BASIC": 2,
 				},
@@ -66,7 +66,7 @@ func TestSummarize(t *testing.T) {
 			filters: Filters{
 				"hosts": {"example.com"},
 			},
-			expected: &Summary{
+			expected: &DetailedSummary{
 				Authentications: map[string]int{
 					"BASIC": 1,
 				},
@@ -113,7 +113,7 @@ func TestSummarize(t *testing.T) {
 				"hosts": {"example.com"},
 				"paths": {"/v1/projects/{arg3}"},
 			},
-			expected: &Summary{
+			expected: &DetailedSummary{
 				Authentications: map[string]int{
 					"BASIC": 1,
 				},
@@ -160,7 +160,7 @@ func TestSummarize(t *testing.T) {
 				"hosts": {"other-example.com"},
 				"paths": {"/v1/projects/{arg3}"},
 			},
-			expected: &Summary{
+			expected: &DetailedSummary{
 				Authentications: map[string]int{
 					"BASIC": 0,
 				},

@@ -8,7 +8,7 @@ import (
 
 // Summarizes a spec along different dimensions that can be used to filter for
 // parts of the spec.
-type Summary struct {
+type DetailedSummary struct {
 	Authentications map[FilterValue]int `json:"authentications"`
 	Directions      map[FilterValue]int `json:"directions"`
 	Hosts           map[FilterValue]int `json:"hosts"`
@@ -22,8 +22,8 @@ type Summary struct {
 	DataTypes       map[FilterValue]int `json:"data_types"`
 }
 
-func NewSummary() *Summary {
-	return &Summary{
+func NewDetailedSummary() *DetailedSummary {
+	return &DetailedSummary{
 		Authentications: make(map[FilterValue]int),
 		Directions:      make(map[FilterValue]int),
 		Hosts:           make(map[FilterValue]int),
@@ -59,12 +59,12 @@ func NewSummaryByDirection() *SummaryByDirection {
 	}
 }
 
-func (s *SummaryByDirection) ToSummary() *Summary {
+func (s *SummaryByDirection) ToSummary() *DetailedSummary {
 	if s == nil {
 		return nil
 	}
 
-	return &Summary{
+	return &DetailedSummary{
 		// Non-directional properties.
 		Directions:  s.NondirectedFilters[DirectionFilter],
 		Hosts:       s.NondirectedFilters[HostFilter],
