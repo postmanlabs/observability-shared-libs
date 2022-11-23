@@ -15,7 +15,7 @@ import (
 )
 
 // See SummarizeWithFilters.
-func Summarize(spec *pb.APISpec) *Summary {
+func Summarize(spec *pb.APISpec) *DetailedSummary {
 	return SummarizeWithFilters(spec, nil)
 }
 
@@ -26,7 +26,7 @@ func Summarize(spec *pb.APISpec) *Summary {
 // For example, suppose filters were { response_codes: [404] }.  If the summary
 // included HTTPMethods: {"GET": 2}, it would mean that there are two GET
 // methods with 404 response codes.
-func SummarizeWithFilters(spec *pb.APISpec, filters Filters) *Summary {
+func SummarizeWithFilters(spec *pb.APISpec, filters Filters) *DetailedSummary {
 	return SummarizeByDirectionWithFilters(spec, filters).ToSummary()
 }
 

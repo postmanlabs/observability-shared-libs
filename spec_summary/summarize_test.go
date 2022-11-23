@@ -14,26 +14,36 @@ func TestSummarize(t *testing.T) {
 		name     string
 		specFile string
 		filters  Filters
-		expected *Summary
+		expected *DetailedSummary
 	}{
 		{
 			name:     "summary without filters",
 			specFile: "testdata/spec1.pb.txt",
 			filters:  nil,
-			expected: &Summary{
+			expected: &DetailedSummary{
+				Summary: Summary{
+					HTTPMethods: map[string]int{
+						"POST": 2,
+					},
+					Paths: map[string]int{
+						"/v1/projects/{arg3}": 1,
+						"/v1/users/{arg3}":    1,
+					},
+					ResponseCodes: map[string]int{
+						"200": 1,
+						"201": 1,
+					},
+					Hosts: map[string]int{
+						"example.com":       1,
+						"other-example.com": 1,
+					},
+				},
 				Authentications: map[string]int{
 					"BASIC": 2,
 				},
 				Directions: map[string]int{
 					"request":  2,
 					"response": 2,
-				},
-				HTTPMethods: map[string]int{
-					"POST": 2,
-				},
-				Paths: map[string]int{
-					"/v1/projects/{arg3}": 1,
-					"/v1/users/{arg3}":    1,
 				},
 				Params: map[string]int{
 					"X-My-Header": 2,
@@ -42,14 +52,6 @@ func TestSummarize(t *testing.T) {
 					"top-level-prop":       2,
 					"my-special-prop":      2,
 					"other-top-level-prop": 2,
-				},
-				ResponseCodes: map[string]int{
-					"200": 1,
-					"201": 1,
-				},
-				Hosts: map[string]int{
-					"example.com":       1,
-					"other-example.com": 1,
 				},
 				DataFormats: map[string]int{
 					"rfc3339": 2,
@@ -66,20 +68,30 @@ func TestSummarize(t *testing.T) {
 			filters: Filters{
 				"hosts": {"example.com"},
 			},
-			expected: &Summary{
+			expected: &DetailedSummary{
+				Summary: Summary{
+					HTTPMethods: map[string]int{
+						"POST": 1,
+					},
+					Paths: map[string]int{
+						"/v1/projects/{arg3}": 1,
+						"/v1/users/{arg3}":    0,
+					},
+					ResponseCodes: map[string]int{
+						"200": 1,
+						"201": 0,
+					},
+					Hosts: map[string]int{
+						"example.com":       1,
+						"other-example.com": 1,
+					},
+				},
 				Authentications: map[string]int{
 					"BASIC": 1,
 				},
 				Directions: map[string]int{
 					"request":  1,
 					"response": 1,
-				},
-				HTTPMethods: map[string]int{
-					"POST": 1,
-				},
-				Paths: map[string]int{
-					"/v1/projects/{arg3}": 1,
-					"/v1/users/{arg3}":    0,
 				},
 				Params: map[string]int{
 					"X-My-Header": 1,
@@ -88,14 +100,6 @@ func TestSummarize(t *testing.T) {
 					"top-level-prop":       1,
 					"my-special-prop":      1,
 					"other-top-level-prop": 1,
-				},
-				ResponseCodes: map[string]int{
-					"200": 1,
-					"201": 0,
-				},
-				Hosts: map[string]int{
-					"example.com":       1,
-					"other-example.com": 1,
 				},
 				DataFormats: map[string]int{
 					"rfc3339": 1,
@@ -113,20 +117,30 @@ func TestSummarize(t *testing.T) {
 				"hosts": {"example.com"},
 				"paths": {"/v1/projects/{arg3}"},
 			},
-			expected: &Summary{
+			expected: &DetailedSummary{
+				Summary: Summary{
+					HTTPMethods: map[string]int{
+						"POST": 1,
+					},
+					Paths: map[string]int{
+						"/v1/projects/{arg3}": 1,
+						"/v1/users/{arg3}":    0,
+					},
+					ResponseCodes: map[string]int{
+						"200": 1,
+						"201": 0,
+					},
+					Hosts: map[string]int{
+						"example.com":       1,
+						"other-example.com": 0,
+					},
+				},
 				Authentications: map[string]int{
 					"BASIC": 1,
 				},
 				Directions: map[string]int{
 					"request":  1,
 					"response": 1,
-				},
-				HTTPMethods: map[string]int{
-					"POST": 1,
-				},
-				Paths: map[string]int{
-					"/v1/projects/{arg3}": 1,
-					"/v1/users/{arg3}":    0,
 				},
 				Params: map[string]int{
 					"X-My-Header": 1,
@@ -135,14 +149,6 @@ func TestSummarize(t *testing.T) {
 					"top-level-prop":       1,
 					"my-special-prop":      1,
 					"other-top-level-prop": 1,
-				},
-				ResponseCodes: map[string]int{
-					"200": 1,
-					"201": 0,
-				},
-				Hosts: map[string]int{
-					"example.com":       1,
-					"other-example.com": 0,
 				},
 				DataFormats: map[string]int{
 					"rfc3339": 1,
@@ -160,20 +166,30 @@ func TestSummarize(t *testing.T) {
 				"hosts": {"other-example.com"},
 				"paths": {"/v1/projects/{arg3}"},
 			},
-			expected: &Summary{
+			expected: &DetailedSummary{
+				Summary: Summary{
+					HTTPMethods: map[string]int{
+						"POST": 0,
+					},
+					Paths: map[string]int{
+						"/v1/projects/{arg3}": 0,
+						"/v1/users/{arg3}":    1,
+					},
+					ResponseCodes: map[string]int{
+						"200": 0,
+						"201": 0,
+					},
+					Hosts: map[string]int{
+						"example.com":       1,
+						"other-example.com": 0,
+					},
+				},
 				Authentications: map[string]int{
 					"BASIC": 0,
 				},
 				Directions: map[string]int{
 					"request":  0,
 					"response": 0,
-				},
-				HTTPMethods: map[string]int{
-					"POST": 0,
-				},
-				Paths: map[string]int{
-					"/v1/projects/{arg3}": 0,
-					"/v1/users/{arg3}":    1,
 				},
 				Params: map[string]int{
 					"X-My-Header": 0,
@@ -182,14 +198,6 @@ func TestSummarize(t *testing.T) {
 					"top-level-prop":       0,
 					"my-special-prop":      0,
 					"other-top-level-prop": 0,
-				},
-				ResponseCodes: map[string]int{
-					"200": 0,
-					"201": 0,
-				},
-				Hosts: map[string]int{
-					"example.com":       1,
-					"other-example.com": 0,
 				},
 				DataFormats: map[string]int{
 					"rfc3339": 0,

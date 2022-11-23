@@ -248,7 +248,7 @@ type GetSpecResponse struct {
 
 	State APISpecState `json:"state"`
 
-	Summary *spec_summary.Summary `json:"summary,omitempty"`
+	Summary *spec_summary.DetailedSummary `json:"summary,omitempty"`
 
 	// Deprecated in favor of TagsSet, which supports multiple values
 	// per tag.
