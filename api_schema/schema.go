@@ -347,6 +347,7 @@ const (
 	Aggr_90p       TimelineAggregation = "90p"       // 90th percentile latency and RTT
 	Aggr_95p       TimelineAggregation = "95p"       // 95th percentile latency and RTT
 	Aggr_99p       TimelineAggregation = "99p"       // 99th percentile latency and RTT
+	Aggr_999p      TimelineAggregation = "99.9p"     // 99.9th percentile latency and RTT
 )
 
 // These are the available keys for Timeline.Values.
