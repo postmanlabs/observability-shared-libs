@@ -317,7 +317,7 @@ type TimelineValues struct {
 	P90Latency    *float32 `json:"latency_90p,omitempty"`
 	P95Latency    *float32 `json:"latency_95p,omitempty"`
 	P99Latency    *float32 `json:"latency_99p,omitempty"`
-	P999Latency    *float32 `json:"latency_99.9p,omitempty"`
+	P999Latency   *float32 `json:"latency_99.9p,omitempty"`
 
 	MaxRTT    *float32 `json:"rtt_max,omitempty"`
 	MinRTT    *float32 `json:"rtt_min,omitempty"`
@@ -326,7 +326,7 @@ type TimelineValues struct {
 	P90RTT    *float32 `json:"rtt_90p,omitempty"`
 	P95RTT    *float32 `json:"rtt_95p,omitempty"`
 	P99RTT    *float32 `json:"rtt_99p,omitempty"`
-	P999RTT    *float32 `json:"rtt_99.9p,omitempty"`
+	P999RTT   *float32 `json:"rtt_99.9p,omitempty"`
 
 	// The number of calls that resulted in a 4XX response.
 	Num4xx *int `json:"num_4xx,omitempty"`
@@ -364,6 +364,7 @@ const (
 	Event_Latency_90p          TimelineValue = "latency_90p"          // 90th percentile latency
 	Event_Latency_95p          TimelineValue = "latency_95p"          // 95th percentile latency
 	Event_Latency_99p          TimelineValue = "latency_99p"          // 99th percentile latency
+	Event_Latency_999p         TimelineValue = "latency_99.9p"        // 99.9th percentile latency
 	Event_RTT                  TimelineValue = "rtt"                  // estimated network round-trip time, in milliseconds
 	Event_RTT_Max              TimelineValue = "rtt_max"              // maximum rtt
 	Event_RTT_Min              TimelineValue = "rtt_min"              // minimum rtt
@@ -372,6 +373,7 @@ const (
 	Event_RTT_90p              TimelineValue = "rtt_90p"              // 90th percentile rtt
 	Event_RTT_95p              TimelineValue = "rtt_95p"              // 95th percentile rtt
 	Event_RTT_99p              TimelineValue = "rtt_99p"              // 99th percentile rtt
+	Event_RTT_999p             TimelineValue = "rtt_99.9p"            // 99.9th percentile rtt
 	Event_Latency_1ms_Count    TimelineValue = "latency_1ms_count"    // Count of events with latency <=1ms
 	Event_Latency_10ms_Count   TimelineValue = "latency_10ms_count"   // Count of events with latency >1ms and <=10ms
 	Event_Latency_100ms_Count  TimelineValue = "latency_100ms_count"  // Count of events with latency >10ms and <=100ms
