@@ -317,6 +317,7 @@ type TimelineValues struct {
 	P90Latency    *float32 `json:"latency_90p,omitempty"`
 	P95Latency    *float32 `json:"latency_95p,omitempty"`
 	P99Latency    *float32 `json:"latency_99p,omitempty"`
+	P999Latency    *float32 `json:"latency_99.9p,omitempty"`
 
 	MaxRTT    *float32 `json:"rtt_max,omitempty"`
 	MinRTT    *float32 `json:"rtt_min,omitempty"`
@@ -325,6 +326,7 @@ type TimelineValues struct {
 	P90RTT    *float32 `json:"rtt_90p,omitempty"`
 	P95RTT    *float32 `json:"rtt_95p,omitempty"`
 	P99RTT    *float32 `json:"rtt_99p,omitempty"`
+	P999RTT    *float32 `json:"rtt_99.9p,omitempty"`
 
 	// The number of calls that resulted in a 4XX response.
 	Num4xx *int `json:"num_4xx,omitempty"`
