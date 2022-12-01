@@ -230,6 +230,10 @@ type GetSpecMetadataResponse struct {
 	// per tag.
 	Tags    tags.SingletonTags `json:"tags,omitempty"`
 	TagsSet tags.Tags          `json:"tags_set,omitempty"`
+
+	// Deployment times
+	TraceStartTime *time.Time `json:"trace_start_time,omitempty"`
+	TraceEndTime   *time.Time `json:"trace_end_time,omitempty"`
 }
 
 type GetSpecResponse struct {
