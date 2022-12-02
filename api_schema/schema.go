@@ -524,6 +524,18 @@ type PostClientPacketCaptureStatsRequest struct {
 	// Report on any errors encounted during apidump that should be shown to the user.
 	ApidumpError     ApidumpErrorType `json:"apidump_error,omitempty"`
 	ApidumpErrorText string           `json:"apidump_error_text,omitempty"`
+
+	// Report CPU and memory usage, if available.
+	AgentUsage *AgentUsage `json:"agent_usage,omitempty"`
+}
+
+type AgentUsage struct {
+	// Time the Akita agent was scheduled (user + kernel mode) relative
+	// to the total time all CPUs spent in user + kernel mode.
+	RelativeCPU float64 `json:"relative_cpu"`
+
+	// Peak virtual memory size in bytes.
+	VMPeak uint64 `json:"vm_peak"`
 }
 
 type PostInitialClientTelemetryRequest struct {
