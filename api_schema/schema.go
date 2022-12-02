@@ -530,8 +530,7 @@ type PostClientPacketCaptureStatsRequest struct {
 }
 
 type AgentUsage struct {
-	// Time the Akita agent was scheduled (user + kernel mode) relative
-	// to the total time all CPUs spent in user + kernel mode.
+	// Akita agent CPU usage, as a percentage of total CPU availability.
 	RelativeCPU float64 `json:"relative_cpu"`
 
 	// Peak virtual memory size in bytes.
