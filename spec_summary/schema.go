@@ -13,6 +13,8 @@ type Summary struct {
 	HTTPMethods   map[FilterValue]int `json:"http_methods"`
 	Paths         map[FilterValue]int `json:"paths"`
 	ResponseCodes map[FilterValue]int `json:"response_codes"`
+
+	EndpointCategories map[FilterValue]int `json:"endpoint_categories"`
 }
 
 func NewSummary() *Summary {
@@ -21,6 +23,8 @@ func NewSummary() *Summary {
 		HTTPMethods:   make(map[FilterValue]int),
 		Paths:         make(map[FilterValue]int),
 		ResponseCodes: make(map[FilterValue]int),
+
+		EndpointCategories: make(map[FilterValue]int),
 	}
 }
 
@@ -81,9 +85,10 @@ func (s *SummaryByDirection) ToSummary() *DetailedSummary {
 	return &DetailedSummary{
 		Summary: Summary{
 			// Non-directional properties.
-			Hosts:       s.NondirectedFilters[HostFilter],
-			HTTPMethods: s.NondirectedFilters[HttpMethodFilter],
-			Paths:       s.NondirectedFilters[PathFilter],
+			Hosts:              s.NondirectedFilters[HostFilter],
+			HTTPMethods:        s.NondirectedFilters[HttpMethodFilter],
+			Paths:              s.NondirectedFilters[PathFilter],
+			EndpointCategories: s.NondirectedFilters[EndpointCategoryFilter],
 
 			// Directional properties.
 			ResponseCodes: s.DirectedFilters.GetCountsByValue(ResponseDirection, ResponseCodeFilter),
