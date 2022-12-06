@@ -6,7 +6,6 @@ import (
 	"github.com/akitasoftware/akita-libs/akid"
 	"github.com/akitasoftware/akita-libs/akinet"
 	"github.com/akitasoftware/akita-libs/client_telemetry"
-	"github.com/akitasoftware/akita-libs/spec_summary"
 	"github.com/akitasoftware/akita-libs/tags"
 	"github.com/akitasoftware/akita-libs/time_span"
 )
@@ -247,8 +246,6 @@ type GetSpecResponse struct {
 	Name string `json:"name"`
 
 	State APISpecState `json:"state"`
-
-	Summary *spec_summary.DetailedSummary `json:"summary,omitempty"`
 
 	// Deprecated in favor of TagsSet, which supports multiple values
 	// per tag.

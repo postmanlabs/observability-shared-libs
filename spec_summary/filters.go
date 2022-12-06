@@ -9,18 +9,19 @@ type FilterValues []FilterValue
 type Filters map[FilterKind]FilterValues
 
 const (
-	AuthFilter           FilterKind = "authentications"
-	DirectionFilter      FilterKind = "directions"
-	HostFilter           FilterKind = "hosts"
-	HttpMethodFilter     FilterKind = "http_methods"
-	PathFilter           FilterKind = "paths"
-	ParamFilter          FilterKind = "params"
-	PropertyFilter       FilterKind = "properties"
-	ResponseCodeFilter   FilterKind = "response_codes"
-	DataFormatFilter     FilterKind = "data_formats"
-	DataFormatKindFilter FilterKind = "data_kinds"
-	DataTypeFilter       FilterKind = "data_types"
-	UnknownFilter        FilterKind = "unknown"
+	AuthFilter             FilterKind = "authentications"
+	DirectionFilter        FilterKind = "directions"
+	EndpointCategoryFilter FilterKind = "endpoint_categories"
+	HostFilter             FilterKind = "hosts"
+	HttpMethodFilter       FilterKind = "http_methods"
+	PathFilter             FilterKind = "paths"
+	ParamFilter            FilterKind = "params"
+	PropertyFilter         FilterKind = "properties"
+	ResponseCodeFilter     FilterKind = "response_codes"
+	DataFormatFilter       FilterKind = "data_formats"
+	DataFormatKindFilter   FilterKind = "data_kinds"
+	DataTypeFilter         FilterKind = "data_types"
+	UnknownFilter          FilterKind = "unknown"
 )
 
 func ParseFilterKind(kind string) (FilterKind, error) {
@@ -29,6 +30,8 @@ func ParseFilterKind(kind string) (FilterKind, error) {
 		return AuthFilter, nil
 	case DirectionFilter:
 		return DirectionFilter, nil
+	case EndpointCategoryFilter:
+		return EndpointCategoryFilter, nil
 	case HostFilter:
 		return HostFilter, nil
 	case HttpMethodFilter:
