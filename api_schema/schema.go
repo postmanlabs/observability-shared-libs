@@ -530,6 +530,20 @@ type PostClientPacketCaptureStatsRequest struct {
 }
 
 type AgentResourceUsage struct {
+	// Peak usage data over the lifetime of the agent.
+	Peak AgentResourceUsageData `json:"peak"`
+
+	// Recent usage data over the interval defined by ObservedStartingAt and
+	// ObservedDurationInSeconds.
+	Recent AgentResourceUsageData `json:"recent"`
+
+	// Time window in which recent resource usage was observed.  This may be different
+	// than the window specified in PostClientPacketCaptureStatsRequest.
+	ObservedStartingAt        time.Time `json:"observed_starting_at"`
+	ObservedDurationInSeconds int       `json:"observed_duration_in_seconds"`
+}
+
+type AgentResourceUsageData struct {
 	// The number of CPU cores (or fractions thereof) the Akita agent used.
 	CoresUsed float64 `json:"cpus_used"`
 
@@ -538,11 +552,6 @@ type AgentResourceUsage struct {
 
 	// Peak resident set size in kB.
 	VmHWM uint64 `json:"vm_hwm"`
-
-	// Time window in which resource usage was observed.  This may be different
-	// than the window specified in PostClientPacketCaptureStatsRequest.
-	ObservedStartingAt        time.Time  `json:"observed_starting_at"`
-	ObservedDurationInSeconds int        `json:"observed_duration_in_seconds"`
 }
 
 type PostInitialClientTelemetryRequest struct {
