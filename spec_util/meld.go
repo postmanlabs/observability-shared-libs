@@ -758,16 +758,21 @@ func (m *melder) meldOneOfVariant(dst *pb.Data, srcHashOpt optionals.Optional[st
 		// will add the resulting source variant to the destination.
 		needToRehashSrc := false
 		for dstHash, dstVariant := range dstOneOf.Options {
-			if _, dstIsPrim := dstVariant.Value.(*pb.Data_Primitive); dstIsPrim && haveCompatibleTypes(dstVariant.GetPrimitive(), srcVariant.GetPrimitive()) {
-				delete(dstOneOf.Options, dstHash)
+			if _, dstIsPrim := dstVariant.Value.(*pb.Data_Primitive); dstIsPrim {
+				srcPrimitive := srcVariant.GetPrimitive()
+				dstPrimitive := dstVariant.GetPrimitive()
+				if haveCompatibleTypes(dstPrimitive, srcPrimitive) {
+					delete(dstOneOf.Options, dstHash)
 
-				// To avoid modifying *srcVariant, we meld srcVariant into dstVariant,
-				// and then set srcVariant = dstVariant.
-				if err := m.meldData(dstVariant, srcVariant); err != nil {
-					return err
+					// To avoid modifying *srcVariant, we meld srcVariant into dstVariant,
+					// and then set srcVariant = dstVariant. (This is an attempt, anyway;
+					// meldPrimitive currently modifies src in some cases.)
+					if err := m.meldPrimitive(dstPrimitive, srcPrimitive); err != nil {
+						return err
+					}
+					srcVariant = dstVariant
+					needToRehashSrc = true
 				}
-				srcVariant = dstVariant
-				needToRehashSrc = true
 			}
 		}
 
