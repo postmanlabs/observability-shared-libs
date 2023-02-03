@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/akitasoftware/go-utils/optionals"
 	"github.com/akitasoftware/go-utils/sets"
 
 	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
@@ -228,9 +229,9 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 	// Check if src is already a oneof. This can happen if src is the collapsed
 	// element from a list originally containing elements with conflicting types.
 	if srcOf, ok := src.Value.(*pb.Data_Oneof); ok {
-		if v, ok := dst.Value.(*pb.Data_Oneof); ok {
+		if _, ok := dst.Value.(*pb.Data_Oneof); ok {
 			// dst already encodes a conflict. Merge the conflicts.
-			return m.meldOneOf(v.Oneof, srcOf.Oneof)
+			return m.meldOneOf(dst, srcOf.Oneof)
 		}
 
 		// dst is not a oneof. Swap src and dst and re-use the logic below.
@@ -301,7 +302,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 		}
 	case *pb.Data_Oneof:
 		hasConflict = true
-		return m.meldOneOfVariant(v.Oneof, nil, src)
+		return m.meldOneOfVariant(dst, optionals.None[string](), src)
 	default:
 		hasConflict = true
 		return m.recordConflict(dst, src)
@@ -317,9 +318,6 @@ func (m *melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb
 		return err
 	}
 	newHash := ir_hash.HashDataToString(option)
-	if err != nil {
-		return err
-	}
 	if newHash != oldHash {
 		delete(oneof.Options, oldHash)
 		oneof.Options[newHash] = option
@@ -678,9 +676,14 @@ func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
 	return nil
 }
 
-func (m *melder) meldOneOf(dst, src *pb.OneOf) error {
+// Assumes dst represents a one-of, and melds in the variants of src. On return,
+// if the result of the meld is no longer a one-of (e.g., if melding caused the
+// variants' types to be unified), then dst will no longer represent a one-of.
+//
+// An error occurs if the given dst does not represent a one-of.
+func (m *melder) meldOneOf(dst *pb.Data, src *pb.OneOf) error {
 	for srcHash, srcVariant := range src.Options {
-		if err := m.meldOneOfVariant(dst, &srcHash, srcVariant); err != nil {
+		if err := m.meldOneOfVariant(dst, optionals.Some(srcHash), srcVariant); err != nil {
 			return err
 		}
 	}
@@ -688,30 +691,39 @@ func (m *melder) meldOneOf(dst, src *pb.OneOf) error {
 	return nil
 }
 
-// Melds a variant into a one-of.
-func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb.Data) error {
-	// Make sure the meta and nullable fields of srcVariant are cleared. For HTTP specs, OneOf
-	// variants all have the same metadata, recorded in the Data.Meta field of the
-	// containing Data.  The nullable bit was copied to the dst Data object in meldData
-	// before calling meldOneOfVariant.
+// Assumes dst represents a one-of, and melds in the given variant. On return,
+// if the result of the meld is no longer a one-of (e.g., if melding caused the
+// variants' types to be unified), then dst will no longer represent a one-of.
+//
+// An error occurs if the given dst does not represent a one-of.
+func (m *melder) meldOneOfVariant(dst *pb.Data, srcHashOpt optionals.Optional[string], srcVariant *pb.Data) error {
+	// Check that dst represents a one-of.
+	dstOneOf := dst.GetOneof()
+	if dstOneOf == nil {
+		return fmt.Errorf("meldOneOfVariant called with a %s, not a one-of", reflect.TypeOf(dst.Value))
+	}
+
+	// Make sure the meta and nullable fields of srcVariant are cleared. For HTTP
+	// specs, OneOf variants all have the same metadata, recorded in the Data.Meta
+	// field of the containing Data.  The nullable bit was copied to the dst Data
+	// object in meldData before calling meldOneOfVariant.
 	if srcVariant.Meta != nil || srcVariant.Nullable {
 		srcVariant = proto.Clone(srcVariant).(*pb.Data)
 		srcVariant.Meta = nil
 		srcVariant.Nullable = false
 
 		// We'll recompute the hash.
-		srcHash = nil
+		srcHashOpt = optionals.None[string]()
 	}
 
 	// Hash if needed.
-	if srcHash == nil {
-		h := ir_hash.HashDataToString(srcVariant)
-		srcHash = &h
-	}
+	srcHash := srcHashOpt.GetOrComputeNoError(func() string {
+		return ir_hash.HashDataToString(srcVariant)
+	})
 
 	// There might be an existing option with the same hash because we ignore
 	// example values in the hash. If this is the case, just merge examples.
-	if existing, ok := dst.Options[*srcHash]; ok {
+	if existing, ok := dstOneOf.Options[srcHash]; ok {
 		mergeExampleValues(existing, srcVariant)
 		return nil
 	}
@@ -721,37 +733,59 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHash *string, srcVariant *pb
 	// need to change the hash.
 	switch srcVariant.Value.(type) {
 	case *pb.Data_Struct:
-		// If the destination has a struct variant, merge with that. Otherwise, fall
-		// through.
-		for oldDstHash, dstVariant := range dst.Options {
+		// If the destination has a struct variant, merge with that.
+		for oldDstHash, dstVariant := range dstOneOf.Options {
 			if _, dstIsStruct := dstVariant.Value.(*pb.Data_Struct); dstIsStruct {
-				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
+				return m.meldAndRehashOption(dstOneOf, oldDstHash, dstVariant, srcVariant)
 			}
 		}
 
 	case *pb.Data_List:
-		// If the destination has a list variant, merge with that. Otherwise, fall
-		// through.
-		for oldDstHash, dstVariant := range dst.Options {
+		// If the destination has a list variant, merge with that.
+		for oldDstHash, dstVariant := range dstOneOf.Options {
 			if _, dstIsList := dstVariant.Value.(*pb.Data_List); dstIsList {
-				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
+				return m.meldAndRehashOption(dstOneOf, oldDstHash, dstVariant, srcVariant)
 			}
 		}
 
 	case *pb.Data_Primitive:
-		// If the destination has a primitive variant that has a compatible type
-		// with the source variant, meld them.  Otherwise, fall through.
-		for oldDstHash, dstVariant := range dst.Options {
+		// The destination might have more than one primitive variant whose type is
+		// compatible with the source variant. If the source variant has no data
+		// formats (i.e., is just a base type), then all these variants will
+		// collapse down to a single variant when melded. Therefore, using
+		// srcVariant as an accumulator, we remove all compatible variants from the
+		// destination and meld them together with the source variant. Later on, we
+		// will add the resulting source variant to the destination.
+		needToRehashSrc := false
+		for dstHash, dstVariant := range dstOneOf.Options {
 			if _, dstIsPrim := dstVariant.Value.(*pb.Data_Primitive); dstIsPrim && haveCompatibleTypes(dstVariant.GetPrimitive(), srcVariant.GetPrimitive()) {
-				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
+				delete(dstOneOf.Options, dstHash)
+
+				// To avoid modifying *srcVariant, we meld srcVariant into dstVariant,
+				// and then set srcVariant = dstVariant.
+				if err := m.meldData(dstVariant, srcVariant); err != nil {
+					return err
+				}
+				srcVariant = dstVariant
+				needToRehashSrc = true
 			}
+		}
+
+		if needToRehashSrc {
+			srcHash = ir_hash.HashDataToString(srcVariant)
 		}
 
 	default:
 		return fmt.Errorf("unknown one-of variant type: %s", reflect.TypeOf(srcVariant.Value).Name())
 	}
 
+	if len(dstOneOf.Options) == 0 {
+		// No longer have a one-of. Replace dst's value with the singleton variant.
+		dst.Value = srcVariant.Value
+		return nil
+	}
+
 	// Add a new variant.
-	dst.Options[*srcHash] = srcVariant
+	dstOneOf.Options[srcHash] = srcVariant
 	return nil
 }

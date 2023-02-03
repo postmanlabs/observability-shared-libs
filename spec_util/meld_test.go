@@ -614,6 +614,30 @@ func TestMeldData(t *testing.T) {
 				PotentialConflict: true,
 			}),
 		},
+		{
+			name: "merging oneof with unformatted primitive",
+			left: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"1": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+						FormatKind: "datetime",
+						Formats:    map[string]bool{"timestamp_seconds_since_epoch": true},
+					}),
+					"2": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+						FormatKind: "unique_id",
+						Formats:    map[string]bool{"integer_id": true},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+			right: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+			}),
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+			}),
+		},
 	}
 
 	for _, tc := range testCases {
