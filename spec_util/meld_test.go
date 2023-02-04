@@ -614,6 +614,69 @@ func TestMeldData(t *testing.T) {
 				PotentialConflict: true,
 			}),
 		},
+		{
+			name: "merging oneof with unformatted primitive - resulting in a primitive",
+			left: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"1": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+						FormatKind: "datetime",
+						Formats:    map[string]bool{"timestamp_seconds_since_epoch": true},
+					}),
+					"2": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+						FormatKind: "unique_id",
+						Formats:    map[string]bool{"integer_id": true},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+			right: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+			}),
+			expected: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+			}),
+		},
+		{
+			name: "merging oneof with unformatted primitive - resulting in a oneof",
+			left: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"1": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+						FormatKind: "datetime",
+						Formats:    map[string]bool{"timestamp_seconds_since_epoch": true},
+					}),
+					"2": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+						FormatKind: "unique_id",
+						Formats:    map[string]bool{"integer_id": true},
+					}),
+					"3": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_StringValue{StringValue: &pb.String{}},
+						FormatKind: "currency_name",
+						Formats:    map[string]bool{"currency_abbreviation": true},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+			right: wrapPrim(&pb.Primitive{
+				Value: &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+			}),
+			expected: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+					"3": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_StringValue{StringValue: &pb.String{}},
+						FormatKind: "currency_name",
+						Formats:    map[string]bool{"currency_abbreviation": true},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+		},
 	}
 
 	for _, tc := range testCases {
