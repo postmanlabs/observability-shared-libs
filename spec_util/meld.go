@@ -251,10 +251,12 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			}
 			makeOptional(dst)
 			return nil
+
 		case *pb.Optional_None:
 			// If src is a none, drop the none and mark the dst value as nullable.
 			dst.Nullable = true
 			return nil
+
 		default:
 			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(srcOpt.Optional.Value).Name())
 		}
@@ -271,6 +273,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			hasConflict = true
 			return m.recordConflict(dst, src)
 		}
+
 	case *pb.Data_List:
 		if srcList, ok := src.Value.(*pb.Data_List); ok {
 			return m.meldList(v.List, srcList.List)
@@ -278,6 +281,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			hasConflict = true
 			return m.recordConflict(dst, src)
 		}
+
 	case *pb.Data_Optional:
 		switch opt := v.Optional.Value.(type) {
 		case *pb.Optional_Data:
@@ -292,17 +296,27 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 			dst.Nullable = dst.Nullable || opt.Data.Nullable
 			opt.Data.Nullable = false
 			return err
+
 		case *pb.Optional_None:
 			// If dst is a none, replace dst with a nullable version of src.
 			dst.Nullable = true
 			dst.Value = src.Value
 			return nil
+
 		default:
 			return fmt.Errorf("unknown optional value type: %s", reflect.TypeOf(v.Optional.Value).Name())
 		}
+
 	case *pb.Data_Oneof:
 		hasConflict = true
-		return m.meldOneOfVariant(dst, optionals.None[string](), src)
+		err := m.meldOneOfVariant(v.Oneof, optionals.None[string](), src)
+		if err != nil {
+			return err
+		}
+
+		rewriteSingletonOneOf(dst)
+		return nil
+
 	default:
 		hasConflict = true
 		return m.recordConflict(dst, src)
@@ -602,6 +616,18 @@ func stripOptional(data *pb.Data) *pb.Data {
 	return optional.GetData()
 }
 
+// Converts a singleton one-of into its underlying variant. Does nothing if the
+// given IR node is not a singleton one-of.
+func rewriteSingletonOneOf(data *pb.Data) {
+	variants := data.GetOneof().GetOptions()
+	if len(variants) == 1 {
+		for _, variant := range variants {
+			data.Value = variant.Value
+			return
+		}
+	}
+}
+
 func (m *melder) meldList(dst, src *pb.List) error {
 	srcOffset := 0
 	if len(dst.Elems) == 0 {
@@ -682,31 +708,32 @@ func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
 //
 // An error occurs if the given dst does not represent a one-of.
 func (m *melder) meldOneOf(dst *pb.Data, src *pb.OneOf) error {
+	// Check that dst represents a one-of.
+	dstOneOf := dst.GetOneof()
+	if dstOneOf == nil {
+		return fmt.Errorf("meldOneOf called with a %s, not a one-of", reflect.TypeOf(dst.Value))
+	}
+
 	for srcHash, srcVariant := range src.Options {
-		if err := m.meldOneOfVariant(dst, optionals.Some(srcHash), srcVariant); err != nil {
+		if err := m.meldOneOfVariant(dstOneOf, optionals.Some(srcHash), srcVariant); err != nil {
 			return err
 		}
 	}
 
+	rewriteSingletonOneOf(dst)
+
 	return nil
 }
 
-// Assumes dst represents a one-of, and melds in the given variant. On return,
-// if the result of the meld is no longer a one-of (e.g., if melding caused the
-// variants' types to be unified), then dst will no longer represent a one-of.
+// Melds a variant into a one-of.
 //
-// An error occurs if the given dst does not represent a one-of.
-func (m *melder) meldOneOfVariant(dst *pb.Data, srcHashOpt optionals.Optional[string], srcVariant *pb.Data) error {
-	// Check that dst represents a one-of.
-	dstOneOf := dst.GetOneof()
-	if dstOneOf == nil {
-		return fmt.Errorf("meldOneOfVariant called with a %s, not a one-of", reflect.TypeOf(dst.Value))
-	}
-
-	// Make sure the meta and nullable fields of srcVariant are cleared. For HTTP
-	// specs, OneOf variants all have the same metadata, recorded in the Data.Meta
-	// field of the containing Data.  The nullable bit was copied to the dst Data
-	// object in meldData before calling meldOneOfVariant.
+// DANGER: This can result in a singleton one-of. If this happens, the caller is
+// responsible for peeling away the one-of layer.
+func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHashOpt optionals.Optional[string], srcVariant *pb.Data) error {
+	// Make sure the meta and nullable fields of srcVariant are cleared. For HTTP specs, OneOf
+	// variants all have the same metadata, recorded in the Data.Meta field of the
+	// containing Data.  The nullable bit was copied to the dst Data object in meldData
+	// before calling meldOneOfVariant.
 	if srcVariant.Meta != nil || srcVariant.Nullable {
 		srcVariant = proto.Clone(srcVariant).(*pb.Data)
 		srcVariant.Meta = nil
@@ -723,7 +750,7 @@ func (m *melder) meldOneOfVariant(dst *pb.Data, srcHashOpt optionals.Optional[st
 
 	// There might be an existing option with the same hash because we ignore
 	// example values in the hash. If this is the case, just merge examples.
-	if existing, ok := dstOneOf.Options[srcHash]; ok {
+	if existing, ok := dst.Options[srcHash]; ok {
 		mergeExampleValues(existing, srcVariant)
 		return nil
 	}
@@ -734,17 +761,17 @@ func (m *melder) meldOneOfVariant(dst *pb.Data, srcHashOpt optionals.Optional[st
 	switch srcVariant.Value.(type) {
 	case *pb.Data_Struct:
 		// If the destination has a struct variant, merge with that.
-		for oldDstHash, dstVariant := range dstOneOf.Options {
+		for oldDstHash, dstVariant := range dst.Options {
 			if _, dstIsStruct := dstVariant.Value.(*pb.Data_Struct); dstIsStruct {
-				return m.meldAndRehashOption(dstOneOf, oldDstHash, dstVariant, srcVariant)
+				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
 			}
 		}
 
 	case *pb.Data_List:
 		// If the destination has a list variant, merge with that.
-		for oldDstHash, dstVariant := range dstOneOf.Options {
+		for oldDstHash, dstVariant := range dst.Options {
 			if _, dstIsList := dstVariant.Value.(*pb.Data_List); dstIsList {
-				return m.meldAndRehashOption(dstOneOf, oldDstHash, dstVariant, srcVariant)
+				return m.meldAndRehashOption(dst, oldDstHash, dstVariant, srcVariant)
 			}
 		}
 
@@ -757,12 +784,12 @@ func (m *melder) meldOneOfVariant(dst *pb.Data, srcHashOpt optionals.Optional[st
 		// destination and meld them together with the source variant. Later on, we
 		// will add the resulting source variant to the destination.
 		needToRehashSrc := false
-		for dstHash, dstVariant := range dstOneOf.Options {
+		for dstHash, dstVariant := range dst.Options {
 			if _, dstIsPrim := dstVariant.Value.(*pb.Data_Primitive); dstIsPrim {
 				srcPrimitive := srcVariant.GetPrimitive()
 				dstPrimitive := dstVariant.GetPrimitive()
 				if haveCompatibleTypes(dstPrimitive, srcPrimitive) {
-					delete(dstOneOf.Options, dstHash)
+					delete(dst.Options, dstHash)
 
 					// To avoid modifying *srcVariant, we meld srcVariant into dstVariant,
 					// and then set srcVariant = dstVariant. (This is an attempt, anyway;
@@ -784,13 +811,7 @@ func (m *melder) meldOneOfVariant(dst *pb.Data, srcHashOpt optionals.Optional[st
 		return fmt.Errorf("unknown one-of variant type: %s", reflect.TypeOf(srcVariant.Value).Name())
 	}
 
-	if len(dstOneOf.Options) == 0 {
-		// No longer have a one-of. Replace dst's value with the singleton variant.
-		dst.Value = srcVariant.Value
-		return nil
-	}
-
 	// Add a new variant.
-	dstOneOf.Options[srcHash] = srcVariant
+	dst.Options[srcHash] = srcVariant
 	return nil
 }

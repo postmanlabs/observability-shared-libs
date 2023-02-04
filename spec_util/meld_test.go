@@ -677,6 +677,53 @@ func TestMeldData(t *testing.T) {
 				PotentialConflict: true,
 			}),
 		},
+		{
+			// XXX The order in which a Go map is iterated changes from run to run.
+			// This test case only runs as intended when the variants in the
+			// right-hand side are merged in the order that they are written.
+			name: "merging two oneofs that transiently turns into a singleton oneof during melding",
+			left: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"1": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+						FormatKind: "datetime",
+						Formats:    map[string]bool{"timestamp_seconds_since_epoch": true},
+					}),
+					"2": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+						FormatKind: "unique_id",
+						Formats:    map[string]bool{"integer_id": true},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+			right: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"3": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint32Value{Uint32Value: &pb.Uint32{}},
+					}),
+					"4": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_StringValue{StringValue: &pb.String{}},
+						FormatKind: "currency_name",
+						Formats:    map[string]bool{"currency_abbreviation": true},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+			expected: wrapOneOf(&pb.OneOf{
+				Options: map[string]*pb.Data{
+					"va5tP-fnZF8=": wrapPrim(&pb.Primitive{
+						Value: &pb.Primitive_Uint64Value{Uint64Value: &pb.Uint64{}},
+					}),
+					"4": wrapPrim(&pb.Primitive{
+						Value:      &pb.Primitive_StringValue{StringValue: &pb.String{}},
+						FormatKind: "currency_name",
+						Formats:    map[string]bool{"currency_abbreviation": true},
+					}),
+				},
+				PotentialConflict: true,
+			}),
+		},
 	}
 
 	for _, tc := range testCases {
