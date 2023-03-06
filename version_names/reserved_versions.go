@@ -51,6 +51,12 @@ func GetLargeModelVersionName(deployment string) VersionName {
 	return fmt.Sprintf("%s-large-model:%s", XAkitaReservedVersionNamePrefix, deployment)
 }
 
+// Produces the version name for the latest "large" model that was precomputed
+// for a deployment and has completed performance stats associated with it.
+func GetLargeModelWithPerformanceStatsVersionName(deployment string) VersionName {
+	return fmt.Sprintf("%s-large-model-with-performance-stats:%s", XAkitaReservedVersionNamePrefix, deployment)
+}
+
 // Produces the version name for the latest "large diffing model" to be used for
 // diffing against the "small diffing model" in a deployment.
 func GetLargeDiffingModelVersionName(deployment string) VersionName {
