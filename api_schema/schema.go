@@ -6,6 +6,8 @@ import (
 	"github.com/akitasoftware/akita-libs/akid"
 	"github.com/akitasoftware/akita-libs/akinet"
 	"github.com/akitasoftware/akita-libs/client_telemetry"
+	"github.com/akitasoftware/akita-libs/endpoints"
+	"github.com/akitasoftware/akita-libs/http_rest_methods"
 	"github.com/akitasoftware/akita-libs/tags"
 	"github.com/akitasoftware/akita-libs/time_span"
 )
@@ -379,16 +381,13 @@ const (
 
 )
 
-// Describes a group of endpoints. If a non-empty string is provided for any
+// Describes a group of endpoints. If a non-default value is provided for any
 // attribute in this struct, then all endpoints in the group will have that
 // value for that attribute.
-//
-// XXX Would be nice for this to just be map[attribute]string, but then we
-// wouldn't be able to use this as a map key.
 type EndpointGroup struct {
-	Method       string `json:"method,omitempty"`
-	Host         string `json:"host,omitempty"`
-	PathTemplate string `json:"path_template,omitempty"`
+	Method       http_rest_methods.HTTPMethod `json:"method,omitempty"`
+	Host         endpoints.Host               `json:"host,omitempty"`
+	PathTemplate endpoints.PathTemplate       `json:"path_template,omitempty"`
 }
 
 // Describes a common set of attributes for a group of endpoints. If a
