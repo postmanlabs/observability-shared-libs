@@ -45,6 +45,12 @@ func GetBigSpecVersionName(source tags.Source, deployment string) VersionName {
 	return builder.String()
 }
 
+// Determines whether a version name is that of the latest "large" model that
+// was precomputed for a deployment.
+func IsLargeModelVersionName(name VersionName) bool {
+	return strings.HasPrefix(name, fmt.Sprintf("%s-large-model:", XAkitaReservedVersionNamePrefix))
+}
+
 // Produces the version name for the latest "large" model that was precomputed
 // for a deployment.
 func GetLargeModelVersionName(deployment string) VersionName {
