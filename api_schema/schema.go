@@ -10,6 +10,7 @@ import (
 	"github.com/akitasoftware/akita-libs/http_rest_methods"
 	"github.com/akitasoftware/akita-libs/tags"
 	"github.com/akitasoftware/akita-libs/time_span"
+	"github.com/akitasoftware/go-utils/optionals"
 )
 
 // NetworkDirection is always relative to subject service.
@@ -124,6 +125,9 @@ type ListedLearnSession struct {
 	ServiceID    akid.ServiceID      `json:"service_id"`
 	CreationTime time.Time           `json:"creation_time"`
 
+	MinClientWitnessTime optionals.Optional[time.Time] `json:"min_client_witness_time"`
+	MaxClientWitnessTime optionals.Optional[time.Time] `json:"max_client_witness_time"`
+
 	// Optional field whose presence indicates that the learn session is an
 	// extension to an existing API spec.
 	BaseAPISpecID *akid.APISpecID `json:"base_api_spec_id,omitempty"`
@@ -144,6 +148,9 @@ func NewListedLearnSession(
 	ServiceID akid.ServiceID,
 	CreationTime time.Time,
 
+	MinClientWitnessTime optionals.Optional[time.Time],
+	MaxClientWitnessTime optionals.Optional[time.Time],
+
 	BaseAPISpecID *akid.APISpecID,
 
 	Tags []LearnSessionTag,
@@ -156,6 +163,9 @@ func NewListedLearnSession(
 		IdentityID:   IdentityID,
 		ServiceID:    ServiceID,
 		CreationTime: CreationTime,
+
+		MinClientWitnessTime: MinClientWitnessTime,
+		MaxClientWitnessTime: MaxClientWitnessTime,
 
 		BaseAPISpecID: BaseAPISpecID,
 
