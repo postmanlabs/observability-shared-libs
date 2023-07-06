@@ -2,17 +2,18 @@ package spec_util
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
-	"sort"
-
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
+	"github.com/akitasoftware/go-utils/maps"
+	"github.com/akitasoftware/go-utils/math"
 	"github.com/akitasoftware/go-utils/optionals"
 	"github.com/akitasoftware/go-utils/sets"
-
-	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
+	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/proto"
 )
 
 type dataAndHash struct {
@@ -70,7 +71,9 @@ func meldTopLevelDataMap(dst, src map[string]*pb.Data, opts MeldOptions) (numCoo
 		if d, ok := dstByMetaHash[h]; ok {
 			// d and s have the same DataMeta, meaning that they are referring to the
 			// same HTTP field. Meld them.
-			if err := MeldData(d.data, s); err != nil {
+			melder := NewMelder(opts)
+			err := melder.MeldData(d.data, s)
+			if err != nil {
 				return len(cookiesDiscarded), err
 			}
 
@@ -119,36 +122,80 @@ func isOptional(d *pb.Data) bool {
 	return isOptional
 }
 
-func mergeExampleValues(dst, src *pb.Data) {
-	examples := make(map[string]*pb.ExampleValue, 2)
+func (m *melder) mergeExampleValues(dst, src *pb.Data) {
+	// Figure out how many examples we're keeping by inspecting dst's location. By
+	// default, we keep the first two values after sorting.
+	maxExamples := 2
+	sortValues := slices.Sort[string]
+	if HTTPPathFromData(dst) != nil {
+		// We are merging examples for path parameters. Keep as many values as we
+		// have configured.
+		maxExamples = m.opts.MaxNumPathParamExampleValues.GetOrDefault(2)
 
-	// Get all (unique) example keys.
-	keySet := make(map[string]struct{}, len(src.ExampleValues)+len(dst.ExampleValues))
-	exampleMaps := []map[string]*pb.ExampleValue{dst.ExampleValues, src.ExampleValues}
-	for _, exampleMap := range exampleMaps {
-		for k := range exampleMap {
-			keySet[k] = struct{}{}
-		}
-	}
-	keys := make([]string, 0, len(keySet))
-	for k := range keySet {
-		keys = append(keys, k)
-	}
-
-	// Keep the two smallest example keys, discard the rest.
-	sort.Strings(keys)
-	for _, k := range keys {
-		if v, ok := src.ExampleValues[k]; ok {
-			examples[k] = v
-		} else if v, ok := dst.ExampleValues[k]; ok {
-			examples[k] = v
-		}
-
-		if len(examples) >= 2 {
-			break
+		if m.opts.KeepRandomPathParamExampleValues {
+			sortValues = func(values []string) {
+				rand.Shuffle(len(values), func(i, j int) {
+					values[i], values[j] = values[j], values[i]
+				})
+			}
 		}
 	}
 
+	// Fast path: if src and dst have few enough examples when combined before
+	// deduplication, then just copy from src to dst without deduplicating. To
+	// maintain the same behaviour as an older version of this function, we let
+	// src clobber dst if there are any conflicts.
+	if len(src.ExampleValues)+len(dst.ExampleValues) <= maxExamples {
+		if dst.ExampleValues == nil {
+			dst.ExampleValues = make(map[string]*pb.ExampleValue)
+		}
+		for k, v := range src.ExampleValues {
+			dst.ExampleValues[k] = v
+		}
+		return
+	}
+
+	// Combine all examples into a deduplicated set.
+	exampleSet := sets.NewSet[string]()
+	{
+		exampleMaps := []map[string]*pb.ExampleValue{
+			dst.ExampleValues,
+			src.ExampleValues,
+		}
+		for _, exampleMap := range exampleMaps {
+			for k := range exampleMap {
+				exampleSet.Insert(k)
+			}
+		}
+	}
+
+	// Slower path: if there are few enough example values after deduplication,
+	// then just copy from src to dst. To maintain the same behaviour as an older
+	// version of this function, we let src clobber dst if there are any
+	// conflicts.
+	if exampleSet.Size() <= maxExamples {
+		if dst.ExampleValues == nil {
+			dst.ExampleValues = make(map[string]*pb.ExampleValue)
+		}
+		for k, v := range src.ExampleValues {
+			dst.ExampleValues[k] = v
+		}
+		return
+	}
+
+	// Slowest path: convert the set into a list, sort with the given function,
+	// and take the first maxExamples examples.
+	sortedExamples := exampleSet.AsSlice()
+	sortValues(sortedExamples)
+	numExamples := math.Min(maxExamples, len(sortedExamples))
+	examples := maps.NewMap[string, *pb.ExampleValue]()
+	for _, example := range sortedExamples[:numExamples] {
+		if v, ok := src.ExampleValues[example]; ok {
+			examples[example] = v
+		} else if v, ok := dst.ExampleValues[example]; ok {
+			examples[example] = v
+		}
+	}
 	dst.ExampleValues = examples
 }
 
@@ -177,23 +224,19 @@ func makeOptional(d *pb.Data) {
 	}
 }
 
-// Assumes that dst.Meta == src.Meta.
-func MeldData(dst, src *pb.Data) (retErr error) {
-	melder := &melder{mergeTracking: true}
-	return melder.meldData(dst, src)
-}
-
-// Assumes that dst.Meta == src.Meta.
-// Melds src into dst.  Leaves tracking data in dst untouched.
-func MeldDataIgnoreTracking(dst, src *pb.Data) (retErr error) {
-	melder := &melder{mergeTracking: false}
-	return melder.meldData(dst, src)
-}
-
 type melder struct {
-	// If true, sums tracking data on meld.  Otherwise leaves
-	// tracking data unmodified in dst.
-	mergeTracking bool
+	opts MeldOptions
+}
+
+func NewMelder(opts MeldOptions) *melder {
+	return &melder{
+		opts: opts,
+	}
+}
+
+// Assumes that dst.Meta == src.Meta.
+func (m *melder) MeldData(dst, src *pb.Data) error {
+	return m.meldData(dst, src)
 }
 
 // If the given src and dst have the following invariant on all OneOfs contained
@@ -219,7 +262,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 		// Merge example values if there wasn't a conflict. Examples are merged in
 		// the conflict handler.
 		if !hasConflict && retErr == nil {
-			mergeExampleValues(dst, src)
+			m.mergeExampleValues(dst, src)
 		}
 	}()
 
@@ -453,7 +496,7 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 		if err != nil {
 			return err
 		}
-		mergeExampleValues(dst, src)
+		m.mergeExampleValues(dst, src)
 	} else {
 		// New conflict detected. Create oneof to record the conflict.
 		// For HTTP specs, oneof options all have the same metadata, recorded in
@@ -751,7 +794,7 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHashOpt optionals.Optional[s
 	// There might be an existing option with the same hash because we ignore
 	// example values in the hash. If this is the case, just merge examples.
 	if existing, ok := dst.Options[srcHash]; ok {
-		mergeExampleValues(existing, srcVariant)
+		m.mergeExampleValues(existing, srcVariant)
 		return nil
 	}
 

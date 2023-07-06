@@ -558,9 +558,11 @@ func TestMeldPrimitives(t *testing.T) {
 		},
 	}
 
+	melder := NewMelder(MeldOptions{})
+
 	for _, tc := range testCases {
 		leftDst := wrapPrim(proto.Clone(tc.left).(*pb.Primitive))
-		err := MeldData(leftDst, wrapPrim(tc.right))
+		err := melder.MeldData(leftDst, wrapPrim(tc.right))
 		assert.NoError(t, err, "[%s] failed to meld", tc.name)
 
 		if diff := cmp.Diff(tc.expected, leftDst, cmpWitnessOptions...); diff != "" {
@@ -568,7 +570,7 @@ func TestMeldPrimitives(t *testing.T) {
 		}
 
 		rightDst := wrapPrim(proto.Clone(tc.right).(*pb.Primitive))
-		err = MeldData(rightDst, wrapPrim(tc.left))
+		err = melder.MeldData(rightDst, wrapPrim(tc.left))
 		assert.NoError(t, err, "[%s] failed to meld", tc.name)
 
 		if diff := cmp.Diff(tc.expected, rightDst, cmpWitnessOptions...); diff != "" {
@@ -726,10 +728,12 @@ func TestMeldData(t *testing.T) {
 		},
 	}
 
+	melder := NewMelder(MeldOptions{})
+
 	for _, tc := range testCases {
 		leftDst := proto.Clone(tc.left).(*pb.Data)
 		right := proto.Clone(tc.right).(*pb.Data)
-		err := MeldData(leftDst, right)
+		err := melder.MeldData(leftDst, right)
 		assert.NoError(t, err, "[%s] failed to meld", tc.name)
 
 		if diff := cmp.Diff(tc.expected, leftDst, cmpWitnessOptions...); diff != "" {
@@ -738,7 +742,7 @@ func TestMeldData(t *testing.T) {
 
 		rightDst := proto.Clone(tc.right).(*pb.Data)
 		left := proto.Clone(tc.left).(*pb.Data)
-		err = MeldData(rightDst, left)
+		err = melder.MeldData(rightDst, left)
 		assert.NoError(t, err, "[%s] failed to meld", tc.name)
 
 		if diff := cmp.Diff(tc.expected, rightDst, cmpWitnessOptions...); diff != "" {
