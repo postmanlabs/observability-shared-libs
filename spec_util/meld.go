@@ -132,7 +132,7 @@ func (m *Melder) mergeExampleValues(dst, src *pb.Data) {
 		// have configured.
 		maxExamples = m.opts.MaxNumPathParamExampleValues.GetOrDefault(2)
 
-		if m.opts.KeepRandomPathParamExampleValues {
+		if m.opts.KeepRandomPathParamExampleValues.GetOrDefault(false) {
 			sortValues = func(values []string) {
 				rand.Shuffle(len(values), func(i, j int) {
 					values[i], values[j] = values[j], values[i]

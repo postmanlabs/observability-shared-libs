@@ -119,7 +119,7 @@ type MeldOptions struct {
 
 	// Controls whether the examples kept for each path parameter are sampled at
 	// random.
-	KeepRandomPathParamExampleValues bool
+	KeepRandomPathParamExampleValues optionals.Optional[bool]
 }
 
 // Determines whether a given method has only 4xx response codes. Returns true if the method has at least one response and all response codes are 4xx.
