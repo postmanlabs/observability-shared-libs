@@ -122,7 +122,7 @@ func isOptional(d *pb.Data) bool {
 	return isOptional
 }
 
-func (m *melder) mergeExampleValues(dst, src *pb.Data) {
+func (m *Melder) mergeExampleValues(dst, src *pb.Data) {
 	// Figure out how many examples we're keeping by inspecting dst's location. By
 	// default, we keep the first two values after sorting.
 	maxExamples := 2
@@ -224,18 +224,18 @@ func makeOptional(d *pb.Data) {
 	}
 }
 
-type melder struct {
+type Melder struct {
 	opts MeldOptions
 }
 
-func NewMelder(opts MeldOptions) *melder {
-	return &melder{
+func NewMelder(opts MeldOptions) *Melder {
+	return &Melder{
 		opts: opts,
 	}
 }
 
 // Assumes that dst.Meta == src.Meta.
-func (m *melder) MeldData(dst, src *pb.Data) error {
+func (m *Melder) MeldData(dst, src *pb.Data) error {
 	return m.meldData(dst, src)
 }
 
@@ -255,7 +255,7 @@ func (m *melder) MeldData(dst, src *pb.Data) error {
 // Assumes that dst.Meta == src.Meta.
 //
 // XXX: In some cases, this modifies src as well as dst :/
-func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
+func (m *Melder) meldData(dst, src *pb.Data) (retErr error) {
 	// Set to true if dst and src are recorded as a conflict.
 	hasConflict := false
 	defer func() {
@@ -369,7 +369,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 // Meld a component of a OneOf that has been identified
 // as a type-match (struct with struct or list with list.)
 // This requires re-inserting it because the hash has been changed
-func (m *melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
+func (m *Melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
 	err := m.meldData(option, srcNoMeta)
 	if err != nil {
 		return err
@@ -482,7 +482,7 @@ func joinBaseTypes(dst, src *pb.Primitive) *pb.Primitive {
 // the same kind are merged.)
 //
 // Assumes dst and src are different base types or are both primitives.
-func (m *melder) recordConflict(dst, src *pb.Data) error {
+func (m *Melder) recordConflict(dst, src *pb.Data) error {
 	// If src and dst are Primitives, we meld them if they have the same type
 	// (in their Value field) and the same data format kind, if any.
 	// Otherwise, src and dst are in conflict, and we introduce a OneOf.
@@ -522,7 +522,7 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 	return nil
 }
 
-func (m *melder) meldStruct(dst, src *pb.Struct) error {
+func (m *Melder) meldStruct(dst, src *pb.Struct) error {
 	if isMap(dst) {
 		if isMap(src) {
 			return m.meldMap(dst, src)
@@ -581,7 +581,7 @@ func isMap(struc *pb.Struct) bool {
 }
 
 // Melds two maps together. The given pb.Structs are assumed to represent maps.
-func (m *melder) meldMap(dst, src *pb.Struct) error {
+func (m *Melder) meldMap(dst, src *pb.Struct) error {
 	// Try to make the key and value in dst non-nil.
 	if dst.MapType.Key == nil {
 		src.MapType.Key, dst.MapType.Key = dst.MapType.Key, src.MapType.Key
@@ -608,7 +608,7 @@ func (m *melder) meldMap(dst, src *pb.Struct) error {
 }
 
 // Converts in place a pb.Struct (assumed to represent a struct) into a map.
-func (m *melder) structToMap(struc *pb.Struct) {
+func (m *Melder) structToMap(struc *pb.Struct) {
 	// The map's value Data is obtained by melding all field types together into
 	// a single Data, while stripping away any optionality.
 	var mapKey *pb.Data
@@ -671,7 +671,7 @@ func rewriteSingletonOneOf(data *pb.Data) {
 	}
 }
 
-func (m *melder) meldList(dst, src *pb.List) error {
+func (m *Melder) meldList(dst, src *pb.List) error {
 	srcOffset := 0
 	if len(dst.Elems) == 0 {
 		if len(src.Elems) == 0 {
@@ -697,7 +697,7 @@ func (m *melder) meldList(dst, src *pb.List) error {
 // Assumes haveCompatibleTypes(dst, src), returns an error otherwise.
 // Meld data formats, tracking data, etc. from src to dst.
 // XXX(cns): In some cases, this modifies src as well as dst :/
-func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
+func (m *Melder) meldPrimitive(dst, src *pb.Primitive) error {
 	// Special case: If and only if one data has a type hint, assign it to the other
 	// data so that the difference does not trigger a conflict and the type hint is preserved.
 	// XXX(cns): This modifies src!  Not ideal, but I don't know if it's safe
@@ -750,7 +750,7 @@ func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
 // variants' types to be unified), then dst will no longer represent a one-of.
 //
 // An error occurs if the given dst does not represent a one-of.
-func (m *melder) meldOneOf(dst *pb.Data, src *pb.OneOf) error {
+func (m *Melder) meldOneOf(dst *pb.Data, src *pb.OneOf) error {
 	// Check that dst represents a one-of.
 	dstOneOf := dst.GetOneof()
 	if dstOneOf == nil {
@@ -772,7 +772,7 @@ func (m *melder) meldOneOf(dst *pb.Data, src *pb.OneOf) error {
 //
 // DANGER: This can result in a singleton one-of. If this happens, the caller is
 // responsible for peeling away the one-of layer.
-func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHashOpt optionals.Optional[string], srcVariant *pb.Data) error {
+func (m *Melder) meldOneOfVariant(dst *pb.OneOf, srcHashOpt optionals.Optional[string], srcVariant *pb.Data) error {
 	// Make sure the meta and nullable fields of srcVariant are cleared. For HTTP specs, OneOf
 	// variants all have the same metadata, recorded in the Data.Meta field of the
 	// containing Data.  The nullable bit was copied to the dst Data object in meldData
