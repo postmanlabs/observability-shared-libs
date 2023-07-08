@@ -2,17 +2,18 @@ package spec_util
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
-	"sort"
-
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
+	"github.com/akitasoftware/go-utils/maps"
+	"github.com/akitasoftware/go-utils/math"
 	"github.com/akitasoftware/go-utils/optionals"
 	"github.com/akitasoftware/go-utils/sets"
-
-	"github.com/akitasoftware/akita-libs/spec_util/ir_hash"
+	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/proto"
 )
 
 type dataAndHash struct {
@@ -70,7 +71,9 @@ func meldTopLevelDataMap(dst, src map[string]*pb.Data, opts MeldOptions) (numCoo
 		if d, ok := dstByMetaHash[h]; ok {
 			// d and s have the same DataMeta, meaning that they are referring to the
 			// same HTTP field. Meld them.
-			if err := MeldData(d.data, s); err != nil {
+			melder := NewMelder(opts)
+			err := melder.MeldData(d.data, s)
+			if err != nil {
 				return len(cookiesDiscarded), err
 			}
 
@@ -119,36 +122,80 @@ func isOptional(d *pb.Data) bool {
 	return isOptional
 }
 
-func mergeExampleValues(dst, src *pb.Data) {
-	examples := make(map[string]*pb.ExampleValue, 2)
+func (m *Melder) mergeExampleValues(dst, src *pb.Data) {
+	// Figure out how many examples we're keeping by inspecting dst's location. By
+	// default, we keep the first two values after sorting.
+	maxExamples := 2
+	sortValues := slices.Sort[string]
+	if HTTPPathFromData(dst) != nil {
+		// We are merging examples for path parameters. Keep as many values as we
+		// have configured.
+		maxExamples = m.opts.MaxNumPathParamExampleValues.GetOrDefault(2)
 
-	// Get all (unique) example keys.
-	keySet := make(map[string]struct{}, len(src.ExampleValues)+len(dst.ExampleValues))
-	exampleMaps := []map[string]*pb.ExampleValue{dst.ExampleValues, src.ExampleValues}
-	for _, exampleMap := range exampleMaps {
-		for k := range exampleMap {
-			keySet[k] = struct{}{}
-		}
-	}
-	keys := make([]string, 0, len(keySet))
-	for k := range keySet {
-		keys = append(keys, k)
-	}
-
-	// Keep the two smallest example keys, discard the rest.
-	sort.Strings(keys)
-	for _, k := range keys {
-		if v, ok := src.ExampleValues[k]; ok {
-			examples[k] = v
-		} else if v, ok := dst.ExampleValues[k]; ok {
-			examples[k] = v
-		}
-
-		if len(examples) >= 2 {
-			break
+		if m.opts.KeepRandomPathParamExampleValues.GetOrDefault(false) {
+			sortValues = func(values []string) {
+				rand.Shuffle(len(values), func(i, j int) {
+					values[i], values[j] = values[j], values[i]
+				})
+			}
 		}
 	}
 
+	// Fast path: if src and dst have few enough examples when combined before
+	// deduplication, then just copy from src to dst without deduplicating. To
+	// maintain the same behaviour as an older version of this function, we let
+	// src clobber dst if there are any conflicts.
+	if len(src.ExampleValues)+len(dst.ExampleValues) <= maxExamples {
+		if dst.ExampleValues == nil {
+			dst.ExampleValues = make(map[string]*pb.ExampleValue)
+		}
+		for k, v := range src.ExampleValues {
+			dst.ExampleValues[k] = v
+		}
+		return
+	}
+
+	// Combine all examples into a deduplicated set.
+	exampleSet := sets.NewSet[string]()
+	{
+		exampleMaps := []map[string]*pb.ExampleValue{
+			dst.ExampleValues,
+			src.ExampleValues,
+		}
+		for _, exampleMap := range exampleMaps {
+			for k := range exampleMap {
+				exampleSet.Insert(k)
+			}
+		}
+	}
+
+	// Slower path: if there are few enough example values after deduplication,
+	// then just copy from src to dst. To maintain the same behaviour as an older
+	// version of this function, we let src clobber dst if there are any
+	// conflicts.
+	if exampleSet.Size() <= maxExamples {
+		if dst.ExampleValues == nil {
+			dst.ExampleValues = make(map[string]*pb.ExampleValue)
+		}
+		for k, v := range src.ExampleValues {
+			dst.ExampleValues[k] = v
+		}
+		return
+	}
+
+	// Slowest path: convert the set into a list, sort with the given function,
+	// and take the first maxExamples examples.
+	sortedExamples := exampleSet.AsSlice()
+	sortValues(sortedExamples)
+	numExamples := math.Min(maxExamples, len(sortedExamples))
+	examples := maps.NewMap[string, *pb.ExampleValue]()
+	for _, example := range sortedExamples[:numExamples] {
+		if v, ok := src.ExampleValues[example]; ok {
+			examples[example] = v
+		} else if v, ok := dst.ExampleValues[example]; ok {
+			examples[example] = v
+		}
+	}
 	dst.ExampleValues = examples
 }
 
@@ -177,23 +224,19 @@ func makeOptional(d *pb.Data) {
 	}
 }
 
-// Assumes that dst.Meta == src.Meta.
-func MeldData(dst, src *pb.Data) (retErr error) {
-	melder := &melder{mergeTracking: true}
-	return melder.meldData(dst, src)
+type Melder struct {
+	opts MeldOptions
+}
+
+func NewMelder(opts MeldOptions) *Melder {
+	return &Melder{
+		opts: opts,
+	}
 }
 
 // Assumes that dst.Meta == src.Meta.
-// Melds src into dst.  Leaves tracking data in dst untouched.
-func MeldDataIgnoreTracking(dst, src *pb.Data) (retErr error) {
-	melder := &melder{mergeTracking: false}
-	return melder.meldData(dst, src)
-}
-
-type melder struct {
-	// If true, sums tracking data on meld.  Otherwise leaves
-	// tracking data unmodified in dst.
-	mergeTracking bool
+func (m *Melder) MeldData(dst, src *pb.Data) error {
+	return m.meldData(dst, src)
 }
 
 // If the given src and dst have the following invariant on all OneOfs contained
@@ -212,14 +255,14 @@ type melder struct {
 // Assumes that dst.Meta == src.Meta.
 //
 // XXX: In some cases, this modifies src as well as dst :/
-func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
+func (m *Melder) meldData(dst, src *pb.Data) (retErr error) {
 	// Set to true if dst and src are recorded as a conflict.
 	hasConflict := false
 	defer func() {
 		// Merge example values if there wasn't a conflict. Examples are merged in
 		// the conflict handler.
 		if !hasConflict && retErr == nil {
-			mergeExampleValues(dst, src)
+			m.mergeExampleValues(dst, src)
 		}
 	}()
 
@@ -326,7 +369,7 @@ func (m *melder) meldData(dst, src *pb.Data) (retErr error) {
 // Meld a component of a OneOf that has been identified
 // as a type-match (struct with struct or list with list.)
 // This requires re-inserting it because the hash has been changed
-func (m *melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
+func (m *Melder) meldAndRehashOption(oneof *pb.OneOf, oldHash string, option *pb.Data, srcNoMeta *pb.Data) error {
 	err := m.meldData(option, srcNoMeta)
 	if err != nil {
 		return err
@@ -439,7 +482,7 @@ func joinBaseTypes(dst, src *pb.Primitive) *pb.Primitive {
 // the same kind are merged.)
 //
 // Assumes dst and src are different base types or are both primitives.
-func (m *melder) recordConflict(dst, src *pb.Data) error {
+func (m *Melder) recordConflict(dst, src *pb.Data) error {
 	// If src and dst are Primitives, we meld them if they have the same type
 	// (in their Value field) and the same data format kind, if any.
 	// Otherwise, src and dst are in conflict, and we introduce a OneOf.
@@ -453,7 +496,7 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 		if err != nil {
 			return err
 		}
-		mergeExampleValues(dst, src)
+		m.mergeExampleValues(dst, src)
 	} else {
 		// New conflict detected. Create oneof to record the conflict.
 		// For HTTP specs, oneof options all have the same metadata, recorded in
@@ -479,7 +522,7 @@ func (m *melder) recordConflict(dst, src *pb.Data) error {
 	return nil
 }
 
-func (m *melder) meldStruct(dst, src *pb.Struct) error {
+func (m *Melder) meldStruct(dst, src *pb.Struct) error {
 	if isMap(dst) {
 		if isMap(src) {
 			return m.meldMap(dst, src)
@@ -538,7 +581,7 @@ func isMap(struc *pb.Struct) bool {
 }
 
 // Melds two maps together. The given pb.Structs are assumed to represent maps.
-func (m *melder) meldMap(dst, src *pb.Struct) error {
+func (m *Melder) meldMap(dst, src *pb.Struct) error {
 	// Try to make the key and value in dst non-nil.
 	if dst.MapType.Key == nil {
 		src.MapType.Key, dst.MapType.Key = dst.MapType.Key, src.MapType.Key
@@ -565,7 +608,7 @@ func (m *melder) meldMap(dst, src *pb.Struct) error {
 }
 
 // Converts in place a pb.Struct (assumed to represent a struct) into a map.
-func (m *melder) structToMap(struc *pb.Struct) {
+func (m *Melder) structToMap(struc *pb.Struct) {
 	// The map's value Data is obtained by melding all field types together into
 	// a single Data, while stripping away any optionality.
 	var mapKey *pb.Data
@@ -628,7 +671,7 @@ func rewriteSingletonOneOf(data *pb.Data) {
 	}
 }
 
-func (m *melder) meldList(dst, src *pb.List) error {
+func (m *Melder) meldList(dst, src *pb.List) error {
 	srcOffset := 0
 	if len(dst.Elems) == 0 {
 		if len(src.Elems) == 0 {
@@ -654,7 +697,7 @@ func (m *melder) meldList(dst, src *pb.List) error {
 // Assumes haveCompatibleTypes(dst, src), returns an error otherwise.
 // Meld data formats, tracking data, etc. from src to dst.
 // XXX(cns): In some cases, this modifies src as well as dst :/
-func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
+func (m *Melder) meldPrimitive(dst, src *pb.Primitive) error {
 	// Special case: If and only if one data has a type hint, assign it to the other
 	// data so that the difference does not trigger a conflict and the type hint is preserved.
 	// XXX(cns): This modifies src!  Not ideal, but I don't know if it's safe
@@ -707,7 +750,7 @@ func (m *melder) meldPrimitive(dst, src *pb.Primitive) error {
 // variants' types to be unified), then dst will no longer represent a one-of.
 //
 // An error occurs if the given dst does not represent a one-of.
-func (m *melder) meldOneOf(dst *pb.Data, src *pb.OneOf) error {
+func (m *Melder) meldOneOf(dst *pb.Data, src *pb.OneOf) error {
 	// Check that dst represents a one-of.
 	dstOneOf := dst.GetOneof()
 	if dstOneOf == nil {
@@ -729,7 +772,7 @@ func (m *melder) meldOneOf(dst *pb.Data, src *pb.OneOf) error {
 //
 // DANGER: This can result in a singleton one-of. If this happens, the caller is
 // responsible for peeling away the one-of layer.
-func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHashOpt optionals.Optional[string], srcVariant *pb.Data) error {
+func (m *Melder) meldOneOfVariant(dst *pb.OneOf, srcHashOpt optionals.Optional[string], srcVariant *pb.Data) error {
 	// Make sure the meta and nullable fields of srcVariant are cleared. For HTTP specs, OneOf
 	// variants all have the same metadata, recorded in the Data.Meta field of the
 	// containing Data.  The nullable bit was copied to the dst Data object in meldData
@@ -751,7 +794,7 @@ func (m *melder) meldOneOfVariant(dst *pb.OneOf, srcHashOpt optionals.Optional[s
 	// There might be an existing option with the same hash because we ignore
 	// example values in the hash. If this is the case, just merge examples.
 	if existing, ok := dst.Options[srcHash]; ok {
-		mergeExampleValues(existing, srcVariant)
+		m.mergeExampleValues(existing, srcVariant)
 		return nil
 	}
 

@@ -71,13 +71,13 @@ func startsWithNumber(s string) bool {
 
 type structToMapVisitor struct {
 	http_rest.DefaultSpecVisitorImpl
-	melder melder
+	melder Melder
 }
 
 var _ http_rest.DefaultSpecVisitor = (*structToMapVisitor)(nil)
 
 func newStructToMapVisitor() *structToMapVisitor {
-	return &structToMapVisitor{melder: melder{mergeTracking: true}}
+	return &structToMapVisitor{melder: Melder{}}
 }
 
 func (v *structToMapVisitor) EnterStruct(self interface{}, c http_rest.SpecVisitorContext, s *pb.Struct) visitors.Cont {
