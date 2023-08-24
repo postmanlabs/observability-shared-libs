@@ -8,31 +8,32 @@ import (
 )
 
 const (
-	APISpecTag            = "api"
-	APIKeyTag             = "apk"
-	APIMethodTag          = "mth"
-	ClientTag             = "cli"
-	ConnectionTag         = "cxn"
-	DataCategoryTag       = "dct"
-	GraphTag              = "gph"
-	IdentityTag           = "idt"
-	InvalidTag            = "xxx"
-	LearnSessionTag       = "lrn"
-	MessageTag            = "msg"
-	MonitorTag            = "mtr"
-	OrganizationTag       = "org"
-	OutboundRequestTag    = "obr"
-	ProjectTag            = "prj"
-	RequestTag            = "req"
-	RuleTag               = "rul"
-	ScheduleTag           = "sch"
-	ServiceClusterTag     = "scl"
-	ServiceTag            = "svc"
-	ShardAliasTag         = "sal"
-	ShardTag              = "shd"
-	UsageTrackingEventTag = "ute"
-	UserTag               = "usr"
-	WitnessTag            = "wit"
+	APISpecTag             = "api"
+	APIKeyTag              = "apk"
+	APIMethodTag           = "mth"
+	ClientTag              = "cli"
+	ConnectionTag          = "cxn"
+	DataCategoryTag        = "dct"
+	GraphTag               = "gph"
+	IdentityTag            = "idt"
+	InvalidTag             = "xxx"
+	LearnSessionTag        = "lrn"
+	MessageTag             = "msg"
+	MonitorTag             = "mtr"
+	OrganizationTag        = "org"
+	OutboundRequestTag     = "obr"
+	PathParameterPrefixTag = "pre"
+	ProjectTag             = "prj"
+	RequestTag             = "req"
+	RuleTag                = "rul"
+	ScheduleTag            = "sch"
+	ServiceClusterTag      = "scl"
+	ServiceTag             = "svc"
+	ShardAliasTag          = "sal"
+	ShardTag               = "shd"
+	UsageTrackingEventTag  = "ute"
+	UserTag                = "usr"
+	WitnessTag             = "wit"
 )
 
 type tagToIDConstructor func(uuid.UUID) ID
@@ -773,4 +774,24 @@ func (id UsageTrackingEventID) MarshallText() ([]byte, error) {
 
 func (id UsageTrackingEventID) UnmarshallText(data []byte) error {
 	return fromText(id, data)
+}
+
+type PathParameterPrefixID struct {
+	baseID
+}
+
+func (PathParameterPrefixID) GetType() string {
+	return PathParameterPrefixTag
+}
+
+func (id PathParameterPrefixID) String() string {
+	return String(id)
+}
+
+func GeneratePathParameterPrefixID() PathParameterPrefixID {
+	return NewPathParameterPrefixID(uuid.New())
+}
+
+func NewPathParameterPrefixID(ID uuid.UUID) PathParameterPrefixID {
+	return PathParameterPrefixID{baseID(ID)}
 }
