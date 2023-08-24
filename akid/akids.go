@@ -22,7 +22,7 @@ const (
 	MonitorTag             = "mtr"
 	OrganizationTag        = "org"
 	OutboundRequestTag     = "obr"
-	PathParameterPrefixTag = "pre"
+	PathParameterPrefixTag = "ppx"
 	ProjectTag             = "prj"
 	RequestTag             = "req"
 	RuleTag                = "rul"
