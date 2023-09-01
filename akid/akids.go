@@ -795,3 +795,11 @@ func GeneratePathParameterPrefixID() PathParameterPrefixID {
 func NewPathParameterPrefixID(ID uuid.UUID) PathParameterPrefixID {
 	return PathParameterPrefixID{baseID(ID)}
 }
+
+func (id PathParameterPrefixID) MarshallText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id PathParameterPrefixID) UnmarshallText(data []byte) error {
+	return fromText(id, data)
+}
