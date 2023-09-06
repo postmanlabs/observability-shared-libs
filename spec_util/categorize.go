@@ -1,15 +1,10 @@
 package spec_util
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/binary"
-	"math"
 	"reflect"
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/OneOfOne/xxhash"
 	"github.com/pkg/errors"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
@@ -117,55 +112,31 @@ func (b primValueImpl) Zero() PrimitiveValue {
 	return primValueImpl{v: reflect.Zero(reflect.TypeOf(b.v)).Interface()}
 }
 
-// DO NOT CHANGE without transition plan to support existing values hashed with
-// the current implementation.
-// Possible transition plan: record the implementation version in the
-// akita_annotations section of the primitive proto.
+// Previously, a hash of the value was used to obfuscate values.
+// We are instead replacing it with the zero value to eliminate all information,
+// but without a signal in the IR that this change has been done. If we want to
+// signal the presence of obfuscated values in the future (other than a time
+// or CLI version-based estimate) we can add an indicator in akita_annotations.
 func (b primValueImpl) Obfuscate() PrimitiveValue {
-	h := sha256.New()
-	h.Write([]byte("b0eadc4a-18a0-49ef-8da5-c840c1942647")) // fixed salt
 	switch tv := b.v.(type) {
 	case int32:
-		var buf [4]byte
-		binary.BigEndian.PutUint32(buf[:], uint32(tv))
-		h.Write(buf[:])
-		return primValueImpl{v: int32(xxhash.Checksum32(h.Sum(nil)))}
+		return primValueImpl{v: int32(0)}
 	case uint32:
-		var buf [4]byte
-		binary.BigEndian.PutUint32(buf[:], tv)
-		h.Write(buf[:])
-		return primValueImpl{v: xxhash.Checksum32(h.Sum(nil))}
+		return primValueImpl{v: uint32(0)}
 	case int64:
-		var buf [8]byte
-		binary.BigEndian.PutUint64(buf[:], uint64(tv))
-		h.Write(buf[:])
-		return primValueImpl{v: int64(xxhash.Checksum64(h.Sum(nil)))}
+		return primValueImpl{v: int64(0)}
 	case uint64:
-		var buf [8]byte
-		binary.BigEndian.PutUint64(buf[:], tv)
-		h.Write(buf[:])
-		return primValueImpl{v: xxhash.Checksum64(h.Sum(nil))}
+		return primValueImpl{v: uint64(0)}
 	case float32:
-		var buf [4]byte
-		binary.BigEndian.PutUint32(buf[:], math.Float32bits(tv))
-		h.Write(buf[:])
-		return primValueImpl{v: math.Float32frombits(xxhash.Checksum32(h.Sum(nil)))}
+		return primValueImpl{v: float32(0.0)}
 	case float64:
-		var buf [8]byte
-		binary.BigEndian.PutUint64(buf[:], math.Float64bits(tv))
-		h.Write(buf[:])
-		return primValueImpl{v: math.Float64frombits(xxhash.Checksum64(h.Sum(nil)))}
+		return primValueImpl{v: float64(0.0)}
 	case bool:
-		// No point of obfuscating a bool.
-		return b
+		return primValueImpl{v: bool(false)}
 	case string:
-		h.Write([]byte(tv))
-		// Use base64 encoding since when converting to protobuf, protobuf requires
-		// the string to contain only UTF-8 characters.
-		return primValueImpl{v: base64.URLEncoding.EncodeToString(h.Sum(nil))}
+		return primValueImpl{v: string("")}
 	case []byte:
-		h.Write(tv)
-		return primValueImpl{v: h.Sum(nil)}
+		return primValueImpl{v: []byte{}}
 	default:
 		// This should never happen since only this package can generate
 		// primValueImpl.
