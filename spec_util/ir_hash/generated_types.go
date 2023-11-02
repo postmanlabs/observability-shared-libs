@@ -369,6 +369,19 @@ func HashHTTPMethodMeta(node *pb.HTTPMethodMeta) []byte {
 	}
 	return hash.Sum(nil)
 }
+func HashHTTPMethodError(node *pb.HTTPMethodError) []byte {
+	hash := xxhash.New64()
+	hash.Write([]byte("d"))
+	if node.Type != 0 {
+		hash.Write(intHashes[1])
+		hash.Write(Hash_Int32(int32(node.Type)))
+	}
+	if node.Message != "" {
+		hash.Write(intHashes[2])
+		hash.Write(Hash_Unicode(node.Message))
+	}
+	return hash.Sum(nil)
+}
 func HashHTTPMultipart(node *pb.HTTPMultipart) []byte {
 	hash := xxhash.New64()
 	hash.Write([]byte("d"))
@@ -620,6 +633,15 @@ func HashMethodMeta(node *pb.MethodMeta) []byte {
 	if val, ok := node.Meta.(*pb.MethodMeta_Http); ok {
 		hash.Write(intHashes[2])
 		hash.Write(HashHTTPMethodMeta(val.Http))
+	}
+	if len(node.Errors) != 0 {
+		hash.Write(intHashes[3])
+		listHash := xxhash.New64()
+		listHash.Write([]byte("l"))
+		for _, v := range node.Errors {
+			listHash.Write(HashHTTPMethodError(v))
+		}
+		hash.Write(listHash.Sum(nil))
 	}
 	return hash.Sum(nil)
 }
@@ -897,4 +919,4 @@ func HashWitness(node *pb.Witness) []byte {
 	return hash.Sum(nil)
 }
 
-var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{69, 16, 236, 176, 97, 180, 164, 70}, "witness.proto": []byte{42, 213, 185, 25, 124, 226, 76, 187}, "types.proto": []byte{98, 84, 34, 180, 249, 140, 214, 227}, "spec.proto": []byte{13, 101, 129, 126, 232, 252, 1, 146}}
+var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{171, 128, 95, 193, 109, 177, 168, 42}, "witness.proto": []byte{42, 213, 185, 25, 124, 226, 76, 187}, "types.proto": []byte{98, 84, 34, 180, 249, 140, 214, 227}, "spec.proto": []byte{13, 101, 129, 126, 232, 252, 1, 146}}
