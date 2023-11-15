@@ -28,6 +28,10 @@ func (*tlsServerHelloParser) Name() string {
 	return "TLS 1.2/1.3 Server-Hello Parser"
 }
 
+func (*tlsServerHelloParser) ConnectionType() string {
+	return akinet.CONNECTION_TYPE_TLS_SERVER
+}
+
 func (parser *tlsServerHelloParser) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, totalBytesConsumed int64, err error) {
 	result, numBytesConsumed, err := parser.parse(input)
 	// It's an error if we're at the end and we don't yet have a result.

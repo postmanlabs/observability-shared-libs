@@ -112,6 +112,7 @@ func main() {
 	gf.AddHashFunc(reflect.TypeOf(pb.HTTPHeader{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.HTTPMeta{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.HTTPMethodMeta{}))
+	gf.AddHashFunc(reflect.TypeOf(pb.HTTPMethodError{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.HTTPMultipart{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.HTTPPath{}))
 	gf.AddHashFunc(reflect.TypeOf(pb.HTTPQuery{}))

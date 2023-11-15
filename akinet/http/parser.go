@@ -58,6 +58,13 @@ func (p *httpParser) Name() string {
 	return "HTTP/1.x Response Parser"
 }
 
+func (p *httpParser) ConnectionType() string {
+	if p.isRequest {
+		return akinet.CONNECTION_TYPE_HTTP_CLIENT
+	}
+	return akinet.CONNECTION_TYPE_HTTP_SERVER
+}
+
 func (p *httpParser) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, totalBytesConsumed int64, err error) {
 	var consumedBytes int64
 	defer func() {

@@ -374,6 +374,30 @@ func (tls *TLSHandshakeMetadata) ApplicationLatencyMeasurable() bool {
 	return *tls.SelectedProtocol == "http/1.1"
 }
 
+// Represents the content when a TCP connection is closed by the client.
+type ClientShutdowntMetadata struct {
+	// StreamID and Seq uniquely identify a pair of request and response.
+	StreamID uuid.UUID
+	Seq      int
+}
+
+var _ ParsedNetworkContent = (*ClientShutdowntMetadata)(nil)
+
+func (ClientShutdowntMetadata) implParsedNetworkContent() {}
+func (ClientShutdowntMetadata) ReleaseBuffers()           {}
+
+// Represents the content when a TCP connection is closed by the server.
+type ServerShutdownMetadata struct {
+	// StreamID and Seq uniquely identify a pair of request and response.
+	StreamID uuid.UUID
+	Seq      int
+}
+
+var _ ParsedNetworkContent = (*ServerShutdownMetadata)(nil)
+
+func (ServerShutdownMetadata) implParsedNetworkContent() {}
+func (ServerShutdownMetadata) ReleaseBuffers()           {}
+
 // Represents an observed HTTP/2 connection preface; no data from it
 // is stored.
 type HTTP2ConnectionPreface struct {

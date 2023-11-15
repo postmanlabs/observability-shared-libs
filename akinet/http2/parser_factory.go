@@ -78,6 +78,10 @@ func (*http2Sink) Name() string {
 	return "HTTP/2 sink"
 }
 
+func (*http2Sink) ConnectionType() string {
+	return akinet.CONNECTION_TYPE_HTTP2_PREFACE
+}
+
 func (s *http2Sink) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, totalBytesConsumed int64, err error) {
 	// Return one event at the start of the stream, so we can count it.
 	if s.firstInput {
