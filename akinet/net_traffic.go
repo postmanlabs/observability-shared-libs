@@ -375,28 +375,28 @@ func (tls *TLSHandshakeMetadata) ApplicationLatencyMeasurable() bool {
 }
 
 // Represents the content when a TCP connection is closed by the client.
-type ClientTimeoutMetadata struct {
+type ClientShutdowntMetadata struct {
 	// StreamID and Seq uniquely identify a pair of request and response.
 	StreamID uuid.UUID
 	Seq      int
 }
 
-var _ ParsedNetworkContent = (*ClientTimeoutMetadata)(nil)
+var _ ParsedNetworkContent = (*ClientShutdowntMetadata)(nil)
 
-func (ClientTimeoutMetadata) implParsedNetworkContent() {}
-func (ClientTimeoutMetadata) ReleaseBuffers()           {}
+func (ClientShutdowntMetadata) implParsedNetworkContent() {}
+func (ClientShutdowntMetadata) ReleaseBuffers()           {}
 
 // Represents the content when a TCP connection is closed by the server.
-type ServerTimeoutMetadata struct {
+type ServerShutdownMetadata struct {
 	// StreamID and Seq uniquely identify a pair of request and response.
 	StreamID uuid.UUID
 	Seq      int
 }
 
-var _ ParsedNetworkContent = (*ServerTimeoutMetadata)(nil)
+var _ ParsedNetworkContent = (*ServerShutdownMetadata)(nil)
 
-func (ServerTimeoutMetadata) implParsedNetworkContent() {}
-func (ServerTimeoutMetadata) ReleaseBuffers()           {}
+func (ServerShutdownMetadata) implParsedNetworkContent() {}
+func (ServerShutdownMetadata) ReleaseBuffers()           {}
 
 // Represents an observed HTTP/2 connection preface; no data from it
 // is stored.
