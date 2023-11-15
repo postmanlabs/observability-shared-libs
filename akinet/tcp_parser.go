@@ -32,6 +32,8 @@ func (d AcceptDecision) String() string {
 type TCPParserFactory interface {
 	Name() string
 
+	ConnectionType() string
+
 	// The caller passes a slice from the current position of the TCP flow to
 	// check whether this TCP flow can be parsed by this parser.
 	// If this function returns NeedMoreData, the caller should supply new data by

@@ -17,6 +17,10 @@ func (*tlsServerParserFactory) Name() string {
 	return "TLS 1.2/1.3 Server Parser Factory"
 }
 
+func (*tlsServerParserFactory) ConnectionType() string {
+	return "TLS_SERVER"
+}
+
 func (factory *tlsServerParserFactory) Accepts(input memview.MemView, isEnd bool) (decision akinet.AcceptDecision, discardFront int64) {
 	decision, discardFront = factory.accepts(input)
 

@@ -22,6 +22,10 @@ func (http2PrefaceParserFactory) Name() string {
 	return "HTTP/2 Connection Preface Parser Factory"
 }
 
+func (http2PrefaceParserFactory) ConnectionType() string {
+	return "HTTP_2_CONNECTION_PREFACE"
+}
+
 // 24 octets: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 var connectionPreface []byte = []byte{
 	0x50, 0x52, 0x49, 0x20, 0x2a, 0x20, 0x48, 0x54,

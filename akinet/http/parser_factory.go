@@ -9,6 +9,11 @@ import (
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
+const (
+	CONNECTION_TYPE_HTTP_CLIENT = "HTTP_CLIENT"
+	CONNECTION_TYPE_HTTP_SERVER = "HTTP_SERVER"
+)
+
 // Returns a factory for creating HTTP requests whose bodies will be allocated
 // from the given buffer pool.
 func NewHTTPRequestParserFactory(pool buffer_pool.BufferPool) akinet.TCPParserFactory {
@@ -31,6 +36,10 @@ type httpRequestParserFactory struct {
 
 func (httpRequestParserFactory) Name() string {
 	return "HTTP/1.x Request Parser Factory"
+}
+
+func (httpRequestParserFactory) ConnectionType() string {
+	return CONNECTION_TYPE_HTTP_CLIENT
 }
 
 func (httpRequestParserFactory) Accepts(input memview.MemView, isEnd bool) (decision akinet.AcceptDecision, discardFront int64) {
@@ -75,6 +84,10 @@ type httpResponseParserFactory struct {
 
 func (httpResponseParserFactory) Name() string {
 	return "HTTP/1.x Response Parser Factory"
+}
+
+func (httpResponseParserFactory) ConnectionType() string {
+	return CONNECTION_TYPE_HTTP_SERVER
 }
 
 func (httpResponseParserFactory) Accepts(input memview.MemView, isEnd bool) (decision akinet.AcceptDecision, discardFront int64) {
