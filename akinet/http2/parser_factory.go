@@ -22,10 +22,6 @@ func (http2PrefaceParserFactory) Name() string {
 	return "HTTP/2 Connection Preface Parser Factory"
 }
 
-func (http2PrefaceParserFactory) ConnectionType() string {
-	return "HTTP_2_CONNECTION_PREFACE"
-}
-
 // 24 octets: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 var connectionPreface []byte = []byte{
 	0x50, 0x52, 0x49, 0x20, 0x2a, 0x20, 0x48, 0x54,
@@ -80,6 +76,10 @@ func (http2PrefaceParserFactory) CreateParser(id akinet.TCPBidiID, seq, ack reas
 
 func (*http2Sink) Name() string {
 	return "HTTP/2 sink"
+}
+
+func (*http2Sink) ConnectionType() string {
+	return akinet.CONNECTION_TYPE_HTTP2_PREFACE
 }
 
 func (s *http2Sink) Parse(input memview.MemView, isEnd bool) (result akinet.ParsedNetworkContent, unused memview.MemView, totalBytesConsumed int64, err error) {

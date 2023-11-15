@@ -17,10 +17,6 @@ func (testFactory) Name() string {
 	return "testFactory"
 }
 
-func (testFactory) ConnectionType() string {
-	return "testConnectionType"
-}
-
 func (f testFactory) Accepts(memview.MemView, bool) (AcceptDecision, int64) {
 	return f.decision, f.discardFront
 }
