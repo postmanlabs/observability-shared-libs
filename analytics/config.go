@@ -17,6 +17,9 @@ type Config struct {
 
 	// The maximum number of events to send in a single batch
 	FlushQueueSize int `yaml:"flush_queue_size"`
+
+	// Toggle for whether client is used in agent or internal service
+	IsAgent bool `yaml:"is_agent"`
 }
 
 // Data pertaining to the application such as name, version, and build

@@ -60,11 +60,18 @@ func NewClient(config Config) (Client, error) {
 }
 
 func (c clientImpl) TrackEvent(event *Event) error {
+	// Added prefix to follow naming convention and differentiate between agent and internal service
+	if c.config.IsAgent {
+		event.name = "Live Insights Agent - " + event.name
+	} else {
+		event.name = "Live Insights - " + event.name
+	}
 
 	c.amplitudeClient.Track(amplitude.Event{
 		UserID:          event.distinctID,
 		EventType:       event.name,
 		EventProperties: event.properties,
+		EventOptions:    c.amplitudeAppInfo,
 	})
 
 	return nil
