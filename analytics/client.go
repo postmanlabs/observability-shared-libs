@@ -86,7 +86,7 @@ func (c clientImpl) Close() error {
 	return nil
 }
 
-// Returns the logger to use for the segment client if logging is enabled. Otherwise, returns nil.
+// Returns the logger to use for the Amplitude client if logging is enabled.
 func provideLogger(isLoggingEnabled bool) amplitude.Logger {
 	if isLoggingEnabled {
 		return &analyticsLogger{}
