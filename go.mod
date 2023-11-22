@@ -7,6 +7,7 @@ require (
 	github.com/akitasoftware/akita-ir v0.0.0-20220630210013-8926783978fe
 	github.com/akitasoftware/go-utils v0.0.0-20221207014235-6f4c9079488d
 	github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0
+	github.com/amplitude/analytics-go v1.0.1
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.5.0
@@ -15,7 +16,7 @@ require (
 	github.com/google/martian/v3 v3.0.1
 	github.com/google/uuid v1.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.1
 	golang.org/x/exp v0.0.0-20220428152302-39d4317da171
 	google.golang.org/protobuf v1.27.1
 )
@@ -32,7 +33,7 @@ require (
 	github.com/segmentio/backo-go v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace (

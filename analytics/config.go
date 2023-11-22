@@ -1,6 +1,9 @@
 package analytics
 
 type Config struct {
+	// Toggle for additionally sending all events to Mixpanel
+	IsSegmentEnabled bool `yaml:"segment_enabled"`
+
 	// The key used to identify the Segment source to use
 	WriteKey string `yaml:"segment_write_key"`
 
@@ -32,6 +35,15 @@ type Config struct {
 	// Sets the default destination types that events will be sent to.
 	// If not set, events will be sent to all destinations.
 	DefaultIntegrations map[string]bool `yaml:"default_integrations"`
+
+	// Toggle for sending events to Amplitude
+	IsAmplitudeEnabled bool `yaml:"amplitude_enabled"`
+
+	// Toggle for whether client is used in agent or internal service
+	IsInternalService bool `yaml:"is_internal_service"`
+
+	// Separate config for amplitude client
+	AmplitudeConfig AmplitudeConfig `yaml:"amplitude"`
 }
 
 // Data pertaining to the application such as name, version, and build
@@ -41,4 +53,21 @@ type AppInfo struct {
 	Version   string `yaml:"version"`
 	Build     string `yaml:"build"`
 	Namespace string `yaml:"namespace"`
+}
+
+type AmplitudeConfig struct {
+	// Amplitude API Key
+	AmplitudeAPIKey string `yaml:"amplitude_api_key"`
+
+	// Amplitude endpoint
+	AmplitudeEndpoint string `yaml:"amplitude_endpoint"`
+
+	// Toggle for logging sent events
+	IsLoggingEnabled bool `yaml:"logging_enabled"`
+
+	// Toggle for batching events. Make sure to set batch amplitude endpoint
+	IsBatchingEnabled bool `yaml:"batching_enabled"`
+
+	// The maximum number of events to send in a single batch
+	FlushQueueSize int `yaml:"flush_queue_size"`
 }
