@@ -33,7 +33,7 @@ type clientImpl struct {
 
 	// The internal client used to send events to Amplitude.
 	amplitudeClient amplitude.Client
-	// App info from which event is sent
+	// This is included in all tracking events reported to Amplitude.
 	amplitudeAppInfo amplitude.EventOptions
 }
 
@@ -168,11 +168,15 @@ func newMixpanelClient(config Config) (mixpanel.Mixpanel, error) {
 }
 
 func newAmplitudeClient(config Config) (amplitude.Client, amplitude.EventOptions, error) {
-	if !config.IsAmplitudeEnabled || config.AmplitudeConfig == (AmplitudeConfig{}) {
+	if !config.IsAmplitudeEnabled {
 		return nil, amplitude.EventOptions{}, nil
 	}
 
 	rawAmplitudeConfig := config.AmplitudeConfig
+
+	if rawAmplitudeConfig == (AmplitudeConfig{}) {
+		return nil, amplitude.EventOptions{}, errors.New("unable to construct new amplitude analytics client. amplitude config cannot be empty")
+	}
 
 	if rawAmplitudeConfig.AmplitudeAPIKey == "" {
 		return nil, amplitude.EventOptions{}, errors.New("unable to construct new amplitude analytics client. API key cannot be empty")
