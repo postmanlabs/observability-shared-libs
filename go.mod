@@ -7,6 +7,7 @@ require (
 	github.com/akitasoftware/akita-ir v0.0.0-20220630210013-8926783978fe
 	github.com/akitasoftware/go-utils v0.0.0-20221207014235-6f4c9079488d
 	github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0
+	github.com/amplitude/analytics-go v1.0.1
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.5.0
@@ -20,10 +21,7 @@ require (
 	google.golang.org/protobuf v1.27.1
 )
 
-require (
-	github.com/amplitude/analytics-go v1.0.1 // indirect
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-)
+require github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
