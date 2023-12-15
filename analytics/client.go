@@ -5,6 +5,7 @@ import (
 	"github.com/dukex/mixpanel"
 	"github.com/golang/glog"
 	multierror "github.com/hashicorp/go-multierror"
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	segment "github.com/segmentio/analytics-go/v3"
 )
@@ -108,10 +109,16 @@ func (c clientImpl) TrackEvent(event *Event) error {
 			event.name = "Live Insights Agent - " + event.name
 		}
 
+		// Postman's property naming convention in Amplitude is snake case. So convert event.properties keys to snake case.
+		properties := map[string]any{}
+		for k, v := range event.properties {
+			properties[strcase.ToSnake(k)] = v
+		}
+
 		c.amplitudeClient.Track(amplitude.Event{
 			UserID:          event.distinctID,
 			EventType:       event.name,
-			EventProperties: event.properties,
+			EventProperties: properties,
 			EventOptions:    c.amplitudeAppInfo,
 		})
 	}

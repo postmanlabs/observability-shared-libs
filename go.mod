@@ -15,6 +15,7 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/google/martian/v3 v3.0.1
 	github.com/google/uuid v1.3.0
+	github.com/iancoleman/strcase v0.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/exp v0.0.0-20220428152302-39d4317da171
