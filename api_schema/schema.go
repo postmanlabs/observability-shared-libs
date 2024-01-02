@@ -582,11 +582,18 @@ type PostInitialClientTelemetryRequest struct {
 	DockerDesktop bool `json:"docker_desktop"`
 }
 
+type PostmanUser struct {
+	Username string `json:"username"`
+	UserID   string `json:"user_id"`
+	TeamID   string `json:"team_id"`
+}
+
 type UserResponse struct {
 	ID             akid.UserID         `json:"id"`
 	OrganizationID akid.OrganizationID `json:"organization_id"`
 	Name           string              `json:"name"`
 	Email          string              `json:"email"`
+	PostmanUser    *PostmanUser        `json:"postman_user,omitempty"`
 	CreatedAt      time.Time           `json:"created_at"`
 	TOSAcceptedAt  time.Time           `json:"tos_accepted_at"`
 }
