@@ -16,6 +16,7 @@ const (
 	DataCategoryTag        = "dct"
 	GraphTag               = "gph"
 	IdentityTag            = "idt"
+	InsightsEndpointTag    = "ine"
 	InvalidTag             = "xxx"
 	LearnSessionTag        = "lrn"
 	MessageTag             = "msg"
@@ -46,6 +47,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	ConnectionTag:          func(ID uuid.UUID) ID { return NewConnectionID(ID) },
 	DataCategoryTag:        func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
 	IdentityTag:            func(ID uuid.UUID) ID { return NewIdentityID(ID) },
+	InsightsEndpointTag:    func(ID uuid.UUID) ID { return NewInsightsEndpointID(ID) },
 	GraphTag:               func(ID uuid.UUID) ID { return NewGraphID(ID) },
 	LearnSessionTag:        func(ID uuid.UUID) ID { return NewLearnSessionID(ID) },
 	MessageTag:             func(ID uuid.UUID) ID { return NewMessageID(ID) },
@@ -311,6 +313,35 @@ func (id IdentityID) MarshalText() ([]byte, error) {
 }
 
 func (id *IdentityID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// InsightsEndpointIDs
+type InsightsEndpointID struct {
+	baseID
+}
+
+func (InsightsEndpointID) GetType() string {
+	return InsightsEndpointTag
+}
+
+func (id InsightsEndpointID) String() string {
+	return String(id)
+}
+
+func NewInsightsEndpointID(ID uuid.UUID) InsightsEndpointID {
+	return InsightsEndpointID{baseID(ID)}
+}
+
+func GenerateInsightsEndpointID() InsightsEndpointID {
+	return NewInsightsEndpointID(uuid.New())
+}
+
+func (id InsightsEndpointID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *InsightsEndpointID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
 
