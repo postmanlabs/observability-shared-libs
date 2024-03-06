@@ -337,12 +337,13 @@ type TimelineValues struct {
 	P99RTT    *float32 `json:"rtt_99p,omitempty"`
 	P999RTT   *float32 `json:"rtt_99.9p,omitempty"`
 
-	Num4xx         *int     `json:"num_4xx,omitempty"`         // The number of calls that resulted in a 4XX response.
-	Fraction4xx    *float32 `json:"fraction_4xx,omitempty"`    // The fraction of calls that resulted in a 4XX response.
-	Num5xx         *int     `json:"num_5xx,omitempty"`         // The number of calls that resulted in a 5XX response.
-	Fraction5xx    *float32 `json:"fraction_5xx,omitempty"`    // The fraction of calls that resulted in a 5XX response.
-	NumErrors      *int     `json:"num_errors,omitempty"`      // The number of calls that resulted in an error response.
-	FractionErrors *float32 `json:"fraction_errors,omitempty"` // The fraction of calls that resulted in an error response.
+	Num4xx         *int       `json:"num_4xx,omitempty"`         // The number of calls that resulted in a 4XX response.
+	Fraction4xx    *float32   `json:"fraction_4xx,omitempty"`    // The fraction of calls that resulted in a 4XX response.
+	Num5xx         *int       `json:"num_5xx,omitempty"`         // The number of calls that resulted in a 5XX response.
+	Fraction5xx    *float32   `json:"fraction_5xx,omitempty"`    // The fraction of calls that resulted in a 5XX response.
+	NumErrors      *int       `json:"num_errors,omitempty"`      // The number of calls that resulted in an error response.
+	FractionErrors *float32   `json:"fraction_errors,omitempty"` // The fraction of calls that resulted in an error response.
+	LastSeen       *time.Time `json:"last_seen,omitempty"`       // The last time an event was seen.
 }
 
 // These arguments may be given as the "aggregate" query parameter.
