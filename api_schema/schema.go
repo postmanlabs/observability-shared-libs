@@ -343,6 +343,9 @@ type TimelineValues struct {
 	Fraction5xx    *float32 `json:"fraction_5xx,omitempty"`    // The fraction of calls that resulted in a 5XX response.
 	NumErrors      *int     `json:"num_errors,omitempty"`      // The number of calls that resulted in an error response.
 	FractionErrors *float32 `json:"fraction_errors,omitempty"` // The fraction of calls that resulted in an error response.
+
+	FirstSeen *time.Time `json:"first_seen,omitempty"` // The first time an event was seen.
+	LastSeen  *time.Time `json:"last_seen,omitempty"`  // The last time an event was seen.
 }
 
 // These arguments may be given as the "aggregate" query parameter.
