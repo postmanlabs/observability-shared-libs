@@ -175,17 +175,17 @@ const (
 	XAkitaOriginalSpecID = "x-akita-original-spec-id"
 )
 
-// Determines whether a key is reserved for Akita internal use.
+// Determines whether a key is reserved for Postman internal use.
 func IsReservedKey(k Key) bool {
 	s := strings.ToLower(string(k))
 	return strings.HasPrefix(s, "x-akita-")
 }
 
-// Returns an error if the key is reserved for Akita internal use.
+// Returns an error if the key is reserved for Postman internal use.
 func CheckReservedKey(k Key) error {
 	if !IsReservedKey(k) {
 		return nil
 	}
 
-	return errors.New(`Tags starting with "x-akita-" are reserved for Akita internal use.`)
+	return errors.New(`Tags starting with "x-akita-" are reserved for Postman internal use.`)
 }
