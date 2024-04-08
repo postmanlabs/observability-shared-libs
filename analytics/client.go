@@ -47,20 +47,20 @@ func (c clientImpl) TrackEvent(event *Event) error {
 	if c.config.IsAmplitudeEnabled && c.amplitudeClient != nil {
 		// Added prefix to follow naming convention and differentiate between agent and internal service
 		if c.config.IsInternalService {
-			event.Name = "Insights - " + event.Name
+			event.name = "Insights - " + event.name
 		} else {
-			event.Name = "Insights - Agent - " + event.Name
+			event.name = "Insights - Agent - " + event.name
 		}
 
 		// Postman's property naming convention in Amplitude is snake case. So convert event.properties keys to snake case.
 		properties := map[string]any{}
-		for k, v := range event.Properties {
+		for k, v := range event.properties {
 			properties[strcase.ToSnake(k)] = v
 		}
 
 		c.amplitudeClient.Track(amplitude.Event{
-			UserID:          event.DistinctID,
-			EventType:       event.Name,
+			UserID:          event.distinctID,
+			EventType:       event.name,
 			EventProperties: properties,
 			EventOptions:    c.amplitudeAppInfo,
 		})
@@ -69,8 +69,8 @@ func (c clientImpl) TrackEvent(event *Event) error {
 	return errors.Wrapf(
 		err,
 		"failed to send analytics tracking event '%s' for distinct id %s",
-		event.Name,
-		event.DistinctID,
+		event.name,
+		event.distinctID,
 	)
 }
 
