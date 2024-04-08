@@ -1,19 +1,12 @@
 package analytics
 
-import (
-	"time"
-)
-
 // Holds the name and properties of an analytics event.
 type Event struct {
 	// The value used to uniquely identify the user who triggered the event.
-	DistinctID string
+	distinctID string
 
 	// The name of the event.
-	Name string
-
-	// The timestamp of the event.
-	Timestamp time.Time
+	name string
 
 	// Custom properties of the event.
 	Properties map[string]any
@@ -23,9 +16,8 @@ type Event struct {
 // The event is initialized with the current time as the timestamp.
 func NewEvent(distinctID string, name string, properties map[string]any) *Event {
 	return &Event{
-		DistinctID: distinctID,
-		Name:       name,
+		distinctID: distinctID,
+		name:       name,
 		Properties: properties,
-		Timestamp:  time.Now(),
 	}
 }
