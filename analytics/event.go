@@ -9,7 +9,7 @@ type Event struct {
 	name string
 
 	// Custom properties of the event.
-	Properties map[string]any
+	properties map[string]any
 }
 
 // Returns a new event with the given name and properties.
@@ -18,6 +18,6 @@ func NewEvent(distinctID string, name string, properties map[string]any) *Event 
 	return &Event{
 		distinctID: distinctID,
 		name:       name,
-		Properties: properties,
+		properties: properties,
 	}
 }
