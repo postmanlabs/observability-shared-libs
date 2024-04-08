@@ -22,16 +22,9 @@ require (
 	google.golang.org/protobuf v1.27.1
 )
 
-require github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dukex/mixpanel v1.0.1
-	github.com/hashicorp/errwrap v1.0.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/segmentio/analytics-go/v3 v3.2.1
-	github.com/segmentio/backo-go v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
