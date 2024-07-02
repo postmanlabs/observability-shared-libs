@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/akitasoftware/akita-ir v0.0.0-20240702005520-13c767b19700
+	github.com/akitasoftware/akita-ir v0.0.0-20240702191148-96a4c6941493
 	github.com/akitasoftware/go-utils v0.0.0-20221207014235-6f4c9079488d
 	github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0
 	github.com/amplitude/analytics-go v1.0.1
