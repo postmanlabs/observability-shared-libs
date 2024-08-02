@@ -155,7 +155,11 @@ func hasValidHTTPResponseStatusLine(input memview.MemView) akinet.AcceptDecision
 
 	// A space separates the HTTP version from status code.
 	// The format is SP Status-Code SP Reason-Phrase CR LF
-	if input.GetByte(0) != ' ' || input.GetByte(4) != ' ' {
+	// Some servers do not include the second 'SP" though and skip straight to 'CR'.
+	if input.GetByte(0) != ' ' {
+		return akinet.Reject
+	}
+	if input.GetByte(4) != ' ' && input.GetByte(4) != '\r' {
 		return akinet.Reject
 	}
 
