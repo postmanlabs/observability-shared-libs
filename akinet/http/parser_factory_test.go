@@ -226,6 +226,18 @@ func TestHTTPResponseParserFactoryAccepts(t *testing.T) {
 			expectedDecision: akinet.Accept,
 			expectedDF:       int64(len("OK")),
 		},
+		// This is technically illegal but we observed some Postman services sending it.
+		{
+			name:             "no reason message",
+			input:            "HTTP/1.1 200\r\n",
+			expectedDecision: akinet.Accept,
+		},
+		// This is technically legal, as the reason string can be zero bytes long.
+		{
+			name:             "no reason message",
+			input:            "HTTP/1.1 200 \r\n",
+			expectedDecision: akinet.Accept,
+		},
 		/*
 			// Currently failing -- does not look for response that spans the end of
 			// what is available.

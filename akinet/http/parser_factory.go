@@ -149,13 +149,17 @@ func hasValidHTTPRequestLine(input memview.MemView) akinet.AcceptDecision {
 // RFC 2616 Section 6.1. The input should start right after the HTTP version.
 func hasValidHTTPResponseStatusLine(input memview.MemView) akinet.AcceptDecision {
 	if input.Len() < 5 {
-		// Need a 2 spaces plus 3 bytes for status code.
+		// Need a space, 3 bytes for status code, and a space or CR.
 		return akinet.NeedMoreData
 	}
 
 	// A space separates the HTTP version from status code.
 	// The format is SP Status-Code SP Reason-Phrase CR LF
-	if input.GetByte(0) != ' ' || input.GetByte(4) != ' ' {
+	// Some servers do not include the second 'SP" though and skip straight to 'CR'.
+	if input.GetByte(0) != ' ' {
+		return akinet.Reject
+	}
+	if input.GetByte(4) != ' ' && input.GetByte(4) != '\r' {
 		return akinet.Reject
 	}
 
