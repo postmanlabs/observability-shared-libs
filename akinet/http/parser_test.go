@@ -362,6 +362,28 @@ func TestHTTPResponseParser(t *testing.T) {
 			},
 		},
 		{
+			name: "example response from Postman health check missing reason phrase",
+			input: "HTTP/1.1 200\r\nServer: nginx/1.25.3\r\nDate: Fri, 02 Aug 2024 03:04:14 GMT\r\n" +
+				"Content-Type: application/json; charset=utf-8\r\nContent-Length: 28\r\n" +
+				"Connection: close\r\nuWebSockets: 20\r\n\r\n{\"response\":\"Who is there?\"}",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				StatusCode: 200,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				Header: map[string][]string{
+					"Server": {"nginx/1.25.3"},
+					// "Connection":     {"close"},    // ignored by parser
+					"Date":           {"Fri, 02 Aug 2024 03:04:14 GMT"},
+					"Uwebsockets":    {"20"}, // normalized
+					"Content-Length": {"28"},
+					"Content-Type":   {"application/json; charset=utf-8"},
+				},
+				Body: memview.New([]byte("{\"response\":\"Who is there?\"}")),
+			},
+		},
+		{
 			name: "ignore trailing bytes",
 			verbatimInput: []memview.MemView{
 				memview.New([]byte("HTTP/1.1 200 OK\r\n")),

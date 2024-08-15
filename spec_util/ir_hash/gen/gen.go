@@ -29,6 +29,7 @@ func main() {
 	gf.SetPackageName("ir_hash")
 	gf.AddImports()
 
+	gf.AddIgnoredField("HTTPMethodMeta", "PathParamAlg")
 	gf.AddIgnoredField("HTTPMethodMeta", "ProcessingLatency")
 	gf.AddIgnoredField("Data", "ExampleValues")
 
