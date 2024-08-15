@@ -13,7 +13,6 @@ require (
 	github.com/golang/protobuf v1.5.0
 	github.com/google/go-cmp v0.5.6
 	github.com/google/gopacket v1.1.19
-	github.com/google/martian/v3 v3.0.1
 	github.com/google/uuid v1.3.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/pkg/errors v0.9.1
@@ -30,7 +29,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace (
-	github.com/google/gopacket v1.1.19 => github.com/akitasoftware/gopacket v1.1.18-0.20210730205736-879e93dac35b
-	github.com/google/martian/v3 v3.0.1 => github.com/akitasoftware/martian/v3 v3.0.1-0.20210608174341-829c1134e9de
-)
+replace github.com/google/gopacket v1.1.19 => github.com/akitasoftware/gopacket v1.1.18-0.20210730205736-879e93dac35b
