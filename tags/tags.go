@@ -6,24 +6,24 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Key = string
+type Key string
 type Value = string
 
 // Maps tags to sets of values.
 type Tags map[Key]ValueSet
 
 // Sets the given key to the given values.  Values are copied.
-func (t Tags) Set(key string, values []string) {
+func (t Tags) Set(key Key, values []string) {
 	t[key] = NewValueSet(values...)
 }
 
 // Sets the given key to the given value.
-func (t Tags) SetSingleton(key string, value string) {
+func (t Tags) SetSingleton(key Key, value string) {
 	t[key] = NewValueSet(value)
 }
 
 // Adds a value to the given key.
-func (t Tags) Add(key string, value string) {
+func (t Tags) Add(key Key, value string) {
 	if values, exists := t[key]; !exists {
 		t[key] = NewValueSet(value)
 	} else {
