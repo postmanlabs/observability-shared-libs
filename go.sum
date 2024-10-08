@@ -1,7 +1,5 @@
 github.com/OneOfOne/xxhash v1.2.8 h1:31czK/TI9sNkxIKfaUfGlU47BAxQ0ztGgd9vPyqimf8=
 github.com/OneOfOne/xxhash v1.2.8/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
-github.com/akitasoftware/akita-ir v0.0.0-20241008083010-10a0a96871ee h1:Ro3uTG4gNXk+c2kVYrZdI1BXlxNAhZ9O3X31Qb1gEX0=
-github.com/akitasoftware/akita-ir v0.0.0-20241008083010-10a0a96871ee/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
 github.com/akitasoftware/akita-ir v0.0.0-20241008154243-b6c9139277d2 h1:P1NY6/c+Qcq9cz2Uw/2msGNBHOPTuv2kb92lU4gt/jI=
 github.com/akitasoftware/akita-ir v0.0.0-20241008154243-b6c9139277d2/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
 github.com/akitasoftware/go-utils v0.0.0-20221207014235-6f4c9079488d h1:pN1dbNacZ/mvlU1NcJVDxqmKnrDQDTVaN6iKOarfdYM=
