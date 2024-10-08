@@ -1,7 +1,7 @@
 github.com/OneOfOne/xxhash v1.2.8 h1:31czK/TI9sNkxIKfaUfGlU47BAxQ0ztGgd9vPyqimf8=
 github.com/OneOfOne/xxhash v1.2.8/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
-github.com/akitasoftware/akita-ir v0.0.0-20241008154243-b6c9139277d2 h1:P1NY6/c+Qcq9cz2Uw/2msGNBHOPTuv2kb92lU4gt/jI=
-github.com/akitasoftware/akita-ir v0.0.0-20241008154243-b6c9139277d2/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
+github.com/akitasoftware/akita-ir v0.0.0-20241008173748-ca8e2e3d5db4 h1:jbsA7E68G4dkK+ldQKQNPFIaRojFCn+cEB3gEEUSEU4=
+github.com/akitasoftware/akita-ir v0.0.0-20241008173748-ca8e2e3d5db4/go.mod h1:WEWPzhZtxlJnov3MxcqSDiZaHHf00vs3aJwCdt3OwzA=
 github.com/akitasoftware/go-utils v0.0.0-20221207014235-6f4c9079488d h1:pN1dbNacZ/mvlU1NcJVDxqmKnrDQDTVaN6iKOarfdYM=
 github.com/akitasoftware/go-utils v0.0.0-20221207014235-6f4c9079488d/go.mod h1:+IOXf7l/QCAQECJzjJwhTp1sBkRoJ6WciZwJezUwBa4=
 github.com/akitasoftware/gopacket v1.1.18-0.20240820200020-7289ae956f70 h1:VnU7QLDBwRujpQoHwShs5yu0Ahv1fSalNJa4UijwlmY=
