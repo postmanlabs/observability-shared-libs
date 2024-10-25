@@ -119,6 +119,14 @@ func (t ClosedInterval) Combine(t2 ClosedInterval) ClosedInterval {
 	}
 }
 
+// Returns a new ClosedInterval with the start and end times truncated.
+func (t ClosedInterval) Truncate(d time.Duration) ClosedInterval {
+	return ClosedInterval{
+		Start: t.Start.Truncate(d),
+		End:   t.End.Truncate(d),
+	}
+}
+
 // An half-open interval [start,end)
 // Empty intervals are represented by having Start >= End.
 type HalfOpenInterval BaseInterval
@@ -202,6 +210,14 @@ func (t HalfOpenInterval) Combine(t2 HalfOpenInterval) HalfOpenInterval {
 	return HalfOpenInterval{
 		Start: MinTime(t.Start, t2.Start), // earlier of the two starts
 		End:   MaxTime(t.End, t2.End),     // later of the two ends
+	}
+}
+
+// Returns a new ClosedInterval with the start and end times truncated.
+func (t HalfOpenInterval) Truncate(d time.Duration) HalfOpenInterval {
+	return HalfOpenInterval{
+		Start: t.Start.Truncate(d),
+		End:   t.End.Truncate(d),
 	}
 }
 
