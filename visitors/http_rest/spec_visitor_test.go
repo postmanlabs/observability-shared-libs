@@ -202,6 +202,14 @@ func TestGetDataPath(t *testing.T) {
 				"Response.200.Header.X-Request-Id.api_spec.String",
 			},
 		},
+		{"../testdata/multipart_body.pb.txt",
+			"/api/pets",
+			[]string{
+				"Response.200.Body.Multi-Part.Body.field1.TEXT_PLAIN.api_spec.String",
+				"Response.200.Body.Multi-Part.Body.field2.JSON.baz.api_spec.Int64",
+				"Response.200.Body.Multi-Part.Body.field2.JSON.foo.api_spec.String",
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -231,6 +239,14 @@ func TestGetFieldPath(t *testing.T) {
 				"result.(format 1 of 2)",
 				"result.(format 2 of 2)",
 				"X-Request-Id",
+			},
+		},
+		{"../testdata/multipart_body.pb.txt",
+			"/api/pets",
+			[]string{
+				"field1",
+				"field2.foo",
+				"field2.baz",
 			},
 		},
 	}
