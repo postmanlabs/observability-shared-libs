@@ -1,0 +1,126 @@
+methods: {
+  id: {
+    name: "PostPets"
+    api_type: HTTP_REST
+  }
+  meta: {
+    http: {
+      method: "POST"
+      path_template: "/api/pets"
+      host: "petstore.swagger.io"
+    }
+  }
+  args: {
+    key: "arg-body-0"
+    value: {
+      struct: {
+        fields: {
+          key: "field1"
+          value: {
+            primitive: {
+              string_value: { type: {} }
+            }
+
+            meta: {
+              http: {
+                body: { content_type: TEXT_PLAIN }
+              }
+            }
+          }
+        }
+        fields: {
+          key: "field2"
+          value: {
+            struct: {
+              fields: {
+                key: "foo"
+                value: {
+                  primitive: {
+                    string_value: { type: {} }
+                  }
+                }
+              }
+              fields: {
+                key: "baz"
+                value: {
+                  primitive: {
+                    int64_value: { type: {} }
+                  }
+                }
+              }
+            }
+
+            meta: {
+              http: {
+                body: { content_type: JSON }
+              }
+            }
+          }
+        }
+      }
+
+      meta: {
+        http: {
+          multipart: { type: "form-data" }
+        }
+      }
+    }
+  }
+  responses: {
+    key: "200-body-0"
+    value: {
+      struct: {
+        fields: {
+          key: "field1"
+          value: {
+            primitive: {
+              string_value: { type: {} }
+            }
+
+            meta: {
+              http: {
+                body: { content_type: TEXT_PLAIN }
+              }
+            }
+          }
+        }
+        fields: {
+          key: "field2"
+          value: {
+            struct: {
+              fields: {
+                key: "foo"
+                value: {
+                  primitive: {
+                    string_value: { type: {} }
+                  }
+                }
+              }
+              fields: {
+                key: "baz"
+                value: {
+                  primitive: {
+                    int64_value: { type: {} }
+                  }
+                }
+              }
+            }
+
+            meta: {
+              http: {
+                body: { content_type: JSON }
+              }
+            }
+          }
+        }
+      }
+
+      meta: {
+        http: {
+          multipart: { type: "mixed" }
+          response_code: 200
+        }
+      }
+    }
+  }
+}

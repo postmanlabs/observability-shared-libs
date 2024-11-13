@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	pb "github.com/akitasoftware/akita-ir/go/api_spec"
+	"github.com/akitasoftware/go-utils/optionals"
 
 	. "github.com/akitasoftware/akita-libs/visitors"
 	"github.com/akitasoftware/akita-libs/visitors/go_ast"
@@ -514,69 +515,109 @@ func extendContext(cin Context, node interface{}) {
 		}
 	case *pb.Data:
 		// Update the context for the field about to be visited.
-		// HTTPMeta is only valid for the top-level Data object.
-		if node.GetMeta() != nil && node.GetMeta().GetHttp() != nil {
-			ctx.setTopLevelDataIndex(len(ctx.GetRestPath()) - 1)
-
-			// Figure out whether the request or response is being visited, and set
-			// the response code.
-			meta := node.GetMeta().GetHttp()
-			switch rc := meta.GetResponseCode(); rc {
-			case 0: // arg
-				ctx.setIsArg(true)
-				ctx.appendRestPath("Arg")
-			default:
-				ctx.setIsArg(false)
-				ctx.appendRestPath("Response")
-
-				responseCode := "default"
-				if rc != -1 {
-					responseCode = strconv.Itoa(int(rc))
+		//
+		// HTTPMeta is only populated for the top-level Data objects in a request or
+		// response, and for the top-level Data object in each part of a multi-part
+		// body.
+		if meta := node.GetMeta().GetHttp(); meta != nil {
+			// Multipart bodies have two layers of metadata: an outer layer associated
+			// with the Data node representing the multiple parts, and an inner layer
+			// at the Data nodes representing each individual part. Determine whether
+			// we are at the inner layer, and if so, try to get the name of the
+			// current body part.
+			//
+			// ugh.
+			isMultipartBodyMember := false
+			multipartBodyMemberNameOpt := optionals.None[string]()
+			if meta.GetBody() != nil {
+				outerData, _ := ctx.GetInnermostNode(reflect.TypeOf((*pb.Data)(nil)))
+				if outerData != nil {
+					isMultipartBodyMember = outerData.(*pb.Data).GetMeta().GetHttp().GetMultipart() != nil
+					if isMultipartBodyMember {
+						// Get the name of the multipart body.
+						astPath := ctx.GetPath()
+						if !astPath.IsEmpty() {
+							astPathEdge := astPath.GetLast().OutEdge
+							if mapValueEdge, ok := astPathEdge.(*MapValueEdge); ok {
+								multipartBodyMemberNameOpt = optionals.Some(fmt.Sprint(mapValueEdge.MapKey))
+							}
+						}
+					}
 				}
-				ctx.appendRestPath(responseCode)
-				ctx.setResponseCode(responseCode)
+			}
+
+			if !isMultipartBodyMember {
+				ctx.setTopLevelDataIndex(len(ctx.GetRestPath()) - 1)
+
+				// Figure out whether the request or response is being visited, and set
+				// the response code.
+				switch rc := meta.GetResponseCode(); rc {
+				case 0: // arg
+					ctx.setIsArg(true)
+					ctx.appendRestPath("Arg")
+				default:
+					ctx.setIsArg(false)
+					ctx.appendRestPath("Response")
+
+					responseCode := "default"
+					if rc != -1 {
+						responseCode = strconv.Itoa(int(rc))
+					}
+					ctx.appendRestPath(responseCode)
+					ctx.setResponseCode(responseCode)
+				}
 			}
 
 			// Figure out the name and kind of parameter being visited. If visiting a
 			// body, also figure out its content type.
-			var name string
-			named := true
+			restPathNames := []string{}
+			fieldPathName := optionals.None[string]()
 			var contentType *string = nil
 			if x := meta.GetPath(); x != nil {
 				ctx.setValueType(PATH)
-				name = x.GetKey()
+				name := x.GetKey()
+				restPathNames = append(restPathNames, name)
+				fieldPathName = optionals.Some(name)
 			} else if x := meta.GetQuery(); x != nil {
 				ctx.setValueType(QUERY)
-				name = x.GetKey()
+				name := x.GetKey()
+				restPathNames = append(restPathNames, name)
+				fieldPathName = optionals.Some(name)
 			} else if x := meta.GetHeader(); x != nil {
 				ctx.setValueType(HEADER)
-				name = x.GetKey()
+				name := x.GetKey()
+				restPathNames = append(restPathNames, name)
+				fieldPathName = optionals.Some(name)
 			} else if x := meta.GetCookie(); x != nil {
 				ctx.setValueType(COOKIE)
-				name = x.GetKey()
+				name := x.GetKey()
+				restPathNames = append(restPathNames, name)
+				fieldPathName = optionals.Some(name)
 			} else if x := meta.GetBody(); x != nil {
 				ctx.setValueType(BODY)
-				name = x.GetContentType().String()
+				name := x.GetContentType().String()
 				contentType = &name
-				named = false
+				if memberName, exists := multipartBodyMemberNameOpt.Get(); exists {
+					restPathNames = append(restPathNames, memberName)
+				}
+				restPathNames = append(restPathNames, *contentType)
+				fieldPathName = multipartBodyMemberNameOpt
 			} else if x := meta.GetEmpty(); x != nil {
 				ctx.setValueType(BODY)
 				unknown := pb.HTTPBody_UNKNOWN.String()
 				contentType = &unknown
-				named = false
 			} else if x := meta.GetAuth(); x != nil {
 				ctx.setValueType(AUTH)
 				ctx.setHttpAuthType(x.GetType())
-				name = "Authorization"
-				named = false
+				restPathNames = append(restPathNames, "Authorization")
 			} else if x := meta.GetMultipart(); x != nil {
 				ctx.setValueType(BODY)
 				unknown := pb.HTTPBody_UNKNOWN.String()
 				contentType = &unknown
-				named = false
+				restPathNames = append(restPathNames, "Multi-Part")
 			}
 
-			if named {
+			if name, exists := fieldPathName.Get(); exists {
 				ctx.appendFieldPath(NewFieldName(name))
 			}
 
@@ -585,7 +626,9 @@ func extendContext(cin Context, node interface{}) {
 			}
 
 			ctx.appendRestPath(ctx.GetValueType().String())
-			ctx.appendRestPath(name)
+			for _, name := range restPathNames {
+				ctx.appendRestPath(name)
+			}
 
 			// Do nothing for HTTPEmpty
 		} else {
