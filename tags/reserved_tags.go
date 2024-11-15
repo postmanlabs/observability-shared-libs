@@ -23,6 +23,9 @@ const (
 	// The version of the service(s) under observation, as defined by the
 	// user.
 	XAkitaServiceVersion Key = "x-akita-service-version"
+
+	// Hostname we get on running `hostname` command. Set in the agent.
+	XInsightsHostname Key = "x-insights-hostname"
 )
 
 // Generic CI tags
