@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/akitasoftware/akita-ir v0.0.0-20241008173748-ca8e2e3d5db4
+	github.com/akitasoftware/akita-ir v0.0.0-20241210134130-1db037ecc549 // todo: update this to match the commit on master once observability-ir#16 is merged
 	github.com/akitasoftware/go-utils v0.0.0-20221207014235-6f4c9079488d
 	github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0
 	github.com/amplitude/analytics-go v1.0.1
