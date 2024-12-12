@@ -905,4 +905,4 @@ func HashWitness(node *pb.Witness) []byte {
 	return hash.Sum(nil)
 }
 
-var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{254, 173, 140, 11, 169, 144, 54, 154}, "witness.proto": []byte{42, 213, 185, 25, 124, 226, 76, 187}, "types.proto": []byte{98, 84, 34, 180, 249, 140, 214, 227}, "spec.proto": []byte{13, 101, 129, 126, 232, 252, 1, 146}}
+var ProtobufFileHashes map[string][]byte = map[string][]byte{"method.proto": []byte{255, 184, 253, 195, 222, 123, 171, 60}, "witness.proto": []byte{42, 213, 185, 25, 124, 226, 76, 187}, "types.proto": []byte{98, 84, 34, 180, 249, 140, 214, 227}, "spec.proto": []byte{13, 101, 129, 126, 232, 252, 1, 146}}
