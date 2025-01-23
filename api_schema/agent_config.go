@@ -30,3 +30,27 @@ func NewFieldRedactionConfig() *FieldRedactionConfig {
 		FieldNameRegexps: []*regexp.Regexp{},
 	}
 }
+
+// Returns a deep copy of this configuration.
+func (config *ServiceAgentConfig) Clone() *ServiceAgentConfig {
+	if config == nil {
+		return nil
+	}
+
+	return &ServiceAgentConfig{
+		FormatVersion:  config.FormatVersion,
+		FieldsToRedact: config.FieldsToRedact.Clone(),
+	}
+}
+
+// Returns a deep copy of this configuration.
+func (config *FieldRedactionConfig) Clone() *FieldRedactionConfig {
+	if config == nil {
+		return nil
+	}
+
+	return &FieldRedactionConfig{
+		FieldNames:       append([]string{}, config.FieldNames...),
+		FieldNameRegexps: append([]*regexp.Regexp{}, config.FieldNameRegexps...),
+	}
+}
