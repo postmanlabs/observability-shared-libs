@@ -1,6 +1,10 @@
 package api_schema
 
-import "regexp"
+import (
+	"regexp"
+
+	"golang.org/x/exp/slices"
+)
 
 // Reflects the version of the JSON encoding of ServiceAgentConfig. Increase the
 // minor version number for backwards-compatible changes, and the major version
@@ -53,4 +57,27 @@ func (config *FieldRedactionConfig) Clone() *FieldRedactionConfig {
 		FieldNames:       append([]string{}, config.FieldNames...),
 		FieldNameRegexps: append([]*regexp.Regexp{}, config.FieldNameRegexps...),
 	}
+}
+
+// Determines whether this configuration is the same as the one given.
+func (config *FieldRedactionConfig) Equals(other *FieldRedactionConfig) bool {
+	if config == other {
+		return true
+	}
+
+	if !slices.Equal(config.FieldNames, other.FieldNames) {
+		return false
+	}
+
+	if !slices.EqualFunc(
+		config.FieldNameRegexps,
+		other.FieldNameRegexps,
+		func(r1, r2 *regexp.Regexp) bool {
+			return r1.String() == r2.String()
+		},
+	) {
+		return false
+	}
+
+	return true
 }
