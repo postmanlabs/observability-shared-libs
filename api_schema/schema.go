@@ -574,6 +574,10 @@ type PostInitialClientTelemetryRequest struct {
 	ObservedStartingAt        time.Time     `json:"observed_starting_at"`
 	ObservedDurationInSeconds int           `json:"observed_duration_in_seconds"`
 
+	// True when the agent is configured to send unobfuscated payloads in its
+	// witnesses.
+	SendsWitnessPayloads bool `json:"sends_witness_payloads"`
+
 	CLIVersion    string `json:"cli_version"`
 	CLITargetArch string `json:"cli_target_arch"`
 
