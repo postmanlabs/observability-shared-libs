@@ -8,64 +8,66 @@ import (
 )
 
 const (
-	APISpecTag             = "api"
-	APIKeyTag              = "apk"
-	APIMethodTag           = "mth"
-	ClientTag              = "cli"
-	ConnectionTag          = "cxn"
-	DataCategoryTag        = "dct"
-	GraphTag               = "gph"
-	IdentityTag            = "idt"
-	InsightsEndpointTag    = "ine"
-	InvalidTag             = "xxx"
-	LearnSessionTag        = "lrn"
-	MessageTag             = "msg"
-	MonitorTag             = "mtr"
-	OrganizationTag        = "org"
-	OutboundRequestTag     = "obr"
-	PathParameterPrefixTag = "ppx"
-	ProjectTag             = "prj"
-	RequestTag             = "req"
-	RuleTag                = "rul"
-	ScheduleTag            = "sch"
-	ServiceClusterTag      = "scl"
-	ServiceTag             = "svc"
-	ShardAliasTag          = "sal"
-	ShardTag               = "shd"
-	UsageTrackingEventTag  = "ute"
-	UserTag                = "usr"
-	WitnessTag             = "wit"
+	APISpecTag               = "api"
+	APIKeyTag                = "apk"
+	APIMethodTag             = "mth"
+	ClientTag                = "cli"
+	ConnectionTag            = "cxn"
+	DataCategoryTag          = "dct"
+	GraphTag                 = "gph"
+	IdentityTag              = "idt"
+	InsightsEndpointTag      = "ine"
+	InvalidTag               = "xxx"
+	LearnSessionTag          = "lrn"
+	MessageTag               = "msg"
+	MonitorTag               = "mtr"
+	OrganizationTag          = "org"
+	OutboundRequestTag       = "obr"
+	PathParameterPrefixTag   = "ppx"
+	ProjectTag               = "prj"
+	RequestTag               = "req"
+	RuleTag                  = "rul"
+	ScheduleTag              = "sch"
+	ServiceClusterTag        = "scl"
+	ServiceTag               = "svc"
+	ShardAliasTag            = "sal"
+	ShardTag                 = "shd"
+	UsageTrackingEventTag    = "ute"
+	UserTag                  = "usr"
+	WitnessTag               = "wit"
+	TeamVerificationTokenTag = "tvt"
 )
 
 type tagToIDConstructor func(uuid.UUID) ID
 
 var idConstructorMap = map[string]tagToIDConstructor{
-	APISpecTag:             func(ID uuid.UUID) ID { return NewAPISpecID(ID) },
-	APIKeyTag:              func(ID uuid.UUID) ID { return NewAPIKeyID(ID) },
-	APIMethodTag:           func(ID uuid.UUID) ID { return NewAPIMethodID(ID) },
-	ClientTag:              func(ID uuid.UUID) ID { return NewClientID(ID) },
-	ConnectionTag:          func(ID uuid.UUID) ID { return NewConnectionID(ID) },
-	DataCategoryTag:        func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
-	IdentityTag:            func(ID uuid.UUID) ID { return NewIdentityID(ID) },
-	InsightsEndpointTag:    func(ID uuid.UUID) ID { return NewInsightsEndpointID(ID) },
-	GraphTag:               func(ID uuid.UUID) ID { return NewGraphID(ID) },
-	LearnSessionTag:        func(ID uuid.UUID) ID { return NewLearnSessionID(ID) },
-	MessageTag:             func(ID uuid.UUID) ID { return NewMessageID(ID) },
-	MonitorTag:             func(ID uuid.UUID) ID { return NewMonitorID(ID) },
-	OrganizationTag:        func(ID uuid.UUID) ID { return NewOrganizationID(ID) },
-	OutboundRequestTag:     func(ID uuid.UUID) ID { return NewOutboundRequestID(ID) },
-	PathParameterPrefixTag: func(ID uuid.UUID) ID { return NewPathParameterPrefixID(ID) },
-	ProjectTag:             func(ID uuid.UUID) ID { return NewProjectID(ID) },
-	RequestTag:             func(ID uuid.UUID) ID { return NewRequestID(ID) },
-	RuleTag:                func(ID uuid.UUID) ID { return NewRuleID(ID) },
-	ScheduleTag:            func(ID uuid.UUID) ID { return NewScheduleID(ID) },
-	ServiceClusterTag:      func(ID uuid.UUID) ID { return NewServiceClusterID(ID) },
-	ServiceTag:             func(ID uuid.UUID) ID { return NewServiceID(ID) },
-	ShardAliasTag:          func(ID uuid.UUID) ID { return NewShardAliasID(ID) },
-	ShardTag:               func(ID uuid.UUID) ID { return NewShardID(ID) },
-	UsageTrackingEventTag:  func(ID uuid.UUID) ID { return NewUsageTrackingEventID(ID) },
-	UserTag:                func(ID uuid.UUID) ID { return NewUserID(ID) },
-	WitnessTag:             func(ID uuid.UUID) ID { return NewWitnessID(ID) },
+	APISpecTag:               func(ID uuid.UUID) ID { return NewAPISpecID(ID) },
+	APIKeyTag:                func(ID uuid.UUID) ID { return NewAPIKeyID(ID) },
+	APIMethodTag:             func(ID uuid.UUID) ID { return NewAPIMethodID(ID) },
+	ClientTag:                func(ID uuid.UUID) ID { return NewClientID(ID) },
+	ConnectionTag:            func(ID uuid.UUID) ID { return NewConnectionID(ID) },
+	DataCategoryTag:          func(ID uuid.UUID) ID { return NewDataCategoryID(ID) },
+	IdentityTag:              func(ID uuid.UUID) ID { return NewIdentityID(ID) },
+	InsightsEndpointTag:      func(ID uuid.UUID) ID { return NewInsightsEndpointID(ID) },
+	GraphTag:                 func(ID uuid.UUID) ID { return NewGraphID(ID) },
+	LearnSessionTag:          func(ID uuid.UUID) ID { return NewLearnSessionID(ID) },
+	MessageTag:               func(ID uuid.UUID) ID { return NewMessageID(ID) },
+	MonitorTag:               func(ID uuid.UUID) ID { return NewMonitorID(ID) },
+	OrganizationTag:          func(ID uuid.UUID) ID { return NewOrganizationID(ID) },
+	OutboundRequestTag:       func(ID uuid.UUID) ID { return NewOutboundRequestID(ID) },
+	PathParameterPrefixTag:   func(ID uuid.UUID) ID { return NewPathParameterPrefixID(ID) },
+	ProjectTag:               func(ID uuid.UUID) ID { return NewProjectID(ID) },
+	RequestTag:               func(ID uuid.UUID) ID { return NewRequestID(ID) },
+	RuleTag:                  func(ID uuid.UUID) ID { return NewRuleID(ID) },
+	ScheduleTag:              func(ID uuid.UUID) ID { return NewScheduleID(ID) },
+	ServiceClusterTag:        func(ID uuid.UUID) ID { return NewServiceClusterID(ID) },
+	ServiceTag:               func(ID uuid.UUID) ID { return NewServiceID(ID) },
+	ShardAliasTag:            func(ID uuid.UUID) ID { return NewShardAliasID(ID) },
+	ShardTag:                 func(ID uuid.UUID) ID { return NewShardID(ID) },
+	UsageTrackingEventTag:    func(ID uuid.UUID) ID { return NewUsageTrackingEventID(ID) },
+	UserTag:                  func(ID uuid.UUID) ID { return NewUserID(ID) },
+	WitnessTag:               func(ID uuid.UUID) ID { return NewWitnessID(ID) },
+	TeamVerificationTokenTag: func(ID uuid.UUID) ID { return NewTeamVerificationToken(ID) },
 }
 
 var (
@@ -833,5 +835,34 @@ func (id PathParameterPrefixID) MarshalText() ([]byte, error) {
 }
 
 func (id PathParameterPrefixID) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// TeamVerificationTokens
+type TeamVerificationToken struct {
+	baseID
+}
+
+func (TeamVerificationToken) GetType() string {
+	return TeamVerificationTokenTag
+}
+
+func (id TeamVerificationToken) String() string {
+	return String(id)
+}
+
+func NewTeamVerificationToken(ID uuid.UUID) TeamVerificationToken {
+	return TeamVerificationToken{baseID(ID)}
+}
+
+func GenerateTeamVerificationToken() TeamVerificationToken {
+	return NewTeamVerificationToken(uuid.New())
+}
+
+func (id TeamVerificationToken) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *TeamVerificationToken) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
