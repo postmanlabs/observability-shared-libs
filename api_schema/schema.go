@@ -598,3 +598,7 @@ type UserResponse struct {
 	CreatedAt      time.Time           `json:"created_at"`
 	TOSAcceptedAt  time.Time           `json:"tos_accepted_at"`
 }
+
+type PostDaemonsetTelemetryRequest struct {
+	KubernetesCluster string `json:"kubernetes_cluster"`
+}
