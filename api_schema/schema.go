@@ -588,6 +588,13 @@ type PostInitialClientTelemetryRequest struct {
 	// True when the host.docker.internal DNS name resolves, which indicates the
 	// CLI is running in a docker container hosted on Docker Desktop.
 	DockerDesktop bool `json:"docker_desktop"`
+
+	// In Daemonset mode, report the agent's pod name, and the name of the
+	// pod being monitored.
+	// TODO: we haven't been able to disambiguate other cases - a container looks
+	// like a container looks like a VM.  Maybe we can do something for sidecars.
+	AgentPodName     string `json:"agent_pod_name,omitempty"`
+	MonitoredPodName string `json:"monitored_pod_name,omitempty"`
 }
 
 type UserResponse struct {
