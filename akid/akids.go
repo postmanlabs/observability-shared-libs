@@ -36,6 +36,7 @@ const (
 	UserTag                  = "usr"
 	WitnessTag               = "wit"
 	TeamVerificationTokenTag = "tvt"
+	InstanceTag              = "ins"
 )
 
 type tagToIDConstructor func(uuid.UUID) ID
@@ -68,6 +69,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	UserTag:                  func(ID uuid.UUID) ID { return NewUserID(ID) },
 	WitnessTag:               func(ID uuid.UUID) ID { return NewWitnessID(ID) },
 	TeamVerificationTokenTag: func(ID uuid.UUID) ID { return NewTeamVerificationToken(ID) },
+	InstanceTokenTag:         func(ID uuid.UUID) ID { return NewInstanceToken(ID) },
 }
 
 var (
@@ -864,5 +866,34 @@ func (id TeamVerificationToken) MarshalText() ([]byte, error) {
 }
 
 func (id *TeamVerificationToken) UnmarshalText(data []byte) error {
+	return fromText(id, data)
+}
+
+// InstanceID
+type InstanceID struct {
+	baseID
+}
+
+func (InstanceID) GetType() string {
+	return InstanceTag
+}
+
+func (id InstanceID) String() string {
+	return String(id)
+}
+
+func NewInstanceID(ID uuid.UUID) InstanceID {
+	return InstanceID{baseID(ID)}
+}
+
+func GenerateInstanceID() InstanceID {
+	return NewInstanceID(uuid.New())
+}
+
+func (id InstanceID) MarshalText() ([]byte, error) {
+	return toText(id)
+}
+
+func (id *InstanceID) UnmarshalText(data []byte) error {
 	return fromText(id, data)
 }
