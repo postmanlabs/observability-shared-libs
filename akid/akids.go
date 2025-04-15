@@ -36,7 +36,7 @@ const (
 	UserTag                  = "usr"
 	WitnessTag               = "wit"
 	TeamVerificationTokenTag = "tvt"
-	InstanceTokenTag         = "ins"
+	InstanceTag              = "ins"
 )
 
 type tagToIDConstructor func(uuid.UUID) ID
@@ -69,7 +69,7 @@ var idConstructorMap = map[string]tagToIDConstructor{
 	UserTag:                  func(ID uuid.UUID) ID { return NewUserID(ID) },
 	WitnessTag:               func(ID uuid.UUID) ID { return NewWitnessID(ID) },
 	TeamVerificationTokenTag: func(ID uuid.UUID) ID { return NewTeamVerificationToken(ID) },
-	InstanceTokenTag:         func(ID uuid.UUID) ID { return NewInstanceToken(ID) },
+	InstanceTag:              func(ID uuid.UUID) ID { return NewInstanceID(ID) },
 }
 
 var (
@@ -875,7 +875,7 @@ type InstanceID struct {
 }
 
 func (InstanceID) GetType() string {
-	return InstanceTokenTag
+	return InstanceTag
 }
 
 func (id InstanceID) String() string {
