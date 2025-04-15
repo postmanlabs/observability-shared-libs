@@ -65,6 +65,8 @@ func TestBaseAkitaIDParse(t *testing.T) {
 		{"derp_aaaaaaaaaaaaaaaaaaaaaa", "derp", false},
 		{"qux_asdf", "qux", false},
 		{"zed__aaaaaaaaaaaaaaaaaaaa", "zed", false},
+		{"ins_0s8VseBBxopFn5eDnVEoRa", "ins", true},
+		{"ins_aaaaaaaaaaaaaaaaaaaaa!", "ins", false},
 	}
 
 	for _, tst := range tests {
