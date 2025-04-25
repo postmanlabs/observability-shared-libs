@@ -303,8 +303,10 @@ type ListSpecsResponse struct {
 	LastPage bool `json:"last_page"`
 }
 
-type TimelineAggregation string
-type TimelineValue string
+type (
+	TimelineAggregation string
+	TimelineValue       string
+)
 
 // Time along with a map of values such as
 // count, latency, etc.
@@ -542,6 +544,9 @@ type PostClientPacketCaptureStatsRequest struct {
 
 	// Report CPU and memory usage, if available.
 	AgentResourceUsage *AgentResourceUsage `json:"agent_resource_usage,omitempty"`
+
+	// Currently configured agent rate limit
+	AgentRateLimit float64 `json:"agent_rate_limit,omitempty"`
 }
 
 type AgentResourceUsage struct {
@@ -595,6 +600,9 @@ type PostInitialClientTelemetryRequest struct {
 	// like a container looks like a VM.  Maybe we can do something for sidecars.
 	AgentPodName     string `json:"agent_pod_name,omitempty"`
 	MonitoredPodName string `json:"monitored_pod_name,omitempty"`
+
+	// Currently configured agent rate limit
+	AgentRateLimit float64 `json:"agent_rate_limit,omitempty"`
 }
 
 type UserResponse struct {

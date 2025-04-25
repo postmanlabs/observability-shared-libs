@@ -11,20 +11,22 @@ type PacketCounts struct {
 	DstPort   int    `json:"dst_port"`
 
 	// Number of events
-	TCPPackets         int `json:"tcp_packets"`
-	HTTPRequests       int `json:"http_requests"`
-	HTTPResponses      int `json:"http_responses"`
-	OversizedWitnesses int `json:"oversized_witnesses"` // These witnesses were dropped.
-	TLSHello           int `json:"tls_hello"`
-	HTTP2Prefaces      int `json:"http2_prefaces"`
-	QUICHandshakes     int `json:"quic_handshakes"`
-	Unparsed           int `json:"unparsed"`
+	TCPPackets              int `json:"tcp_packets"`
+	HTTPRequests            int `json:"http_requests"`
+	HTTPResponses           int `json:"http_responses"`
+	HTTPRequestsRateLimited int `json:"http_requests_rate_limited"`
+	OversizedWitnesses      int `json:"oversized_witnesses"` // These witnesses were dropped.
+	TLSHello                int `json:"tls_hello"`
+	HTTP2Prefaces           int `json:"http2_prefaces"`
+	QUICHandshakes          int `json:"quic_handshakes"`
+	Unparsed                int `json:"unparsed"`
 }
 
 func (c *PacketCounts) Add(d PacketCounts) {
 	c.TCPPackets += d.TCPPackets
 	c.HTTPRequests += d.HTTPRequests
 	c.HTTPResponses += d.HTTPResponses
+	c.HTTPRequestsRateLimited += d.HTTPRequestsRateLimited
 	c.OversizedWitnesses += d.OversizedWitnesses
 	c.TLSHello += d.TLSHello
 	c.HTTP2Prefaces += d.HTTP2Prefaces
