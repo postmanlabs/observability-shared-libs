@@ -61,7 +61,7 @@ func (c *PacketCounts) CopyAndReset() *PacketCounts {
 // Reflects the version of the JSON encoding.  Increase the minor version
 // number for backwards-compatible changes and the major number for non-
 // backwards compatible changes.
-const Version = "v0.3"
+const Version = "v0.4"
 
 type PacketCountSummary struct {
 	Version           string                   `json:"version"`
