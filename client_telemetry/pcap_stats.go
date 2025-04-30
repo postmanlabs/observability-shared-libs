@@ -42,17 +42,34 @@ func (c *PacketCounts) Copy() *PacketCounts {
 	return &copy
 }
 
+func (c *PacketCounts) CopyAndReset() *PacketCounts {
+	copy := c.Copy()
+
+	c.TCPPackets = 0
+	c.HTTPRequests = 0
+	c.HTTPResponses = 0
+	c.HTTPRequestsRateLimited = 0
+	c.OversizedWitnesses = 0
+	c.TLSHello = 0
+	c.HTTP2Prefaces = 0
+	c.QUICHandshakes = 0
+	c.Unparsed = 0
+
+	return copy
+}
+
 // Reflects the version of the JSON encoding.  Increase the minor version
 // number for backwards-compatible changes and the major number for non-
 // backwards compatible changes.
-const Version = "v0.3"
+const Version = "v0.4"
 
 type PacketCountSummary struct {
-	Version        string                   `json:"version"`
-	Total          PacketCounts             `json:"total"`
-	TopByPort      map[int]*PacketCounts    `json:"top_by_port"`
-	TopByInterface map[string]*PacketCounts `json:"top_by_interface"`
-	TopByHost      map[string]*PacketCounts `json:"top_by_host"`
+	Version           string                   `json:"version"`
+	Total             PacketCounts             `json:"total"`
+	ObservationWindow PacketCounts             `json:"observation_window"`
+	TopByPort         map[int]*PacketCounts    `json:"top_by_port"`
+	TopByInterface    map[string]*PacketCounts `json:"top_by_interface"`
+	TopByHost         map[string]*PacketCounts `json:"top_by_host"`
 
 	// Maximum number of elements allowed in the TopByX maps.
 	ByPortOverflowLimit      int `json:"by_port_overflow_limit"`
