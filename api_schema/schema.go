@@ -530,9 +530,11 @@ const (
 )
 
 type PostClientPacketCaptureStatsRequest struct {
-	ClientID                  akid.ClientID `json:"client_id"`
-	ObservedStartingAt        time.Time     `json:"observed_starting_at"`
-	ObservedDurationInSeconds int           `json:"observed_duration_in_seconds"`
+	ClientID                        akid.ClientID `json:"client_id"`
+	ObservedStartingAt              time.Time     `json:"observed_starting_at"`
+	ObservedDurationInSeconds       int           `json:"observed_duration_in_seconds"`
+	ObservedWindowStartingAt        time.Time     `json:"observed_window_starting_at"`
+	ObservedWindowDurationInSeconds int           `json:"observed_window_duration_in_seconds"`
 
 	// If PacketCountSummary is absent, then this observation period has
 	// started but not yet concluded.
