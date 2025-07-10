@@ -27,6 +27,27 @@ type Client interface {
 	Close() error
 }
 
+type NullClient struct{}
+
+var _ Client = &NullClient{}
+
+func (NullClient) TrackEvent(*Event) {
+	// Do nothing.
+}
+
+func (NullClient) Track(string, string, map[string]any) {
+	// Do nothing.
+}
+
+func (NullClient) TrackSegmentEvent(*Event) {
+	// Do nothing.
+}
+
+func (NullClient) Close() error {
+	// Do nothing.
+	return nil
+}
+
 type clientImpl struct {
 	// The analytics client configuration.
 	config Config
