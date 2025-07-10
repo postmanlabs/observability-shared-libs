@@ -75,7 +75,15 @@ func NewClient(config Config) (Client, error) {
 	}, nil
 }
 
-func (c clientImpl) prepareEvent(event *Event) {
+func convertToSnakeCase(properties map[string]any) map[string]any {
+	snakeCaseProperties := map[string]any{}
+	for k, v := range properties {
+		snakeCaseProperties[strcase.ToSnake(k)] = v
+	}
+	return snakeCaseProperties
+}
+
+func (c clientImpl) TrackEvent(event *Event) {
 	// Added prefix to follow naming convention and differentiate between agent and internal service
 	if c.config.IsInternalService {
 		event.name = "Insights - " + event.name
@@ -84,22 +92,13 @@ func (c clientImpl) prepareEvent(event *Event) {
 	}
 
 	// Postman's property naming convention in Amplitude is snake case. So convert event.properties keys to snake case.
-	properties := map[string]any{}
-	for k, v := range event.properties {
-		properties[strcase.ToSnake(k)] = v
-	}
-
-	event.properties = properties
-}
-
-func (c clientImpl) TrackEvent(event *Event) {
-	c.prepareEvent(event)
+	properties := convertToSnakeCase(event.properties)
 
 	if c.config.IsAmplitudeEnabled && c.amplitudeClient != nil {
 		c.amplitudeClient.Track(amplitude.Event{
 			UserID:          event.distinctID,
 			EventType:       event.name,
-			EventProperties: event.properties,
+			EventProperties: properties,
 			EventOptions:    c.amplitudeAppInfo,
 		})
 	}
@@ -112,13 +111,20 @@ func (c clientImpl) Track(distinctID string, name string, properties map[string]
 func (c clientImpl) TrackSegmentEvent(event *Event) error {
 	var err error
 
-	c.prepareEvent(event)
+	if c.config.IsInternalService {
+		event.name = "Insights " + event.name
+	} else {
+		event.name = "Insights Agent " + event.name
+	}
+
+	// Postman's property naming convention in Segment is snake case. So convert event.properties keys to snake case.
+	properties := convertToSnakeCase(event.properties)
 
 	if c.config.IsSegmentEnabled && c.segmentClient != nil {
 		err = c.segmentClient.Enqueue(segmentAnalytics.Track{
 			UserId:     event.distinctID,
 			Event:      event.name,
-			Properties: event.properties,
+			Properties: properties,
 		})
 	}
 
