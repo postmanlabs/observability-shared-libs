@@ -7,6 +7,13 @@ import (
 	"github.com/segmentio/analytics-go/v3"
 )
 
+type AnalyticsProvider string
+
+const (
+	Amplitude AnalyticsProvider = "amplitude"
+	Segment   AnalyticsProvider = "segment"
+)
+
 type Client interface {
 	// Sends the given tracking event to Amplitude (if enabled).
 	TrackEvent(event *Event)
