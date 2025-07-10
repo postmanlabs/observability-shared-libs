@@ -8,11 +8,14 @@ import (
 )
 
 type Client interface {
-	// Sends the given tracking event to Segment and Mixpanel (if enabled).
-	TrackEvent(event *Event) error
+	// Sends the given tracking event to Amplitude (if enabled).
+	TrackEvent(event *Event)
 
 	// A shorthand wrapper method for TrackEvent that sends a tracking event with the given distinct id, name and properties.
-	Track(distinctID string, name string, properties map[string]any) error
+	Track(distinctID string, name string, properties map[string]any)
+
+	// Sends the given tracking event to Segment (if enabled).
+	TrackSegmentEvent(event *Event)
 
 	Close() error
 }
@@ -50,9 +53,7 @@ func NewClient(config Config) (Client, error) {
 	}, nil
 }
 
-func (c clientImpl) TrackEvent(event *Event) error {
-	var err error
-
+func (c clientImpl) prepareEvent(event *Event) {
 	// Added prefix to follow naming convention and differentiate between agent and internal service
 	if c.config.IsInternalService {
 		event.name = "Insights - " + event.name
@@ -66,14 +67,28 @@ func (c clientImpl) TrackEvent(event *Event) error {
 		properties[strcase.ToSnake(k)] = v
 	}
 
+	event.properties = properties
+}
+
+func (c clientImpl) TrackEvent(event *Event) {
+	c.prepareEvent(event)
+
 	if c.config.IsAmplitudeEnabled && c.amplitudeClient != nil {
 		c.amplitudeClient.Track(amplitude.Event{
 			UserID:          event.distinctID,
 			EventType:       event.name,
-			EventProperties: properties,
+			EventProperties: event.properties,
 			EventOptions:    c.amplitudeAppInfo,
 		})
 	}
+}
+
+func (c clientImpl) Track(distinctID string, name string, properties map[string]any) {
+	c.TrackEvent(NewEvent(distinctID, name, properties))
+}
+
+func (c clientImpl) TrackSegmentEvent(event *Event) {
+	c.prepareEvent(event)
 
 	if c.config.IsSegmentEnabled && c.segmentClient != nil {
 		c.segmentClient.Enqueue(analytics.Track{
@@ -83,16 +98,6 @@ func (c clientImpl) TrackEvent(event *Event) error {
 		})
 	}
 
-	return errors.Wrapf(
-		err,
-		"failed to send analytics tracking event '%s' for distinct id %s",
-		event.name,
-		event.distinctID,
-	)
-}
-
-func (c clientImpl) Track(distinctID string, name string, properties map[string]any) error {
-	return c.TrackEvent(NewEvent(distinctID, name, properties))
 }
 
 func (c clientImpl) Close() error {
@@ -103,7 +108,7 @@ func (c clientImpl) Close() error {
 	}
 
 	if c.segmentClient != nil {
-		c.segmentClient.Close()
+		err = c.segmentClient.Close()
 	}
 
 	return err
