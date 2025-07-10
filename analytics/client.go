@@ -4,7 +4,7 @@ import (
 	"github.com/amplitude/analytics-go/amplitude"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"github.com/segmentio/analytics-go/v3"
+	segmentAnalytics "github.com/segmentio/analytics-go/v3"
 )
 
 type AnalyticsProvider string
@@ -60,7 +60,7 @@ type clientImpl struct {
 	amplitudeAppInfo amplitude.EventOptions
 
 	// The internal client used to send events to Segment.
-	segmentClient analytics.Client
+	segmentClient segmentAnalytics.Client
 }
 
 func NewClient(config Config) (Client, error) {
@@ -122,7 +122,7 @@ func (c clientImpl) TrackSegmentEvent(event *Event) error {
 	c.prepareEvent(event)
 
 	if c.config.IsSegmentEnabled && c.segmentClient != nil {
-		err = c.segmentClient.Enqueue(analytics.Track{
+		err = c.segmentClient.Enqueue(segmentAnalytics.Track{
 			UserId:     event.distinctID,
 			Event:      event.name,
 			Properties: event.properties,
