@@ -2,9 +2,9 @@ package analytics
 
 import (
 	"github.com/amplitude/analytics-go/amplitude"
-	"github.com/golang/glog"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
+	"github.com/segmentio/analytics-go/v3"
 )
 
 type Client interface {
@@ -26,6 +26,9 @@ type clientImpl struct {
 
 	// This is included in all tracking events reported to Amplitude.
 	amplitudeAppInfo amplitude.EventOptions
+
+	// The internal client used to send events to Segment.
+	segmentClient analytics.Client
 }
 
 func NewClient(config Config) (Client, error) {
@@ -34,35 +37,49 @@ func NewClient(config Config) (Client, error) {
 		return nil, errors.Wrap(err, "failed to create amplitude client")
 	}
 
+	segmentClient, err := newSegmentClient(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create segment client")
+	}
+
 	return &clientImpl{
 		config:           config,
 		amplitudeClient:  amplitudeClient,
 		amplitudeAppInfo: amplitudeAppInfo,
+		segmentClient:    segmentClient,
 	}, nil
 }
 
 func (c clientImpl) TrackEvent(event *Event) error {
 	var err error
 
+	// Added prefix to follow naming convention and differentiate between agent and internal service
+	if c.config.IsInternalService {
+		event.name = "Insights - " + event.name
+	} else {
+		event.name = "Insights - Agent - " + event.name
+	}
+
+	// Postman's property naming convention in Amplitude is snake case. So convert event.properties keys to snake case.
+	properties := map[string]any{}
+	for k, v := range event.properties {
+		properties[strcase.ToSnake(k)] = v
+	}
+
 	if c.config.IsAmplitudeEnabled && c.amplitudeClient != nil {
-		// Added prefix to follow naming convention and differentiate between agent and internal service
-		if c.config.IsInternalService {
-			event.name = "Insights - " + event.name
-		} else {
-			event.name = "Insights - Agent - " + event.name
-		}
-
-		// Postman's property naming convention in Amplitude is snake case. So convert event.properties keys to snake case.
-		properties := map[string]any{}
-		for k, v := range event.properties {
-			properties[strcase.ToSnake(k)] = v
-		}
-
 		c.amplitudeClient.Track(amplitude.Event{
 			UserID:          event.distinctID,
 			EventType:       event.name,
 			EventProperties: properties,
 			EventOptions:    c.amplitudeAppInfo,
+		})
+	}
+
+	if c.config.IsSegmentEnabled && c.segmentClient != nil {
+		c.segmentClient.Enqueue(analytics.Track{
+			UserId:     event.distinctID,
+			Event:      event.name,
+			Properties: event.properties,
 		})
 	}
 
@@ -85,89 +102,9 @@ func (c clientImpl) Close() error {
 		c.amplitudeClient.Shutdown()
 	}
 
+	if c.segmentClient != nil {
+		c.segmentClient.Close()
+	}
+
 	return err
-}
-
-func newAmplitudeClient(config Config) (amplitude.Client, amplitude.EventOptions, error) {
-	if !config.IsAmplitudeEnabled {
-		return nil, amplitude.EventOptions{}, nil
-	}
-
-	rawAmplitudeConfig := config.AmplitudeConfig
-
-	if rawAmplitudeConfig == (AmplitudeConfig{}) {
-		return nil, amplitude.EventOptions{}, errors.New("unable to construct new amplitude analytics client. amplitude config cannot be empty")
-	}
-
-	if rawAmplitudeConfig.AmplitudeAPIKey == "" {
-		return nil, amplitude.EventOptions{}, errors.New("unable to construct new amplitude analytics client. API key cannot be empty")
-	}
-
-	amplitudeConfig := amplitude.NewConfig(rawAmplitudeConfig.AmplitudeAPIKey)
-
-	amplitudeConfig.Logger = provideAmplitudeLogger(rawAmplitudeConfig.IsLoggingEnabled)
-
-	if rawAmplitudeConfig.IsBatchingEnabled {
-		amplitudeConfig.UseBatch = rawAmplitudeConfig.IsBatchingEnabled
-		amplitudeConfig.ServerURL = rawAmplitudeConfig.AmplitudeEndpoint
-	}
-
-	if rawAmplitudeConfig.FlushQueueSize > 0 {
-		amplitudeConfig.FlushQueueSize = rawAmplitudeConfig.FlushQueueSize
-	}
-
-	amplitudeAppInfo := amplitude.EventOptions{
-		AppVersion:  config.App.Version,
-		VersionName: config.App.Name,
-	}
-
-	return amplitude.NewClient(amplitudeConfig), amplitudeAppInfo, nil
-}
-
-// Returns the logger to use for the Amplitude client if logging is enabled.
-func provideAmplitudeLogger(isLoggingEnabled bool) amplitude.Logger {
-	if isLoggingEnabled {
-		return &amplitudeLogger{}
-	}
-
-	return &disabledAmplitudeLogger{}
-}
-
-// A custom segment logger that logs to glog.
-type amplitudeLogger struct{}
-
-func (d amplitudeLogger) Debugf(format string, args ...any) {
-	glog.Infof(format, args...)
-}
-
-func (d amplitudeLogger) Infof(format string, args ...any) {
-	glog.Infof(format, args...)
-}
-
-func (d amplitudeLogger) Warnf(format string, args ...any) {
-	glog.Warningf(format, args...)
-}
-
-func (d amplitudeLogger) Errorf(format string, args ...interface{}) {
-	glog.Errorf(format, args...)
-}
-
-// A custom segment logger that does nothing.
-// This is used when logging is disabled as the segment client requires a logger (the client uses its own default logger even when none is specified).
-type disabledAmplitudeLogger struct{}
-
-func (d disabledAmplitudeLogger) Debugf(format string, args ...any) {
-	// Do nothing.
-}
-
-func (d disabledAmplitudeLogger) Infof(format string, args ...any) {
-	// Do nothing.
-}
-
-func (d disabledAmplitudeLogger) Warnf(format string, args ...any) {
-	// Do nothing.
-}
-
-func (d disabledAmplitudeLogger) Errorf(format string, args ...interface{}) {
-	// Do nothing.
 }

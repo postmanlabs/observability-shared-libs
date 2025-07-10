@@ -1,22 +1,24 @@
 package analytics
 
+import "time"
+
 type Config struct {
 	App AppInfo `yaml:"app"`
-
-	// Toggle for logging sent events
-	IsLoggingEnabled bool `yaml:"logging_enabled"`
-
-	// Disable batching (used for CLI) by setting this parameter to 1
-	BatchSize int `yaml:"batch_size"`
-
-	// Toggle for sending events to Amplitude
-	IsAmplitudeEnabled bool `yaml:"amplitude_enabled"`
 
 	// Toggle for whether client is used in agent or internal service
 	IsInternalService bool `yaml:"is_internal_service"`
 
+	// Toggle for sending events to Amplitude
+	IsAmplitudeEnabled bool `yaml:"amplitude_enabled"`
+
 	// Separate config for amplitude client
 	AmplitudeConfig AmplitudeConfig `yaml:"amplitude"`
+
+	// Toggle for sending events to Segment
+	IsSegmentEnabled bool `yaml:"segment_enabled"`
+
+	// Separate config for segment client
+	SegmentConfig SegmentConfig `yaml:"segment"`
 }
 
 // Data pertaining to the application such as name, version, and build
@@ -43,4 +45,24 @@ type AmplitudeConfig struct {
 
 	// The maximum number of events to send in a single batch
 	FlushQueueSize int `yaml:"flush_queue_size"`
+}
+
+type SegmentConfig struct {
+	// Segement Write Key
+	SegmentAPIKey string `yaml:"segment_api_key"`
+
+	// Segment endpoint
+	SegmentEndpoint string `yaml:"segment_endpoint"`
+
+	// Toggle for logging sent events
+	IsLoggingEnabled bool `yaml:"logging_enabled"`
+
+	// The interval at which to flush the queue
+	FlushInterval time.Duration `yaml:"flush_interval"`
+
+	// The maximum number of events to send in a single batch
+	BatchSize int `yaml:"batch_size"`
+
+	// Toggle for verbose logging
+	IsVerboseLoggingEnabled bool `yaml:"verbose_logging_enabled"`
 }
