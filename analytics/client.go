@@ -16,10 +16,10 @@ const (
 
 type Client interface {
 	// Sends the given tracking event to Amplitude (if enabled).
-	TrackEvent(event *Event)
+	TrackEvent(event *Event) error
 
 	// A shorthand wrapper method for TrackEvent that sends a tracking event with the given distinct id, name and properties.
-	Track(distinctID string, name string, properties map[string]any)
+	Track(distinctID string, name string, properties map[string]any) error
 
 	// Sends the given tracking event to Segment (if enabled).
 	TrackSegmentEvent(event *Event)
@@ -77,7 +77,7 @@ func (c clientImpl) prepareEvent(event *Event) {
 	event.properties = properties
 }
 
-func (c clientImpl) TrackEvent(event *Event) {
+func (c clientImpl) TrackEvent(event *Event) error {
 	c.prepareEvent(event)
 
 	if c.config.IsAmplitudeEnabled && c.amplitudeClient != nil {
@@ -88,10 +88,12 @@ func (c clientImpl) TrackEvent(event *Event) {
 			EventOptions:    c.amplitudeAppInfo,
 		})
 	}
+
+	return nil
 }
 
-func (c clientImpl) Track(distinctID string, name string, properties map[string]any) {
-	c.TrackEvent(NewEvent(distinctID, name, properties))
+func (c clientImpl) Track(distinctID string, name string, properties map[string]any) error {
+	return c.TrackEvent(NewEvent(distinctID, name, properties))
 }
 
 func (c clientImpl) TrackSegmentEvent(event *Event) {
