@@ -48,7 +48,7 @@ type AmplitudeConfig struct {
 }
 
 type SegmentConfig struct {
-	// Segement Write Key
+	// Segment Write Key
 	SegmentAPIKey string `yaml:"segment_api_key"`
 
 	// Segment endpoint

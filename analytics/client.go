@@ -22,7 +22,7 @@ type Client interface {
 	Track(distinctID string, name string, properties map[string]any)
 
 	// Sends the given tracking event to Segment (if enabled).
-	TrackSegmentEvent(event *Event)
+	TrackSegmentEvent(event *Event) error
 
 	Close() error
 }
@@ -39,8 +39,9 @@ func (NullClient) Track(string, string, map[string]any) {
 	// Do nothing.
 }
 
-func (NullClient) TrackSegmentEvent(*Event) {
+func (NullClient) TrackSegmentEvent(*Event) error {
 	// Do nothing.
+	return nil
 }
 
 func (NullClient) Close() error {
@@ -115,17 +116,20 @@ func (c clientImpl) Track(distinctID string, name string, properties map[string]
 	c.TrackEvent(NewEvent(distinctID, name, properties))
 }
 
-func (c clientImpl) TrackSegmentEvent(event *Event) {
+func (c clientImpl) TrackSegmentEvent(event *Event) error {
+	var err error
+
 	c.prepareEvent(event)
 
 	if c.config.IsSegmentEnabled && c.segmentClient != nil {
-		c.segmentClient.Enqueue(analytics.Track{
+		err = c.segmentClient.Enqueue(analytics.Track{
 			UserId:     event.distinctID,
 			Event:      event.name,
 			Properties: event.properties,
 		})
 	}
 
+	return err
 }
 
 func (c clientImpl) Close() error {
