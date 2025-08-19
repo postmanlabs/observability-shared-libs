@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/akitasoftware/akita-ir v0.0.0-20250819030302-f0ae6415c1f1
+	github.com/akitasoftware/akita-ir v0.0.0-20250819204808-cf56d019e1b4
 	github.com/akitasoftware/go-utils v0.0.0-20221207014235-6f4c9079488d
 	github.com/akitasoftware/objecthash-proto v0.0.0-20211020004800-9990a7ea5dc0
 	github.com/amplitude/analytics-go v1.0.1
@@ -16,15 +16,16 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/pkg/errors v0.9.1
+	github.com/segmentio/analytics-go/v3 v3.3.0
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/exp v0.0.0-20220428152302-39d4317da171
 	google.golang.org/protobuf v1.27.1
 )
 
 require (
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/segmentio/analytics-go/v3 v3.3.0 // indirect
 	github.com/segmentio/backo-go v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
