@@ -126,7 +126,9 @@ func (m *Melder) mergeExampleValues(dst, src *pb.Data) {
 	// Figure out how many examples we're keeping by inspecting dst's location. By
 	// default, we keep the first two values after sorting.
 	maxExamples := 2
-	sortValues := slices.Sort[string]
+	sortValues := func(values []string) {
+		slices.Sort(values)
+	}
 	if HTTPPathFromData(dst) != nil {
 		// We are merging examples for path parameters. Keep as many values as we
 		// have configured.
