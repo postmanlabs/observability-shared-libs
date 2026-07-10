@@ -16,6 +16,29 @@ import (
 	"github.com/akitasoftware/akita-libs/memview"
 )
 
+// NetTrafficDirection indicates, relative to the monitored service, whether an
+// HTTP exchange is inbound (the service is the server: it received the request)
+// or outbound (the service is the client: it sent the request). It is
+// DirectionUnknown when the producer does not compute it (e.g. the pcap path).
+type NetTrafficDirection int
+
+const (
+	DirectionUnknown NetTrafficDirection = iota
+	DirectionInbound
+	DirectionOutbound
+)
+
+func (d NetTrafficDirection) String() string {
+	switch d {
+	case DirectionInbound:
+		return "INBOUND"
+	case DirectionOutbound:
+		return "OUTBOUND"
+	default:
+		return "UNKNOWN"
+	}
+}
+
 // Represents a generic network traffic that has been parsed from the wire.
 type ParsedNetworkTraffic struct {
 	SrcIP     net.IP
@@ -24,6 +47,11 @@ type ParsedNetworkTraffic struct {
 	DstPort   int
 	Content   ParsedNetworkContent
 	Interface string
+
+	// Direction, when known, indicates whether this traffic is inbound or
+	// outbound relative to the monitored service. DirectionUnknown for
+	// producers that do not compute it.
+	Direction NetTrafficDirection
 
 	// The time at which the first packet was observed
 	ObservationTime time.Time
