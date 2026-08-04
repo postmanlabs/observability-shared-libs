@@ -14,6 +14,8 @@ type PacketCounts struct {
 	TCPPackets              int `json:"tcp_packets"`
 	HTTPRequests            int `json:"http_requests"`
 	HTTPResponses           int `json:"http_responses"`
+	HTTPSRequests           int `json:"https_requests"`
+	HTTPSResponses          int `json:"https_responses"`
 	HTTPRequestsRateLimited int `json:"http_requests_rate_limited"`
 	OversizedWitnesses      int `json:"oversized_witnesses"` // These witnesses were dropped.
 	TLSHello                int `json:"tls_hello"`
@@ -26,6 +28,8 @@ func (c *PacketCounts) Add(d PacketCounts) {
 	c.TCPPackets += d.TCPPackets
 	c.HTTPRequests += d.HTTPRequests
 	c.HTTPResponses += d.HTTPResponses
+	c.HTTPSRequests += d.HTTPSRequests
+	c.HTTPSResponses += d.HTTPSResponses
 	c.HTTPRequestsRateLimited += d.HTTPRequestsRateLimited
 	c.OversizedWitnesses += d.OversizedWitnesses
 	c.TLSHello += d.TLSHello
@@ -48,6 +52,8 @@ func (c *PacketCounts) CopyAndReset() *PacketCounts {
 	c.TCPPackets = 0
 	c.HTTPRequests = 0
 	c.HTTPResponses = 0
+	c.HTTPSRequests = 0
+	c.HTTPSResponses = 0
 	c.HTTPRequestsRateLimited = 0
 	c.OversizedWitnesses = 0
 	c.TLSHello = 0
@@ -61,7 +67,7 @@ func (c *PacketCounts) CopyAndReset() *PacketCounts {
 // Reflects the version of the JSON encoding.  Increase the minor version
 // number for backwards-compatible changes and the major number for non-
 // backwards compatible changes.
-const Version = "v0.4"
+const Version = "v0.5"
 
 type PacketCountSummary struct {
 	Version           string                   `json:"version"`
