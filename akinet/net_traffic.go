@@ -39,6 +39,27 @@ func (d NetTrafficDirection) String() string {
 	}
 }
 
+// TransportSecurity indicates whether parsed traffic was observed as plaintext
+// or after TLS decryption.
+type TransportSecurity string
+
+const (
+	TransportSecurityUnknown   TransportSecurity = "unknown"
+	TransportSecurityPlaintext TransportSecurity = "plaintext"
+	TransportSecurityTLS       TransportSecurity = "tls"
+)
+
+func (s TransportSecurity) String() string {
+	switch s {
+	case TransportSecurityPlaintext:
+		return "PLAINTEXT"
+	case TransportSecurityTLS:
+		return "TLS"
+	default:
+		return "UNKNOWN"
+	}
+}
+
 // Represents a generic network traffic that has been parsed from the wire.
 type ParsedNetworkTraffic struct {
 	SrcIP     net.IP
@@ -52,6 +73,11 @@ type ParsedNetworkTraffic struct {
 	// outbound relative to the monitored service. DirectionUnknown for
 	// producers that do not compute it.
 	Direction NetTrafficDirection
+
+	// TransportSecurity indicates whether this traffic was observed as plaintext
+	// or after TLS decryption. TransportSecurityUnknown when the producer does
+	// not compute it.
+	TransportSecurity TransportSecurity
 
 	// The time at which the first packet was observed
 	ObservationTime time.Time
