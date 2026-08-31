@@ -1,6 +1,7 @@
 package api_schema
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/akitasoftware/akita-libs/akid"
@@ -618,5 +619,40 @@ type UserResponse struct {
 }
 
 type PostDaemonsetTelemetryRequest struct {
+	Type              string `json:"type,omitempty"`
+	Event             string `json:"event,omitempty"`
+	AgentID           string `json:"agent_id,omitempty"`
+	RunID             string `json:"run_id,omitempty"`
+	Sequence          uint64 `json:"sequence,omitempty"`
+	SchemaVersion     string `json:"schema_version,omitempty"`
 	KubernetesCluster string `json:"kubernetes_cluster"`
+	Environment       string `json:"environment,omitempty"`
+
+	// Agent-scope metadata. Present on agent_started, agent_heartbeat,
+	// agent_stopped, and agent_failed.
+	AgentVersion    string     `json:"agent_version,omitempty"`
+	GitVersion      string     `json:"git_version,omitempty"`
+	AgentState      string     `json:"agent_state,omitempty"`
+	AgentStateSince *time.Time `json:"agent_state_since,omitempty"`
+	FailureCategory string     `json:"failure_category,omitempty"`
+
+	// Snapshot fields. Targets is a raw, agent-owned payload: this package
+	// does not depend on the agent's target-record shape.
+	Targets          json.RawMessage `json:"targets,omitempty"`
+	TruncatedTargets uint64          `json:"truncated_targets,omitempty"`
+	StageCounts      map[string]int  `json:"stage_counts,omitempty"`
+
+	// Counter fields.
+	TargetID    string     `json:"target_id,omitempty"`
+	Count       uint64     `json:"count,omitempty"`
+	CounterType string     `json:"counter_type,omitempty"`
+	WindowStart *time.Time `json:"window_start,omitempty"`
+	WindowEnd   *time.Time `json:"window_end,omitempty"`
+
+	// Events batches additional, independent events/counters into this same
+	// request (D1): every heartbeat interval used to POST its counter map as
+	// one HTTP request per (event, target) pair. Each element omits identity
+	// fields (AgentID, RunID, KubernetesCluster, ...) on the wire, since they
+	// apply to the whole batch, not repeated per element.
+	Events []PostDaemonsetTelemetryRequest `json:"events,omitempty"`
 }
