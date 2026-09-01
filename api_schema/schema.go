@@ -649,6 +649,15 @@ type PostDaemonsetTelemetryRequest struct {
 	WindowStart *time.Time `json:"window_start,omitempty"`
 	WindowEnd   *time.Time `json:"window_end,omitempty"`
 
+	// ServiceID and TeamID identify the Insights project and Postman team
+	// TargetID currently resolves to. Target-scoped like TargetID itself, not
+	// request-scoped: a single agent can watch pods belonging to different
+	// projects and teams, so there is no one value for the whole request.
+	// Can legitimately be empty even on a counter row if that target hasn't
+	// resolved a service yet.
+	ServiceID string `json:"service_id,omitempty"`
+	TeamID    string `json:"team_id,omitempty"`
+
 	// Events batches additional, independent events/counters into this same
 	// request (D1): every heartbeat interval used to POST its counter map as
 	// one HTTP request per (event, target) pair. Each element omits identity
