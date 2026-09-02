@@ -622,11 +622,9 @@ type PostDaemonsetTelemetryRequest struct {
 	Type              string `json:"type,omitempty"`
 	Event             string `json:"event,omitempty"`
 	AgentID           string `json:"agent_id,omitempty"`
-	RunID             string `json:"run_id,omitempty"`
 	Sequence          uint64 `json:"sequence,omitempty"`
 	SchemaVersion     string `json:"schema_version,omitempty"`
 	KubernetesCluster string `json:"kubernetes_cluster"`
-	Environment       string `json:"environment,omitempty"`
 
 	// Agent-scope metadata. Present on agent_started, agent_heartbeat,
 	// agent_stopped, and agent_failed.
@@ -649,19 +647,34 @@ type PostDaemonsetTelemetryRequest struct {
 	WindowStart *time.Time `json:"window_start,omitempty"`
 	WindowEnd   *time.Time `json:"window_end,omitempty"`
 
-	// ServiceID and TeamID identify the Insights project and Postman team
-	// TargetID currently resolves to. Target-scoped like TargetID itself, not
-	// request-scoped: a single agent can watch pods belonging to different
-	// projects and teams, so there is no one value for the whole request.
-	// Can legitimately be empty even on a counter row if that target hasn't
-	// resolved a service yet.
+	// ServiceID identifies the Insights project TargetID currently resolves
+	// to. Target-scoped like TargetID itself, not request-scoped: a single
+	// agent can watch pods belonging to different projects, so there is no
+	// one value for the whole request. Can legitimately be empty even on a
+	// counter row if that target hasn't resolved a service yet.
 	ServiceID string `json:"service_id,omitempty"`
-	TeamID    string `json:"team_id,omitempty"`
+
+	// UserID and TeamID are the agent-reported Postman identity and the sole
+	// tenancy attribution for this payload -- the receiving side stores them
+	// as given rather than deriving tenancy from the request's auth token.
+	//
+	// Scope depends on the row. On the top-level request they are agent-scope:
+	// resolved once at startup from the DaemonSet's own API key, so they
+	// describe the install. On an Events element they are target-scope:
+	// resolved from that pod's own API key, which can belong to a different
+	// team than the install.
+	//
+	// Both can legitimately be empty -- a target that hasn't resolved yet, or
+	// an agent with no DaemonSet-level API key (workspace mode does not
+	// require one). Consumers must treat empty as "unattributed", not as an
+	// error and not as a distinct tenant.
+	UserID string `json:"user_id,omitempty"`
+	TeamID string `json:"team_id,omitempty"`
 
 	// Events batches additional, independent events/counters into this same
 	// request (D1): every heartbeat interval used to POST its counter map as
 	// one HTTP request per (event, target) pair. Each element omits identity
-	// fields (AgentID, RunID, KubernetesCluster, ...) on the wire, since they
+	// fields (AgentID, KubernetesCluster, ...) on the wire, since they
 	// apply to the whole batch, not repeated per element.
 	Events []PostDaemonsetTelemetryRequest `json:"events,omitempty"`
 }
