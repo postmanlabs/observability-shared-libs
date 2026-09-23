@@ -42,29 +42,29 @@ type WitnessReport struct {
 //
 // # A zero field means the stage was not reached -- omitempty keeps it off the wire
 //
-// Most fields are stamped per witness. Uploaded and IngestRecv are stamped once
-// per upload batch and shared by every witness in it, so they are identical
-// across a batch and the spread within one is not observable. An interval that
-// ends at either of them therefore includes waiting for the rest of the batch
-// to accumulate, which is real latency but is queueing, not work done on that
-// witness.
+// Most fields are stamped per witness. WitnessUploaded and AswWitnessReceived
+// are stamped once per upload batch and shared by every witness in it, so they
+// are identical across a batch and the spread within one is not observable. An
+// interval that ends at either of them therefore includes waiting for the rest
+// of the batch to accumulate, which is real latency but is queueing, not work
+// done on that witness.
 type EventTimestamps struct {
 	// Stamped by the agent. The first three are packet capture timestamps on
 	// the kernel's clock; the rest are the agent's wall clock.
-	ReqRecv   int64 `json:"req_recv,omitempty"`   // last packet of the request
-	RespStart int64 `json:"resp_start,omitempty"` // first packet of the response
-	RespRecv  int64 `json:"resp_recv,omitempty"`  // last packet of the response
-	Paired    int64 `json:"paired,omitempty"`     // request and response merged
-	Redacted  int64 `json:"redacted,omitempty"`   // redaction returned
-	Batched   int64 `json:"batched,omitempty"`    // batcher handed it to the upload buffer
-	Buffered  int64 `json:"buffered,omitempty"`   // added to the upload report
-	Uploaded  int64 `json:"uploaded,omitempty"`   // batch dispatched: just before the POST, per batch
+	ReqRecv         int64 `json:"req_recv,omitempty"`         // last packet of the request
+	RespStart       int64 `json:"resp_start,omitempty"`       // first packet of the response
+	RespRecv        int64 `json:"resp_recv,omitempty"`        // last packet of the response
+	WitnessPaired   int64 `json:"witness_paired,omitempty"`   // request and response merged
+	WitnessRedacted int64 `json:"witness_redacted,omitempty"` // redaction returned
+	WitnessBatched  int64 `json:"witness_batched,omitempty"`  // batcher handed it to the upload buffer
+	WitnessBuffered int64 `json:"witness_buffered,omitempty"` // added to the upload report
+	WitnessUploaded int64 `json:"witness_uploaded,omitempty"` // batch dispatched: just before the POST, per batch
 
-	// Stamped by the back end
-	IngestRecv int64 `json:"ingest_recv,omitempty"` // batch received by async_witnesses, per batch
-	KafkaPub   int64 `json:"kafka_pub,omitempty"`   // published to Kafka
-	AsmRecv    int64 `json:"asm_recv,omitempty"`    // witness_assembler consumed it
-	ChInsert   int64 `json:"ch_insert,omitempty"`   // inserted into ClickHouse
+	// Stamped by the back end: Asw* by async_witnesses, Asm* by witness_assembler.
+	AswWitnessReceived int64 `json:"asw_witness_received,omitempty"` // batch received by async_witnesses, per batch
+	AswKafkaPublished  int64 `json:"asw_kafka_published,omitempty"`  // published to Kafka
+	AsmKafkaReceived   int64 `json:"asm_kafka_received,omitempty"`   // witness_assembler consumed it
+	AsmChInserted      int64 `json:"asm_ch_inserted,omitempty"`      // inserted into ClickHouse
 }
 
 // Returns an approximation of the size of this report.
@@ -97,9 +97,9 @@ func (report *WitnessReport) SizeInBytes() int {
 var eventTimestampsMaxSize_bytes = func() int {
 	result := 0
 	for _, name := range []string{
-		"req_recv", "resp_start", "resp_recv", "paired",
-		"redacted", "batched", "buffered", "uploaded",
-		"ingest_recv", "kafka_pub", "asm_recv", "ch_insert",
+		"req_recv", "resp_start", "resp_recv",
+		"witness_paired", "witness_redacted", "witness_batched", "witness_buffered", "witness_uploaded",
+		"asw_witness_received", "asw_kafka_published", "asm_kafka_received", "asm_ch_inserted",
 	} {
 		result += len(name) + 20
 	}

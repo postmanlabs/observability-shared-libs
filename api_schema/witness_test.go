@@ -25,7 +25,7 @@ func TestEventTimestampsOmitsUnsetFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, string(b), `"req_recv":1790071339202964`)
 	assert.NotContains(t, string(b), "resp_start")
-	assert.NotContains(t, string(b), "ch_insert")
+	assert.NotContains(t, string(b), "asm_ch_inserted")
 }
 
 // SizeInBytes gates the agent's upload batch, so it must never under-count what
@@ -36,10 +36,10 @@ func TestWitnessReportSizeInBytesCoversEventTimestamps(t *testing.T) {
 	full := bare
 	full.EventTimestamps = &EventTimestamps{
 		ReqRecv: 1790071339202964, RespStart: 1790071339202965, RespRecv: 1790071339202966,
-		Paired: 1790071339203100, Redacted: 1790071339203200, Batched: 1790071339203300,
-		Buffered: 1790071339203400, Uploaded: 1790071339204000,
-		IngestRecv: 1790071339205000, KafkaPub: 1790071339206000,
-		AsmRecv: 1790071339207000, ChInsert: 1790071339208000,
+		WitnessPaired: 1790071339203100, WitnessRedacted: 1790071339203200, WitnessBatched: 1790071339203300,
+		WitnessBuffered: 1790071339203400, WitnessUploaded: 1790071339204000,
+		AswWitnessReceived: 1790071339205000, AswKafkaPublished: 1790071339206000,
+		AsmKafkaReceived: 1790071339207000, AsmChInserted: 1790071339208000,
 	}
 
 	bareJSON, err := json.Marshal(&bare)
