@@ -1,9 +1,12 @@
 package http
 
 import (
+	"bufio"
 	"bytes"
 	"compress/flate"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -67,9 +70,23 @@ type parseTestCase struct {
 	expected       akinet.ParsedNetworkContent
 	expectErr      bool
 	bytesRemaining int64 // num bytes from inputs expected to be left unconsumed
+	// The message is only complete once the input ends, e.g. a body framed by
+	// connection close.
+	requiresEnd bool
 }
 
-func runParseTestCase(isRequest bool, c parseTestCase, pool buffer_pool.BufferPool) error {
+// Runs c through a fresh parser for each way of segmenting its input. If
+// signalEnd is set, isEnd is passed with the last segment; otherwise the parser
+// must find the end of the message on its own.
+func runParseTestCase(isRequest bool, c parseTestCase, pool buffer_pool.BufferPool, signalEnd bool) error {
+	return runParseTestCaseWithGarble(isRequest, c, pool, signalEnd, false)
+}
+
+// Like runParseTestCase, but if garble is set, each input is given to the
+// parser as a private copy whose consumed bytes (those not returned in unused)
+// are overwritten once Parse returns. The parser may discard consumed bytes, so
+// it must not hold on to them.
+func runParseTestCaseWithGarble(isRequest bool, c parseTestCase, pool buffer_pool.BufferPool, signalEnd bool, garble bool) error {
 	var segments <-chan []memview.MemView
 	if c.verbatimInput != nil {
 		s := make(chan []memview.MemView)
@@ -93,7 +110,24 @@ func runParseTestCase(isRequest bool, c parseTestCase, pool buffer_pool.BufferPo
 		for i, input := range inputs {
 			inputSize += input.Len()
 
-			pnc, unused, totalBytesConsumed, err = p.Parse(input, i == len(inputs)-1)
+			var buf []byte
+			if garble {
+				buf = []byte(input.String())
+				input = memview.New(buf)
+			}
+
+			pnc, unused, totalBytesConsumed, err = p.Parse(input, signalEnd && i == len(inputs)-1)
+
+			if garble {
+				consumed := buf
+				if err == nil {
+					consumed = buf[:int64(len(buf))-unused.Len()]
+				}
+				for k := range consumed {
+					consumed[k] = 0xff
+				}
+			}
+
 			if err != nil {
 				break
 			} else if pnc != nil {
@@ -133,13 +167,8 @@ func runParseTestCase(isRequest bool, c parseTestCase, pool buffer_pool.BufferPo
 	return nil
 }
 
-func TestHTTPRequestParser(t *testing.T) {
-	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
-	if err != nil {
-		t.Error(err)
-	}
-
-	testCases := []parseTestCase{
+func requestParseTestCases() []parseTestCase {
+	return []parseTestCase{
 		{
 			name:  "request line only",
 			input: "GET / HTTP/1.0\r\n\r\n",
@@ -301,22 +330,24 @@ func TestHTTPRequestParser(t *testing.T) {
 			},
 		},
 	}
-
-	for _, c := range testCases {
-		t.Logf(c.name)
-		if err := runParseTestCase(true, c, pool); err != nil {
-			t.Error(err)
-		}
-	}
 }
 
-func TestHTTPResponseParser(t *testing.T) {
+func TestHTTPRequestParser(t *testing.T) {
 	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
 	if err != nil {
 		t.Error(err)
 	}
 
-	testCases := []parseTestCase{
+	for _, c := range requestParseTestCases() {
+		t.Logf(c.name)
+		if err := runParseTestCase(true, c, pool, true); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func responseParseTestCases() []parseTestCase {
+	return []parseTestCase{
 		{
 			name:  "status line only",
 			input: "HTTP/1.0 204 No Content\r\n\r\n",
@@ -448,8 +479,9 @@ func TestHTTPResponseParser(t *testing.T) {
 		},
 		{
 			// No Content-Length, we need to read the body until input has ended.
-			name:  "frame by connection close",
-			input: "HTTP/1.0 200 OK\r\n\r\nhello this is prince",
+			name:        "frame by connection close",
+			input:       "HTTP/1.0 200 OK\r\n\r\nhello this is prince",
+			requiresEnd: true,
 			expected: akinet.HTTPResponse{
 				StreamID:   uuid.UUID(testBidiID),
 				Seq:        522,
@@ -467,6 +499,8 @@ func TestHTTPResponseParser(t *testing.T) {
 				"\r\n",
 				deflatedBody.String(),
 			}, ""),
+			// No Content-Length, so the body is framed by connection close.
+			requiresEnd: true,
 			expected: akinet.HTTPResponse{
 				StreamID:   uuid.UUID(testBidiID),
 				Seq:        522,
@@ -532,11 +566,118 @@ func TestHTTPResponseParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "chunked body with extension and trailer",
+			input: "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5;foo=bar\r\nhello\r\n6\r\n world\r\n0\r\nX-Trailer: t\r\n\r\n",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Body:       memview.New([]byte("hello world")),
+			},
+		},
+		{
+			name:      "malformed chunk size",
+			input:     "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nzz\r\nhello\r\n0\r\n\r\n",
+			expectErr: true,
+		},
+		{
+			name: "pipelined responses",
+			verbatimInput: []memview.MemView{
+				memview.New([]byte("HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nfooHTTP/1.1 204 No Content\r\n\r\n")),
+			},
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Header:     map[string][]string{"Content-Length": {"3"}},
+				Body:       memview.New([]byte("foo")),
+			},
+			bytesRemaining: int64(len("HTTP/1.1 204 No Content\r\n\r\n")),
+		},
+		{
+			name: "304 has no body despite content-length",
+			verbatimInput: []memview.MemView{
+				memview.New([]byte("HTTP/1.1 304 Not Modified\r\nContent-Length: 5\r\n\r\nHTTP/1.1")),
+			},
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 304,
+				Header:     map[string][]string{"Content-Length": {"5"}},
+			},
+			bytesRemaining: int64(len("HTTP/1.1")),
+		},
+	}
+}
+
+func TestHTTPResponseParser(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Error(err)
 	}
 
-	for _, c := range testCases {
-		if err := runParseTestCase(false, c, pool); err != nil {
+	for _, c := range responseParseTestCases() {
+		if err := runParseTestCase(false, c, pool, true); err != nil {
 			t.Error(err)
+		}
+	}
+}
+
+// Every message except one framed by connection close must be recognized as
+// complete as soon as its last byte arrives. Otherwise the parser would only
+// finish when the connection ends, and the isEnd fallback in Parse would hide
+// that in TestHTTPRequestParser and TestHTTPResponseParser.
+func TestParseCompletesWithoutEnd(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		isRequest bool
+		cases     []parseTestCase
+	}{
+		{true, requestParseTestCases()},
+		{false, responseParseTestCases()},
+	} {
+		for _, c := range tc.cases {
+			if c.requiresEnd {
+				continue
+			}
+			if err := runParseTestCase(tc.isRequest, c, pool, false); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+}
+
+// The bytes that Parse consumes may be discarded, and so overwritten, as soon
+// as it returns, so the parser must copy whatever it keeps of them, e.g. a
+// partial header block or chunk-size line.
+func TestParsedInputCanBeGarbled(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		isRequest bool
+		cases     []parseTestCase
+	}{
+		{true, requestParseTestCases()},
+		{false, responseParseTestCases()},
+	} {
+		for _, c := range tc.cases {
+			if err := runParseTestCaseWithGarble(tc.isRequest, c, pool, true, true); err != nil {
+				t.Error(err)
+			}
 		}
 	}
 }
@@ -601,5 +742,429 @@ func TestOversizedResponse(t *testing.T) {
 
 	if expectedBytesConsumed != totalBytesConsumed {
 		t.Errorf("expected %d bytes consumed, but actually consumed %d bytes", expectedBytesConsumed, totalBytesConsumed)
+	}
+}
+
+var getNoBodyRequest = []byte(strings.Join([]string{
+	"GET /test/path HTTP/1.1\r\n",
+	"Host: 172.17.0.2:8080\r\n",
+	"Accept: */*\r\n",
+	"Accept-Encoding: *\r\n",
+	"User-Agent: Mozilla/5.0 (unknown-aarch64-linux-gnu) Siege/4.2.2\r\n",
+	"Connection: close\r\n",
+	"\r\n",
+}, ""))
+
+var Scratch = make([]byte, 64*1024*1024)
+
+func BenchmarkHTTPRequestParserGETNoBody(b *testing.B) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		b.Fatal(err)
+	}
+	/*
+		inputs := [][]byte{}
+		for i := 0; i < b.N; i++ {
+			input := append([]byte{}, getNoBodyRequest...)
+			inputs = append(inputs, input)
+		}
+
+		flush := func() {
+			// flush cache
+			for i := 0; i < len(Scratch); i++ {
+				Scratch[i]++
+			}
+			_ = Scratch
+		}
+
+		//flush()
+		_ = flush
+	*/
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		p := newHTTPParser(true, testBidiID, 522, 1203, pool)
+		pnc, _, _, err := p.Parse(memview.New(getNoBodyRequest), false)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if pnc == nil {
+			b.Fatal("parsing incomplete")
+		}
+		pnc.ReleaseBuffers()
+
+		b.StopTimer()
+		//flush()
+		b.StartTimer()
+	}
+}
+
+// Benchmarks only Go's http.ReadRequest on the same input, as a floor for
+// BenchmarkHTTPRequestParserGETNoBody. The bufio.Reader is reused across
+// iterations, as httpParser does.
+func BenchmarkStdReadRequestGETNoBody(b *testing.B) {
+	input := getNoBodyRequest
+	r := bytes.NewReader(input)
+	br := bufio.NewReader(r)
+
+	b.SetBytes(int64(len(input)))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.Reset(input)
+		br.Reset(r)
+		if _, err := http.ReadRequest(br); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// Reports whether n bytes can still be taken from pool.
+func poolHasRoom(pool buffer_pool.BufferPool, n int) bool {
+	probe := pool.NewBuffer()
+	defer probe.Release()
+	_, err := probe.Write(make([]byte, n))
+	return err == nil
+}
+
+// When the buffer pool runs out, the body is truncated but still framed, so
+// the message ends in the right place and bytes after it are left unused.
+func TestBodyTruncatedWhenPoolExhausted(t *testing.T) {
+	const poolSize = 16
+	pool, err := buffer_pool.MakeBufferPool(poolSize, poolSize)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := strings.Repeat("x", 4*poolSize)
+	msg := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
+	trailer := "HTTP/1.1 204 No Content\r\n\r\n"
+
+	p := newHTTPParser(false, testBidiID, 522, 1203, pool)
+	pnc, unused, consumed, err := p.Parse(memview.New([]byte(msg+trailer)), false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if pnc == nil {
+		t.Fatal("parsing incomplete")
+	}
+	defer pnc.ReleaseBuffers()
+
+	resp := pnc.(akinet.HTTPResponse)
+	if got := resp.Body.Len(); got == 0 || got >= int64(len(body)) {
+		t.Errorf("body length = %d, want truncated to between 1 and %d", got, len(body)-1)
+	}
+	if got := unused.String(); got != trailer {
+		t.Errorf("unused = %q, want %q", got, trailer)
+	}
+	if consumed != int64(len(msg)) {
+		t.Errorf("consumed %d bytes, want %d", consumed, len(msg))
+	}
+}
+
+// A parse error gives the partially filled body buffer back to the pool.
+func TestParseErrorReleasesBody(t *testing.T) {
+	const chunkSize = 16
+	const poolSize = 2 * chunkSize
+	pool, err := buffer_pool.MakeBufferPool(poolSize, chunkSize)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := newHTTPParser(false, testBidiID, 522, 1203, pool)
+	start := fmt.Sprintf("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n%x\r\n%s\r\n", chunkSize, strings.Repeat("x", chunkSize))
+	if pnc, _, _, err := p.Parse(memview.New([]byte(start)), false); pnc != nil || err != nil {
+		t.Fatalf("expected incomplete parse, got pnc=%v err=%v", pnc, err)
+	}
+	if poolHasRoom(pool, poolSize) {
+		t.Fatal("body should be holding a chunk of the pool")
+	}
+
+	if _, _, _, err := p.Parse(memview.New([]byte("zz\r\n")), false); err == nil {
+		t.Fatal("expected error for malformed chunk size")
+	}
+	if !poolHasRoom(pool, poolSize) {
+		t.Error("parse error did not return the body's buffers to the pool")
+	}
+}
+
+// Input that ends before the header block is complete is an error, and all of
+// it counts as consumed.
+func TestHeadersIncompleteAtEnd(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, c := range []struct {
+		isRequest bool
+		inputs    []string
+	}{
+		{true, []string{"GET / HTTP/1.1\r\n", "Host: exa"}},
+		{true, []string{"GET / HTTP/1.1\r\nHost: example.com\r\n"}},
+		{false, []string{"HTTP/1.1 200 OK\r\n", "Content-Length: 3\r\n\r"}},
+	} {
+		p := newHTTPParser(c.isRequest, testBidiID, 522, 1203, pool)
+		var pnc akinet.ParsedNetworkContent
+		var consumed int64
+		inputSize := int64(0)
+		for i, in := range c.inputs {
+			inputSize += int64(len(in))
+			pnc, _, consumed, err = p.Parse(memview.New([]byte(in)), i == len(c.inputs)-1)
+		}
+		if pnc != nil {
+			t.Errorf("%q: expected no result, got %v", c.inputs, pnc)
+		}
+		if !errors.Is(err, io.ErrUnexpectedEOF) {
+			t.Errorf("%q: err = %v, want %v", c.inputs, err, io.ErrUnexpectedEOF)
+		}
+		if consumed != inputSize {
+			t.Errorf("%q: consumed %d bytes, want %d", c.inputs, consumed, inputSize)
+		}
+	}
+}
+
+// Input that ends partway through the body yields the message with as much of
+// the body as arrived.
+func TestBodyIncompleteAtEnd(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testCases := []parseTestCase{
+		{
+			name:  "content-length body cut short",
+			input: "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nabcd",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Header:     map[string][]string{"Content-Length": {"10"}},
+				Body:       memview.New([]byte("abcd")),
+			},
+		},
+		{
+			name:  "chunked body cut in chunk data",
+			input: "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhel",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Body:       memview.New([]byte("hel")),
+			},
+		},
+		{
+			name:  "chunked body cut in chunk-size line",
+			input: "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n1",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Body:       memview.New([]byte("hello")),
+			},
+		},
+	}
+
+	for _, c := range testCases {
+		if err := runParseTestCase(false, c, pool, true); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+// Bytes following a message are left unused, wherever the message itself is
+// split. The split points stay inside the message so that all of the trailing
+// bytes arrive with its last byte.
+func TestTrailingBytesAfterMessage(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, c := range []struct {
+		name      string
+		isRequest bool
+		msg       string
+		trailer   string
+		expected  akinet.ParsedNetworkContent
+	}{
+		{
+			name:      "after chunked response",
+			isRequest: false,
+			msg:       "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n6\r\n world\r\n0\r\nX-Trailer: t\r\n\r\n",
+			trailer:   "HTTP/1.1 204 No Content\r\n\r\n",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Body:       memview.New([]byte("hello world")),
+			},
+		},
+		{
+			name:      "after chunked request",
+			isRequest: true,
+			msg:       "POST /a HTTP/1.1\r\nHost: example.com\r\nTransfer-Encoding: chunked\r\n\r\n3\r\nfoo\r\n0\r\n\r\n",
+			trailer:   "GET /b HTTP/1.1\r\nHost: example.com\r\n\r\n",
+			expected: akinet.HTTPRequest{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        1203,
+				Method:     "POST",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				URL:        &url.URL{Path: "/a"},
+				Host:       "example.com",
+				Body:       memview.New([]byte("foo")),
+			},
+		},
+		{
+			name:      "pipelined requests",
+			isRequest: true,
+			msg:       "GET /a HTTP/1.1\r\nHost: example.com\r\n\r\n",
+			trailer:   "GET /b HTTP/1.1\r\nHost: example.com\r\n\r\n",
+			expected: akinet.HTTPRequest{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        1203,
+				Method:     "GET",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				URL:        &url.URL{Path: "/a"},
+				Host:       "example.com",
+			},
+		},
+	} {
+		full := c.msg + c.trailer
+		for i := 0; i < len(c.msg); i++ {
+			tc := parseTestCase{
+				name: fmt.Sprintf("%s, split at %d", c.name, i),
+				verbatimInput: []memview.MemView{
+					memview.New([]byte(full[:i])),
+					memview.New([]byte(full[i:])),
+				},
+				expected:       c.expected,
+				bytesRemaining: int64(len(c.trailer)),
+			}
+			if err := runParseTestCase(c.isRequest, tc, pool, false); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+}
+
+func TestMalformedChunkedBody(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const header = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"
+	testCases := []parseTestCase{
+		{
+			name:      "missing CRLF after chunk data",
+			input:     header + "5\r\nhelloX\r\n0\r\n\r\n",
+			expectErr: true,
+		},
+		{
+			name:      "negative chunk size",
+			input:     header + "-1\r\nhello\r\n0\r\n\r\n",
+			expectErr: true,
+		},
+		{
+			name:      "chunk size overflows int64",
+			input:     header + "ffffffffffffffffff\r\nhello\r\n0\r\n\r\n",
+			expectErr: true,
+		},
+		{
+			// Too long to segment every possible way. A valid chunk size padded
+			// with leading zeros, so only its length makes it malformed. Its line
+			// terminator arrives in a later input, so the length check on a
+			// partial line is what fails.
+			name: "chunk-size line too long",
+			verbatimInput: []memview.MemView{
+				memview.New([]byte(header)),
+				memview.New([]byte(strings.Repeat("0", maxChunkLineLength) + "5")),
+				memview.New([]byte("\r\nhello\r\n0\r\n\r\n")),
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, c := range testCases {
+		if err := runParseTestCase(false, c, pool, true); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+// Header blocks whose lines end in a bare LF instead of CRLF, which Go's HTTP
+// library accepts and some clients send.
+func TestHeaderBlockEndingInBareLF(t *testing.T) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	requestCases := []parseTestCase{
+		{
+			name:  "request with LF line endings",
+			input: "GET / HTTP/1.1\nHost: example.com\n\n",
+			expected: akinet.HTTPRequest{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        1203,
+				Method:     "GET",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				URL:        &url.URL{Path: "/"},
+				Host:       "example.com",
+			},
+		},
+		{
+			name:  "request with CRLF lines and a bare LF empty line",
+			input: "GET / HTTP/1.1\r\nHost: example.com\r\n\n",
+			expected: akinet.HTTPRequest{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        1203,
+				Method:     "GET",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				URL:        &url.URL{Path: "/"},
+				Host:       "example.com",
+			},
+		},
+	}
+	responseCases := []parseTestCase{
+		{
+			name:  "response with LF line endings",
+			input: "HTTP/1.1 200 OK\nContent-Length: 3\n\nfoo",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Header:     map[string][]string{"Content-Length": {"3"}},
+				Body:       memview.New([]byte("foo")),
+			},
+		},
+	}
+
+	for _, c := range requestCases {
+		if err := runParseTestCase(true, c, pool, false); err != nil {
+			t.Error(err)
+		}
+	}
+	for _, c := range responseCases {
+		if err := runParseTestCase(false, c, pool, false); err != nil {
+			t.Error(err)
+		}
 	}
 }
