@@ -34,13 +34,16 @@ type AmplitudeConfig struct {
 	// Amplitude API Key
 	AmplitudeAPIKey string `yaml:"amplitude_api_key"`
 
-	// Amplitude endpoint
+	// Amplitude endpoint. Empty means Amplitude's default US endpoint for the selected mode.
+	// A URL with no path (such as "https://api.eu.amplitude.com") gets the mode's API path:
+	// "/batch" with batching, "/2/httpapi" without. A URL with a path is used as is.
 	AmplitudeEndpoint string `yaml:"amplitude_endpoint"`
 
 	// Toggle for logging sent events
 	IsLoggingEnabled bool `yaml:"logging_enabled"`
 
-	// Toggle for batching events. Make sure to set batch amplitude endpoint
+	// Toggle for batching events (Amplitude's Batch Event Upload API instead of the HTTP V2 API).
+	// An endpoint with a path must then be a batch endpoint.
 	IsBatchingEnabled bool `yaml:"batching_enabled"`
 
 	// The maximum number of events to send in a single batch
