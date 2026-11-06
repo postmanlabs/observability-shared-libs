@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bufio"
 	"bytes"
 	"compress/flate"
 	"fmt"
@@ -532,6 +533,54 @@ func TestHTTPResponseParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "chunked body with extension and trailer",
+			input: "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5;foo=bar\r\nhello\r\n6\r\n world\r\n0\r\nX-Trailer: t\r\n\r\n",
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Body:       memview.New([]byte("hello world")),
+			},
+		},
+		{
+			name:      "malformed chunk size",
+			input:     "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nzz\r\nhello\r\n0\r\n\r\n",
+			expectErr: true,
+		},
+		{
+			name: "pipelined responses",
+			verbatimInput: []memview.MemView{
+				memview.New([]byte("HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nfooHTTP/1.1 204 No Content\r\n\r\n")),
+			},
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 200,
+				Header:     map[string][]string{"Content-Length": {"3"}},
+				Body:       memview.New([]byte("foo")),
+			},
+			bytesRemaining: int64(len("HTTP/1.1 204 No Content\r\n\r\n")),
+		},
+		{
+			name: "304 has no body despite content-length",
+			verbatimInput: []memview.MemView{
+				memview.New([]byte("HTTP/1.1 304 Not Modified\r\nContent-Length: 5\r\n\r\nHTTP/1.1")),
+			},
+			expected: akinet.HTTPResponse{
+				StreamID:   uuid.UUID(testBidiID),
+				Seq:        522,
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				StatusCode: 304,
+				Header:     map[string][]string{"Content-Length": {"5"}},
+			},
+			bytesRemaining: int64(len("HTTP/1.1")),
+		},
 	}
 
 	for _, c := range testCases {
@@ -601,5 +650,80 @@ func TestOversizedResponse(t *testing.T) {
 
 	if expectedBytesConsumed != totalBytesConsumed {
 		t.Errorf("expected %d bytes consumed, but actually consumed %d bytes", expectedBytesConsumed, totalBytesConsumed)
+	}
+}
+
+var getNoBodyRequest = []byte(strings.Join([]string{
+	"GET /test/path HTTP/1.1\r\n",
+	"Host: 172.17.0.2:8080\r\n",
+	"Accept: */*\r\n",
+	"Accept-Encoding: *\r\n",
+	"User-Agent: Mozilla/5.0 (unknown-aarch64-linux-gnu) Siege/4.2.2\r\n",
+	"Connection: close\r\n",
+	"\r\n",
+}, ""))
+
+var Scratch = make([]byte, 64*1024*1024)
+
+func BenchmarkHTTPRequestParserGETNoBody(b *testing.B) {
+	pool, err := buffer_pool.MakeBufferPool(1024*1024, 4*1024)
+	if err != nil {
+		b.Fatal(err)
+	}
+	/*
+		inputs := [][]byte{}
+		for i := 0; i < b.N; i++ {
+			input := append([]byte{}, getNoBodyRequest...)
+			inputs = append(inputs, input)
+		}
+
+		flush := func() {
+			// flush cache
+			for i := 0; i < len(Scratch); i++ {
+				Scratch[i]++
+			}
+			_ = Scratch
+		}
+
+		//flush()
+		_ = flush
+	*/
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		p := newHTTPParser(true, testBidiID, 522, 1203, pool)
+		pnc, _, _, err := p.Parse(memview.New(getNoBodyRequest), false)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if pnc == nil {
+			b.Fatal("parsing incomplete")
+		}
+		pnc.ReleaseBuffers()
+
+		b.StopTimer()
+		//flush()
+		b.StartTimer()
+	}
+}
+
+// Benchmarks only Go's http.ReadRequest on the same input, as a floor for
+// BenchmarkHTTPRequestParserGETNoBody. The bufio.Reader is reused across
+// iterations, as httpParser does.
+func BenchmarkStdReadRequestGETNoBody(b *testing.B) {
+	input := getNoBodyRequest
+	r := bytes.NewReader(input)
+	br := bufio.NewReader(r)
+
+	b.SetBytes(int64(len(input)))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.Reset(input)
+		br.Reset(r)
+		if _, err := http.ReadRequest(br); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
