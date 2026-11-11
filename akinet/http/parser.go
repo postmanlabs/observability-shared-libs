@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -330,15 +331,16 @@ func (p *httpParser) consumeBody(input memview.MemView, pos int64) (done bool, e
 				// Ignore chunk extensions.
 				line = line[:i]
 			}
-			size, err := strconv.ParseInt(strings.TrimSpace(line), 16, 64)
-			if err != nil || size < 0 {
+			line = strings.TrimRight(line, " \t")
+			size, err := strconv.ParseUint(line, 16, 64)
+			if err != nil || size > math.MaxInt64 {
 				return false, 0, errors.Errorf("malformed chunk size %q", line)
 			}
 			if size == 0 {
 				p.state = stateChunkTrailer
 			} else {
 				p.state = stateChunkData
-				p.bodyRemaining = size
+				p.bodyRemaining = int64(size)
 			}
 
 		case stateChunkData:
@@ -379,16 +381,23 @@ func (p *httpParser) consumeBody(input memview.MemView, pos int64) (done bool, e
 // left over from previous input. Returns ok=false if the line is incomplete.
 // The returned line excludes the line terminator.
 func (p *httpParser) readLine(input memview.MemView, pos int64) (line string, newPos int64, ok bool, err error) {
+	var eol int64
 	nl := input.Index(pos, lf)
 	if nl < 0 {
-		p.lineBuf = appendFromMemView(p.lineBuf, input.SubView(pos, input.Len()))
-		if len(p.lineBuf) > maxChunkLineLength {
-			return "", 0, false, errors.New("malformed chunked encoding: line too long")
-		}
-		return "", input.Len(), false, nil
+		eol = input.Len()
+	} else {
+		eol = nl
 	}
 
-	p.lineBuf = appendFromMemView(p.lineBuf, input.SubView(pos, nl))
+	p.lineBuf = appendFromMemView(p.lineBuf, input.SubView(pos, eol))
+	if len(p.lineBuf) > maxChunkLineLength {
+		return "", 0, false, errors.New("malformed chunked encoding: line too long")
+	}
+
+	if nl < 0 {
+		return "", eol, false, nil
+	}
+
 	line = string(bytes.TrimSuffix(p.lineBuf, []byte{'\r'}))
 	p.lineBuf = p.lineBuf[0:0]
 	return line, nl + 1, true, nil
